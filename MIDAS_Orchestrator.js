@@ -45,10 +45,17 @@ class MIDASOrchestrator {
       },
       hermes: {
         id: 'hermes',
-        name: 'Hermes 3 405B',
-        model: 'nousresearch/hermes-3-llama-3.1-405b:free',
+        name: 'Qwen3-Next 80B',
+        model: 'qwen/qwen3-next-80b-a3b-instruct:free',
         tier: 'FREE',
-        role: 'Router & Orchestrator'
+        role: 'Router & Orchestrator (Primary)'
+      },
+      qwen_fallback: {
+        id: 'qwen_fallback',
+        name: 'Llama 3.3 70B',
+        model: 'meta-llama/llama-3.3-70b-instruct:free',
+        tier: 'FREE',
+        role: 'Router Fallback'
       },
       gpt: {
         id: 'gpt',
@@ -62,6 +69,8 @@ class MIDASOrchestrator {
     this.costTracker = { swarm: 0, gemini: 0, claude: 0, saved: 0 };
     this.taskLog = [];
     this.vaultBridge = null; // Will init on first use
+    this.vaultWriteQueue = Promise.resolve();
+    this.vaultWriteSeq = 0;
   }
 
   // ==================== IMPROVED CALL AGENT ====================
@@ -224,10 +233,12 @@ class MIDASOrchestrator {
       };
 
       // ==================== HANDOFF TO HUD ====================
-      // Save result to global window object so HUD can display it
+      // Save result to task-keyed storage + compatibility alias
       if (typeof window !== 'undefined') {
-        window.lastResult = fullResult;
-        console.log('[ORCHESTRATOR] ✓ Result saved to window.lastResult');
+        window.midasResults = window.midasResults || {};
+        window.midasResults[taskId] = fullResult;
+        window.lastResult = fullResult; // alias: always points at most recently completed task
+        console.log(`[ORCHESTRATOR] ✓ Result saved to window.midasResults[${taskId}]`);
 
         // Trigger HUD display function if available
         if (typeof window.MIDASIntegration !== 'undefined' && typeof window.MIDASIntegration.showResults === 'function') {
@@ -246,7 +257,7 @@ class MIDASOrchestrator {
   }
 
   async routeTask(task) {
-    console.log(`[HERMES] Routing task: ${task.type}`);
+    console.log(`[ROUTER] Routing task: ${task.type}`);
 
     const routingPrompt = `You are a task router. Decide which specialized agents should handle this task:
 Task type: ${task.type}
@@ -262,12 +273,18 @@ Available agents:
 
 Respond with agent IDs only, comma-separated. For now, respond with: qwen,nemotron`;
 
-    // Try primary router (Hermes)
+    // Try primary router (Qwen3-Next 80B)
     let routingDecision = await this.callAgent(this.agents.hermes, routingPrompt);
 
-    // If Hermes fails, try fallback routers
+    // If Qwen3-Next fails, try Llama 3.3 70B fallback
     if (routingDecision.includes('[Error') || routingDecision.length < 5) {
-      console.warn(`[HERMES] Failed or empty response, trying Gemini fallback...`);
+      console.warn(`[ROUTER] Qwen3-Next failed, trying Llama 3.3 70B fallback...`);
+      routingDecision = await this.callAgent(this.agents.qwen_fallback, routingPrompt);
+    }
+
+    // If Llama fails, try Gemini
+    if (routingDecision.includes('[Error') || routingDecision.length < 5) {
+      console.warn(`[ROUTER] Llama fallback failed, trying Gemini fallback...`);
       routingDecision = await this.callAgent(this.agents.gemini, routingPrompt);
     }
 
@@ -396,25 +413,32 @@ Requirements:
   }
 
   async saveToVault(analysisData) {
+    const writeNumber = ++this.vaultWriteSeq;
+    console.log('[VAULT] Queued write');
+
+    const task = this.vaultWriteQueue.then(() => this._processVaultWrite(analysisData, writeNumber));
+    this.vaultWriteQueue = task.catch(() => {}); // keep chain alive even if a write errors
+
+    return task;
+  }
+
+  async _processVaultWrite(analysisData, writeNumber) {
+    console.log(`[VAULT] Processing write ${writeNumber}/${this.vaultWriteSeq}`);
+
+    if (!this.vaultBridge) {
+      console.error('[VAULT] ERROR: vaultBridge not initialized');
+      return { success: false, error: 'Vault bridge unavailable' };
+    }
+
     try {
-      if (!this.vaultBridge) {
-        console.warn('[VAULT] No vault bridge initialized');
-        return { success: false, error: 'Vault bridge unavailable' };
-      }
-
       const result = await this.vaultBridge.createAnalysisEntry(analysisData);
-
       if (result?.success) {
         console.log(`[VAULT] File created: ${result.filepath}`);
       }
-
       return result;
     } catch (err) {
       console.error('[VAULT] Save failed:', err);
-      return {
-        success: false,
-        error: err.message
-      };
+      return { success: false, error: err.message };
     }
   }
   async runReflexion() { console.log('[REFLEXION] Lesson extracted.'); return "Lesson learned."; }

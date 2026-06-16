@@ -1554,9 +1554,9 @@ const MODEL_CACHE = {};
 // Hardcoded primary agent models - production endpoints (verified 2026)
 const PRIMARY_MODELS = {
   // STEP 1: SWARM ANALYSIS (Parallel Processing - Fast & High-Efficiency)
-  qwen: 'qwen/qwen-2.5-72b-instruct',                           // Vision + reasoning
+  qwen: 'qwen/qwen-2.5-72b-instruct',                           // Vision + reasoning (swarm)
   nemotron: 'nvidia/nemotron-3-ultra-550b-a55b:free',          // High-parameter logic engine
-  hermes: 'nousresearch/hermes-3-llama-3.1-405b:free',         // Router & Orchestrator
+  hermes: 'qwen/qwen3-next-80b-a3b-instruct:free',             // Router & Orchestrator (Primary)
 
   // STEP 2: GEMINI SYNTHESIS (Consolidating Swarm Data & Extracting Core Thesis)
   gemini: 'google/gemini-3.5-flash',                            // Efficient multimodal master
@@ -1705,7 +1705,7 @@ const AgentPicker = {
 
   models: [
     { id: 'claude', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', desc: 'Pine authority', openrouter: 'anthropic/claude-sonnet-4.6', isFree: false },
-    { id: 'hermes', name: 'Hermes 3 405B', provider: 'NousResearch', desc: 'Router & Orchestrator', openrouter: 'nousresearch/hermes-3-llama-3.1-405b:free', isFree: true },
+    { id: 'hermes', name: 'Qwen3-Next 80B', provider: 'Alibaba', desc: 'Router & Orchestrator (Primary)', openrouter: 'qwen/qwen3-next-80b-a3b-instruct:free', isFree: true },
     { id: 'gemini', name: 'Gemini 2.0 Flash', provider: 'Google', desc: 'Visual / long ctx', openrouter: 'google/gemini-3.5-flash', isFree: true },
     { id: 'grok', name: 'Grok 3', provider: 'xAI', desc: 'Reasoning + vision', openrouter: 'x-ai/grok-3', isFree: false },
     { id: 'nemotron', name: 'Nemotron 3 Ultra', provider: 'Nvidia', desc: 'Quant + Logic', openrouter: 'nvidia/nemotron-3-ultra-550b-a55b:free', isFree: true },
