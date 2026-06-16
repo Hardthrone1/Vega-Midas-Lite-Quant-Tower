@@ -1,0 +1,184 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+//@version=5
+strategy("De Broglie Swing — Dual Engine", overlay=true, currency=currency.USD,
+         initial_capital=50000, default_qty_value=1, calc_on_every_tick=false, process_orders_on_close=false)
+
+// =========================================================================
+// MASTER
+// =========================================================================
+grp_m = "Global Settings"
+strategyDirection = input.string("Both", "Testing Direction", options=["Both", "Long Only", "Short Only"], group=grp_m)
+usePriceMode      = input.bool(true, "Use Price Units (Recommended)", group=grp_m)
+allowLongs  = strategyDirection == "Both" or strategyDirection == "Long Only"
+allowShorts = strategyDirection == "Both" or strategyDirection == "Short Only"
+
+// =========================================================================
+// EXITS — sized BIG on purpose: levels a single 5m bar can't contain
+// =========================================================================
+grp_x = "Exits (Swing-Sized)"
+tp_input    = input.float(120, "Take Profit (Price)", group=grp_x, tooltip="Keep TP+SL larger than any plausible single-bar range and intrabar fill assumptions stop deciding your results.")
+sl_input    = input.float(40,  "Stop Loss (Price)",   group=grp_x)
+useFlipExit = input.bool(true, "Exit on Opposite Trigger?", group=grp_x, tooltip="Momentum-flip exit. Often closes trades before TP/SL — natural for swing logic.")
+
+// =========================================================================
+// CHOP CONTROL — A/B TOGGLES (all OFF = identical to previous build)
+// =========================================================================
+grp_c = "Chop Control (A/B)"
+useBands   = input.bool(false, "1 · Band Hysteresis", group=grp_c, tooltip="Overrides Entry Trigger. Enter only on a cross of ±Entry Band; flip-exit only on a cross of ∓Exit Band. Kills noise-floor round trips.")
+entryBand  = input.float(20, "    Entry Band (±)", minval=0, maxval=90, group=grp_c)
+exitBand   = input.float(10, "    Exit Band (∓)",  minval=0, maxval=90, group=grp_c)
+useRegime  = input.bool(false, "2 · Regime Gate", group=grp_c, tooltip="Blocks NEW entries in compression. Never blocks exits.")
+regimeMode = input.string("ATR Percentile", "    Regime Mode", options=["ATR Percentile", "ADX"], group=grp_c)
+atrLen     = input.int(14,  "    ATR Length", minval=1, group=grp_c)
+atrLook    = input.int(100, "    ATR Percentile Lookback", minval=10, group=grp_c)
+atrPctMin  = input.float(40, "    Min ATR Percentile", minval=0, maxval=100, group=grp_c)
+adxDiLen   = input.int(14, "    ADX DI Length", minval=1, group=grp_c)
+adxSmLen   = input.int(14, "    ADX Smoothing", minval=1, group=grp_c)
+adxMin     = input.float(20, "    Min ADX", minval=0, maxval=100, group=grp_c)
+showShade  = input.bool(true, "    Shade Blocked Regime", group=grp_c)
+cooldown   = input.int(0, "3 · Cooldown Bars After Exit (0 = off)", minval=0, group=grp_c, tooltip="Minimum bars after any exit before the next entry is allowed.")
+useHTF     = input.bool(false, "4 · Higher-TF Bias Filter", group=grp_c, tooltip="Longs only when HTF close > HTF EMA; shorts only when below. Computed inside request.security per house pattern.")
+htfTF      = input.timeframe("60", "    Bias Timeframe", group=grp_c)
+htfLen     = input.int(50, "    Bias EMA Length", minval=1, group=grp_c)
+
+// =========================================================================
+// DE BROGLIE TRIGGER ENGINE
+// =========================================================================
+grp_db = "De Broglie Trigger"
+db_src     = input.source(close, "Source", group=grp_db)
+smooth_len = input.int(14, "Normalization Length", minval=1, group=grp_db)
+signal_len = input.int(5,  "Signal Smoothing",     minval=1, group=grp_db)
+trigMode   = input.string("Zero Cross", "Entry Trigger", options=["Zero Cross", "Signal Cross"], group=grp_db, tooltip="Ignored while Band Hysteresis is ON.")
+obGuard    = input.float(0, "Overextension Guard (0 = off)", minval=0, maxval=90, group=grp_db, tooltip="Blocks longs when osc is already above this level (and shorts below the negative). Don't chase exhausted flow.")
+
+db_vel     = db_src - db_src[1]
+avgVol     = ta.sma(volume, smooth_len)
+avgVolSafe = avgVol == 0 ? 1 : avgVol
+bull_mom   = db_vel > 0 ? (volume / avgVolSafe) * db_vel  : 0.0
+bear_mom   = db_vel < 0 ? (volume / avgVolSafe) * -db_vel : 0.0
+bull_flow  = ta.ema(bull_mom, smooth_len)
+bear_flow  = ta.ema(bear_mom, smooth_len)
+total_flow = bull_flow + bear_flow
+db_osc     = total_flow > 0 ? 100 * (bull_flow - bear_flow) / total_flow : 0
+db_signal  = ta.ema(db_osc, signal_len)
+
+// All cross series computed unconditionally at top scope (consistency rule),
+// selection happens after.
+crossZeroUp   = ta.crossover(db_osc, 0)
+crossZeroDn   = ta.crossunder(db_osc, 0)
+crossSigUp    = ta.crossover(db_osc, db_signal)
+crossSigDn    = ta.crossunder(db_osc, db_signal)
+crossBandUp   = ta.crossover(db_osc,  entryBand)
+crossBandDn   = ta.crossunder(db_osc, -entryBand)
+crossExitDn   = ta.crossunder(db_osc, -exitBand)
+crossExitUp   = ta.crossover(db_osc,  exitBand)
+
+baseLongTrig  = trigMode == "Zero Cross" ? crossZeroUp : crossSigUp
+baseShortTrig = trigMode == "Zero Cross" ? crossZeroDn : crossSigDn
+longTrig      = useBands ? crossBandUp : baseLongTrig
+shortTrig     = useBands ? crossBandDn : baseShortTrig
+longFlipOut   = useBands ? crossExitDn : shortTrig   // closes longs
+shortFlipOut  = useBands ? crossExitUp : longTrig    // closes shorts
+
+obOKLong  = obGuard == 0 or db_osc <  obGuard
+obOKShort = obGuard == 0 or db_osc > -obGuard
+
+// =========================================================================
+// REGIME / COOLDOWN / HTF GATES
+// =========================================================================
+atrVal  = ta.atr(atrLen)
+atrPct  = ta.percentrank(atrVal, atrLook)
+[diP, diM, adxV] = ta.dmi(adxDiLen, adxSmLen)
+regimeOK = not useRegime or (regimeMode == "ADX" ? adxV >= adxMin : atrPct >= atrPctMin)
+
+var int lastExitBar = na
+exitedThisBar = strategy.position_size == 0 and strategy.position_size[1] != 0
+if exitedThisBar
+    lastExitBar := bar_index
+cooldownOK = cooldown == 0 or na(lastExitBar) or (bar_index - lastExitBar) >= cooldown
+
+htfUp     = request.security(syminfo.tickerid, htfTF, close > ta.ema(close, htfLen))
+htfOKLong  = not useHTF or htfUp
+htfOKShort = not useHTF or not htfUp
+
+// =========================================================================
+// TREND ENGINE — VAMA vs PHOTON, selectable (both with their fixes)
+// =========================================================================
+grp_t = "Trend Engine"
+trendEngine = input.string("VAMA", "Engine", options=["VAMA", "Photon"], group=grp_t)
+t_src       = input.source(close, "Engine Price Source", group=grp_t)
+
+dynamic_ema(source, series_length) =>
+    len = math.max(1.0, series_length)
+    alpha = 2.0 / (len + 1.0)
+    var float ema_val = na
+    ema_val := na(ema_val) ? source : (alpha * source) + ((1.0 - alpha) * ema_val)
+    ema_val
+
+// — VAMA (with velocity smoothing fix)
+grp_v = "VAMA Settings"
+base_length = input.int(20, "Base Cycle Length", minval=5, group=grp_v)
+vel_period  = input.int(10, "Velocity Lookup Period", minval=2, group=grp_v)
+vel_smooth  = input.int(5, "Velocity Smoothing",  minval=1, group=grp_v)
+tr_bg       = ta.sma(ta.tr, vel_period)
+v_raw       = tr_bg == 0 ? 1.0 : ta.tr / tr_bg
+v_sm        = ta.sma(v_raw, vel_smooth)
+vama_len    = math.max(5.0, math.min(base_length * v_sm, 200.0))
+vama        = dynamic_ema(t_src, vama_len)
+
+// — Photon (with ordering fix)
+grp_p = "Photon Settings"
+energy_period = input.int(10, "Energy Measurement Window", group=grp_p)
+constant_h_c  = input.float(500.0, "Planck-Light Constant", group=grp_p)
+m_energy   = ta.sma(math.abs(t_src - ta.valuewhen(ta.change(t_src) != 0, t_src[1], 0)), energy_period)
+m_clean    = m_energy == 0 ? 0.001 : m_energy
+wave_len   = constant_h_c / m_clean
+p_fastLen  = math.max(5.0, wave_len * 0.5)
+p_midLen   = math.max(p_fastLen, math.max(5.0, wave_len))
+p_slowLen  = math.max(p_midLen,  math.min(200.0, wave_len * 1.5))
+p_fast     = dynamic_ema(t_src, p_fastLen)
+p_mid      = dynamic_ema(t_src, p_midLen)
+p_slow     = dynamic_ema(t_src, p_slowLen)
+
+trendUp = trendEngine == "VAMA" ? close > vama : p_fast > p_slow
+trendDn = trendEngine == "VAMA" ? close < vama : p_fast < p_slow
+
+// =========================================================================
+// TICK CONVERSION + ORDERS
+// =========================================================================
+tickSize = syminfo.mintick > 0 ? syminfo.mintick : 0.01
+f_toTicks(val) => math.max(1, math.round(val / (usePriceMode ? tickSize : 1)))
+tp = f_toTicks(tp_input)
+sl = f_toTicks(sl_input)
+
+longCondition  = allowLongs  and longTrig  and trendUp and obOKLong  and regimeOK and cooldownOK and htfOKLong
+shortCondition = allowShorts and shortTrig and trendDn and obOKShort and regimeOK and cooldownOK and htfOKShort
+
+if strategy.position_size == 0
+    if longCondition
+        strategy.entry("Long", strategy.long)
+    if shortCondition
+        strategy.entry("Short", strategy.short)
+
+// Momentum-flip exit: opposite trigger closes the trade
+// (Gates never apply to exits — an open position can always leave.)
+if useFlipExit
+    if strategy.position_size > 0 and longFlipOut
+        strategy.close("Long", comment="FlipExit")
+    if strategy.position_size < 0 and shortFlipOut
+        strategy.close("Short", comment="FlipExit")
+
+if strategy.position_size > 0
+    strategy.exit("Exit Long", "Long", profit=tp, loss=sl)
+if strategy.position_size < 0
+    strategy.exit("Exit Short", "Short", profit=tp, loss=sl)
+
+// =========================================================================
+// VISUALS
+// =========================================================================
+bgcolor(useRegime and showShade and not regimeOK ? color.new(color.gray, 88) : na)
+plot(trendEngine == "VAMA" ? vama : na,   "VAMA",        color=close > vama ? color.new(color.blue, 0) : color.new(color.orange, 0), linewidth=2)
+plot(trendEngine == "Photon" ? p_fast : na, "Photon Fast", color=p_fast > p_slow ? color.new(color.green, 30) : color.new(color.red, 30))
+plot(trendEngine == "Photon" ? p_mid  : na, "Photon Core", color=color.new(color.white, 0))
+plot(trendEngine == "Photon" ? p_slow : na, "Photon Slow", color=p_fast > p_slow ? color.new(color.green, 30) : color.new(color.red, 30))

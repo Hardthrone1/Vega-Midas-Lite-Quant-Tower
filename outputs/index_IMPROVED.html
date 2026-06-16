@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIDAS — Quant Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#04070e; --pane:#070d18; --pane2:#0a1322; --pane3:#0e1a2e;
+  --line:#122139; --line2:#1c3454; --line3:#27496f;
+  --cy:#38cfff; --cy-hot:#8ae6ff; --cy-dim:#1a5d80; --cy-bg:rgba(56,207,255,.07);
+  --rd:#ff4257; --rd-hot:#ff8b97; --rd-dim:#7e2530; --rd-bg:rgba(255,66,87,.08);
+  --text:#e3f3ff; --muted:#8aa7c4; --dim:#48648a;
+  --fd:'Rajdhani',sans-serif; --fm:'IBM Plex Mono',monospace; --fb:'Inter',sans-serif;
+  --glow-cy:0 0 10px rgba(56,207,255,.55); --glow-rd:0 0 10px rgba(255,66,87,.55);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--void);color:var(--text);font-family:var(--fb);font-size:13.5px;display:flex;overflow:hidden}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(56,207,255,.085) 1px,transparent 1.4px);
+  background-size:26px 26px;
+}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(1100px 500px at 70% -10%,rgba(56,207,255,.06),transparent 60%);
+}
+::selection{background:var(--cy-dim);color:#fff}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{
+  outline:1.5px solid var(--cy);outline-offset:2px;
+}
+
+/* ════════ RAIL ════════ */
+.rail{
+  width:200px;min-width:200px;height:100vh;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#081020 0%,var(--void) 65%);
+  border-right:1px solid var(--line);padding:18px 12px 14px;position:relative;z-index:3;
+}
+.mark{display:flex;align-items:center;gap:10px;padding:0 8px 16px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.mark .king{font-size:26px;color:var(--cy);text-shadow:var(--glow-cy);line-height:1}
+.mark .t{font-family:var(--fd);font-weight:700;font-size:20px;letter-spacing:.3em;color:var(--text)}
+.mark .s{font-family:var(--fm);font-size:8.5px;color:var(--dim);letter-spacing:.16em;margin-top:1px}
+.nav{display:flex;flex-direction:column;gap:1px;flex:1;overflow-y:auto}
+.nav button{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;text-align:left;
+  font-family:var(--fd);font-weight:600;font-size:13px;letter-spacing:.1em;color:var(--muted);
+  border-left:2px solid transparent;transition:color .15s,background .15s;text-transform:uppercase;
+}
+.nav button .k{margin-left:auto;font-family:var(--fm);font-size:9px;color:var(--dim);font-weight:400}
+.nav button:hover{color:var(--text);background:var(--pane2)}
+.nav button.on{color:var(--cy-hot);background:var(--cy-bg);border-left-color:var(--cy);text-shadow:var(--glow-cy)}
+.nav .sep{margin:8px 10px;border-top:1px solid var(--line)}
+.rail-foot{border-top:1px solid var(--line);padding-top:11px;font-family:var(--fm)}
+.clock{font-size:19px;font-weight:600;letter-spacing:.08em;color:var(--text)}
+.clock .sec{color:var(--cy);text-shadow:var(--glow-cy)}
+.sess{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:9.5px;letter-spacing:.12em;color:var(--muted)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex:none}
+.dot.live{background:var(--cy);box-shadow:var(--glow-cy);animation:pulse 2.2s infinite}
+.dot.down{background:var(--rd);box-shadow:var(--glow-rd)}
+@keyframes pulse{50%{opacity:.4}}
+
+/* ════════ MAIN / PAGES ════════ */
+.main{flex:1;height:100vh;overflow-y:auto;position:relative;z-index:1}
+.page{display:none;max-width:1180px;margin:0 auto;padding:24px 30px 70px}
+.page.on{display:block;animation:rise .25s ease}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.ph .mod{font-family:var(--fm);font-size:9.5px;letter-spacing:.22em;color:var(--cy);margin-bottom:4px}
+.ph h1{font-family:var(--fd);font-weight:700;font-size:26px;letter-spacing:.14em;text-transform:uppercase;line-height:1}
+.ph .sub{font-family:var(--fm);font-size:10.5px;color:var(--dim);margin-top:5px;letter-spacing:.05em}
+.pill{
+  display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border:1px solid var(--line2);
+  font-family:var(--fm);font-size:9.5px;letter-spacing:.12em;color:var(--muted);background:var(--pane2);
+}
+
+/* HUD panel with corner brackets */
+.panel{position:relative;background:linear-gradient(180deg,var(--pane2),var(--pane));border:1px solid var(--line);padding:16px 18px}
+.panel::before,.panel::after{content:"";position:absolute;width:13px;height:13px;border:1px solid rgba(56,207,255,.6);pointer-events:none}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.panel+.panel{margin-top:14px}
+.panel h2{
+  font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--cy);margin-bottom:13px;display:flex;align-items:baseline;gap:8px;
+}
+.panel h2::before{content:"//";color:var(--cy-dim)}
+.panel h2 .hint{margin-left:auto;font-size:8.5px;font-weight:400;letter-spacing:.08em;color:var(--dim)}
+.panel.alert{border-color:var(--rd-dim)}
+.panel.alert::before,.panel.alert::after{border-color:rgba(255,66,87,.6)}
+.panel.alert h2{color:var(--rd)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:920px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* ════════ HUD TILES / MIN CHARTS ════════ */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+.tile{position:relative;background:var(--pane2);border:1px solid var(--line);padding:11px 13px 9px}
+.tile .l{font-family:var(--fm);font-size:8.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+.tile .v{font-family:var(--fd);font-weight:700;font-size:22px;letter-spacing:.03em;margin:3px 0 4px}
+.tile .v.cy{color:var(--cy-hot);text-shadow:var(--glow-cy)}
+.tile .v.rd{color:var(--rd-hot);text-shadow:var(--glow-rd)}
+.tile canvas{display:block;width:100%;height:26px}
+.tile .tag{position:absolute;top:9px;right:11px;font-family:var(--fm);font-size:8px;letter-spacing:.12em;color:var(--dim)}
+
+.ring{display:flex;align-items:center;gap:14px}
+.ring svg{flex:none}
+.ring .rl{font-family:var(--fm);font-size:9px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+.ring .rv{font-family:var(--fd);font-weight:700;font-size:18px}
+
+/* candle ambient strip */
+.candlewrap{position:relative;height:64px;margin:-4px 0 14px;overflow:hidden;border-bottom:1px solid var(--line)}
+.candlewrap svg{position:absolute;inset:0;width:100%;height:100%;opacity:.8}
+
+/* ════════ HONEYCOMB ════════ */
+.comb-wrap{display:flex;gap:38px;flex-wrap:wrap;align-items:flex-start}
+.comb-group{flex:1;min-width:330px}
+.comb-label{font-family:var(--fm);font-size:9px;letter-spacing:.2em;color:var(--dim);margin-bottom:11px}
+.comb{--w:116px;--h:102px}
+.comb .row{display:flex;gap:6px}
+.comb .row.off{margin-left:calc(var(--w)/2 + 3px)}
+.comb .row+.row{margin-top:calc(var(--h)*-0.225)}
+.hex{
+  width:var(--w);height:var(--h);flex:none;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  background:var(--line2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  transition:background .2s,transform .15s,filter .2s;position:relative;
+}
+.hex::after{content:"";position:absolute;inset:1.5px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--pane2);z-index:0;transition:background .2s}
+.hex>*{position:relative;z-index:1}
+.hex .nm{font-family:var(--fd);font-weight:600;font-size:10.5px;letter-spacing:.04em;text-align:center;line-height:1.2;padding:0 10px}
+.hex .rl{font-family:var(--fm);font-size:8px;color:var(--dim);letter-spacing:.05em;text-align:center}
+.hex .st{font-family:var(--fm);font-size:7.5px;letter-spacing:.16em;color:var(--dim)}
+.hex:hover{transform:translateY(-2px)}
+.hex.live{background:var(--cy);filter:drop-shadow(0 0 7px rgba(56,207,255,.45))}
+.hex.live::after{background:linear-gradient(180deg,#0c1d30,#091523)}
+.hex.live .nm{color:var(--cy-hot)}
+.hex.live .st{color:var(--cy)}
+.hex.down{background:var(--rd);filter:drop-shadow(0 0 7px rgba(255,66,87,.4))}
+.hex.down .st{color:var(--rd)}
+.comb-foot{margin-top:15px;font-family:var(--fm);font-size:9.5px;color:var(--dim);letter-spacing:.04em;line-height:1.7}
+.comb-foot b{color:var(--cy);font-weight:500}
+
+/* ════════ FEED / TABLES ════════ */
+.feed{font-family:var(--fm);font-size:11px;line-height:1.5;max-height:240px;overflow-y:auto}
+.feed .e{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
+.feed .e:last-child{border-bottom:none}
+.feed .t{color:var(--dim);flex:none;width:84px}
+.feed .cy{color:var(--cy)} .feed .rd{color:var(--rd)} .feed .mu{color:var(--dim)} .feed .wh{color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-family:var(--fm);font-size:11px}
+th{font-family:var(--fm);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);text-align:left;padding:6px 9px;border-bottom:1px solid var(--line2)}
+td{padding:7px 9px;border-bottom:1px solid var(--line);color:var(--muted);vertical-align:middle}
+td:first-child{color:var(--text)}
+tr:last-child td{border-bottom:none}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;padding:2px 8px;font-size:8.5px;letter-spacing:.12em;font-family:var(--fm)}
+.chip.cy{background:var(--cy-bg);color:var(--cy);border:1px solid var(--cy-dim)}
+.chip.rd{background:var(--rd-bg);color:var(--rd);border:1px solid var(--rd-dim)}
+.chip.dim{background:var(--pane3);color:var(--dim);border:1px solid var(--line2)}
+
+/* ════════ FORMS / BTN ════════ */
+textarea,input,select{
+  width:100%;background:var(--pane3);border:1px solid var(--line2);color:var(--text);
+  font-family:var(--fm);font-size:11.5px;padding:9px 11px;
+}
+textarea{min-height:80px;resize:vertical}
+input[type=number]{padding:5px 7px}
+.btn{
+  font-family:var(--fd);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  background:var(--cy);color:#031019;padding:9px 20px;transition:background .15s,box-shadow .15s;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+}
+.btn:hover{background:var(--cy-hot);box-shadow:var(--glow-cy)}
+.btn.ghost{background:var(--pane3);color:var(--muted);border:1px solid var(--line2);clip-path:none}
+.btn.ghost:hover{color:var(--cy);border-color:var(--cy-dim);box-shadow:none}
+.fld label{display:block;font-family:var(--fm);font-size:8.5px;color:var(--dim);letter-spacing:.16em;margin-bottom:5px;text-transform:uppercase}
+
+/* ════════ THINK ════════ */
+.mcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(198px,1fr));gap:10px;margin-top:14px}
+.mc{background:var(--pane2);border:1px solid var(--line);border-left:2px solid var(--cy-dim);padding:11px 12px;opacity:.3;transition:opacity .4s,border-color .4s}
+.mc.lit{opacity:1;border-left-color:var(--cy)}
+.mc .who{font-family:var(--fd);font-weight:700;font-size:13px;letter-spacing:.1em}
+.mc .role{font-family:var(--fm);font-size:8px;color:var(--dim);letter-spacing:.12em;margin:2px 0 7px}
+.mc .say{font-size:11px;color:var(--muted);line-height:1.5;min-height:44px}
+.cons{margin-top:16px}
+.cons .bar{height:7px;background:var(--pane3);border:1px solid var(--line);overflow:hidden}
+.cons .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--cy-dim),var(--cy),var(--cy-hot));transition:width 1.4s ease;box-shadow:var(--glow-cy)}
+.cons .lbl{display:flex;justify-content:space-between;font-family:var(--fm);font-size:9px;color:var(--dim);margin-top:6px;letter-spacing:.12em}
+
+/* ════════ LOG / CHECK / DETAILS ════════ */
+.log{
+  background:#030810;border:1px solid var(--line);padding:13px;
+  font-family:var(--fm);font-size:11px;line-height:1.7;min-height:160px;max-height:290px;overflow-y:auto;white-space:pre-wrap;
+}
+.log .ok{color:var(--cy)} .log .er{color:var(--rd)} .log .wn{color:#ffd166} .log .in{color:var(--muted)} .log .mu{color:var(--dim)}
+.check{display:flex;flex-direction:column;gap:9px}
+.check label{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted);line-height:1.5;cursor:pointer}
+.check input{width:14px;height:14px;margin-top:2px;accent-color:var(--cy);flex:none}
+.check b{color:var(--text);font-weight:600}
+.check code,.dbody code{font-family:var(--fm);font-size:10.5px;color:var(--cy-hot);background:#030810;padding:1px 6px;border:1px solid var(--line)}
+details{border:1px solid var(--line);background:var(--pane2);margin-bottom:9px}
+summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 15px;font-family:var(--fd);font-weight:600;font-size:13px;letter-spacing:.08em}
+summary::-webkit-details-marker{display:none}
+summary .car{margin-left:auto;color:var(--dim);transition:transform .2s;font-family:var(--fm)}
+details[open] summary .car{transform:rotate(90deg)}
+.dbody{padding:0 15px 15px;color:var(--muted);font-size:12px;line-height:1.65}
+.dbody .fix{margin-top:10px;padding:9px 12px;border-left:2px solid var(--cy);background:var(--cy-bg);color:var(--text)}
+.flagd{border-left:2px solid var(--rd)}
+.flagd summary{color:var(--rd-hot)}
+
+/* ════════ TIMELINE ════════ */
+.tl{position:relative;padding-left:24px}
+.tl::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:1px;background:var(--line2)}
+.tl .ev{position:relative;padding:0 0 20px}
+.tl .ev::before{content:"";position:absolute;left:-22px;top:5px;width:8px;height:8px;background:var(--pane);border:1.5px solid var(--cy-dim)}
+.tl .ev.hot::before{border-color:var(--cy);background:var(--cy);box-shadow:var(--glow-cy)}
+.tl .d{font-family:var(--fm);font-size:9px;color:var(--dim);letter-spacing:.14em}
+.tl .h{font-family:var(--fd);font-weight:600;font-size:15px;margin:3px 0 3px;letter-spacing:.04em}
+.tl .b{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ════════ QUANT LAB ════════ */
+.drop{
+  border:1px dashed var(--line3);background:var(--pane2);padding:22px;text-align:center;cursor:pointer;
+  font-family:var(--fm);font-size:11px;color:var(--dim);letter-spacing:.06em;transition:border-color .15s,background .15s;
+}
+.drop:hover,.drop.over{border-color:var(--cy);background:var(--cy-bg);color:var(--cy)}
+.drop b{color:var(--cy);font-weight:500}
+.eq-big{display:block;width:100%;height:120px;margin-top:8px}
+.hist{display:flex;align-items:flex-end;gap:5px;height:96px;padding-top:6px}
+.hist .hb{flex:1;background:linear-gradient(180deg,var(--cy),var(--cy-dim));min-height:2px;position:relative;opacity:.9}
+.hist .hb.neg{background:linear-gradient(180deg,var(--rd),var(--rd-dim))}
+.hist .hb .hv{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-family:var(--fm);font-size:8px;color:var(--dim)}
+.heat{display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+.heat .hc{aspect-ratio:1.5;background:var(--pane3);border:1px solid var(--line);position:relative}
+.heat .hc span{position:absolute;left:4px;bottom:2px;font-family:var(--fm);font-size:7.5px;color:var(--dim)}
+.edge{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+.edge:last-child{border-bottom:none}
+.edge .et{flex:1;color:var(--text)}
+.edge .chip{cursor:pointer}
+.edge .x{color:var(--rd);font-family:var(--fm);font-size:12px;padding:0 4px}
+.formulas{font-family:var(--fm);font-size:11px;line-height:2.1;color:var(--muted)}
+.formulas b{color:var(--cy);font-weight:500}
+
+/* ════════ ALGO ARENA ════════ */
+.lb td input{width:58px;text-align:right;font-size:10.5px}
+.lb .rank{font-family:var(--fd);font-weight:700;font-size:16px;color:var(--dim);width:38px}
+.lb tr.top1 .rank{color:var(--cy-hot);text-shadow:var(--glow-cy)}
+.lb tr.top1 td:nth-child(2){color:var(--cy-hot)}
+.lb .score{font-family:var(--fd);font-weight:700;font-size:16px}
+.lb .sbar{height:4px;background:var(--pane3);margin-top:3px;width:96px}
+.lb .sbar i{display:block;height:100%;background:var(--cy);box-shadow:var(--glow-cy)}
+.archbars .ab{margin-bottom:12px}
+.archbars .al{display:flex;justify-content:space-between;font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;color:var(--muted);margin-bottom:4px}
+.archbars .at{height:9px;background:var(--pane3);border:1px solid var(--line)}
+.archbars .at i{display:block;height:100%;background:linear-gradient(90deg,var(--cy-dim),var(--cy));box-shadow:var(--glow-cy);transition:width .6s ease}
+.netgraph{width:100%;height:230px}
+
+.kv{font-family:var(--fm);font-size:11px;line-height:2}
+.kv b{color:var(--cy);font-weight:500;display:inline-block;min-width:150px}
+.note{font-size:10.5px;color:var(--dim);line-height:1.6;font-family:var(--fm)}
+.big{font-family:var(--fd);font-weight:700;font-size:30px;letter-spacing:.04em;color:var(--cy-hot);text-shadow:var(--glow-cy)}
+.rulebar{
+  display:flex;align-items:center;gap:12px;background:var(--rd-bg);border:1px solid var(--rd-dim);
+  padding:10px 14px;font-family:var(--fm);font-size:11px;color:var(--rd-hot);margin-bottom:14px;letter-spacing:.03em;
+}
+.spend-form{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:8px;align-items:end}
+@media(max-width:760px){.spend-form{grid-template-columns:1fr 1fr}}
+.main::-webkit-scrollbar,.feed::-webkit-scrollbar,.log::-webkit-scrollbar,.nav::-webkit-scrollbar{width:8px}
+.main::-webkit-scrollbar-thumb,.feed::-webkit-scrollbar-thumb,.log::-webkit-scrollbar-thumb,.nav::-webkit-scrollbar-thumb{background:var(--line2)}
+.main::-webkit-scrollbar-track{background:transparent}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@media(max-width:760px){
+  .rail{width:62px;min-width:62px;padding:14px 8px}
+  .mark .t,.mark .s,.nav button span:not(.k),.nav .k,.sess span{display:none}
+  .clock{font-size:10px}
+  .page{padding:16px 14px 60px}
+  .comb{--w:94px;--h:82px}
+}
+
+/* ════════ AGENT PROFILES ════════ */
+#agentsOverlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(14,26,46,.95),rgba(18,33,57,.95));z-index:9998;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:24px;overflow-y:auto;animation:overlayFadeIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes overlayFadeIn{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(10px)}}
+.agents-header{position:sticky;top:0;background:rgba(56,207,255,.08);border:1px solid rgba(56,207,255,.25);border-radius:12px;padding:20px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(10px);z-index:1;box-shadow:0 4px 16px rgba(56,207,255,.1)}
+.agents-header-content h1{margin:0 0 8px;color:var(--cy);font-family:'Outfit',var(--fd),sans-serif;font-size:28px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;text-shadow:var(--glow-cy)}
+.agents-header-content p{margin:0;color:var(--muted);font-family:var(--fm);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.agents-close-btn{background:none;border:none;color:var(--cy);cursor:pointer;font-size:22px;padding:0;width:40px;height:40px;display:flex;align-items:center;justify-content:center;transition:all .2s ease;border-radius:6px}
+.agents-close-btn:hover{background:rgba(56,207,255,.15);transform:scale(1.1) rotate(90deg)}
+#agentsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}
+.agent-card{background:rgba(56,207,255,.08);border:1px solid rgba(56,207,255,.25);border-radius:12px;padding:16px;cursor:pointer;transition:all .4s cubic-bezier(.34,1.56,.64,1);backdrop-filter:blur(10px);position:relative;overflow:hidden;display:flex;flex-direction:column;height:100%}
+.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(56,207,255,.15),transparent);opacity:0;transition:opacity .4s ease;pointer-events:none;z-index:1}
+.agent-card:hover{border-color:rgba(56,207,255,.6);background:rgba(56,207,255,.15);transform:translateY(-6px);box-shadow:0 12px 40px rgba(56,207,255,.25)}
+.agent-card:hover::before{opacity:1}
+.agent-card:hover .agent-avatar{transform:scale(1.05);box-shadow:0 8px 24px rgba(56,207,255,.3)}
+.agent-card>*{position:relative;z-index:2}
+.agent-avatar{width:100%;height:180px;border-radius:8px;object-fit:cover;margin-bottom:12px;border:1px solid rgba(56,207,255,.3);transition:all .4s ease}
+.agent-name{color:var(--cy);font-family:'Outfit',var(--fd),sans-serif;font-size:18px;font-weight:700;margin:0 0 6px;letter-spacing:.12em;text-transform:uppercase}
+.agent-role{color:var(--muted);font-family:var(--fm);font-size:10px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.agent-bio-preview{color:var(--text);font-size:11px;line-height:1.5;margin-bottom:10px;flex-grow:1}
+.agent-strengths{display:flex;flex-wrap:wrap;gap:5px}
+.badge{display:inline-block;background:rgba(56,207,255,.2);border:1px solid rgba(56,207,255,.5);color:var(--cy);padding:4px 8px;border-radius:4px;font-size:8px;font-family:var(--fm);font-weight:500;text-transform:uppercase;letter-spacing:.08em;transition:all .2s ease;cursor:default}
+.badge:hover{background:rgba(56,207,255,.35);border-color:rgba(56,207,255,.7);box-shadow:0 0 12px rgba(56,207,255,.2)}
+#agentDetailPanel{display:none;background:rgba(56,207,255,.1);border:1px solid rgba(56,207,255,.3);border-radius:12px;padding:28px;margin-top:20px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(56,207,255,.15);animation:slideUp .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.detail-container{display:flex;gap:28px;align-items:flex-start}
+#detailAvatar{width:140px;height:140px;border-radius:8px;border:2px solid rgba(56,207,255,.5);object-fit:cover;flex-shrink:0;box-shadow:0 8px 24px rgba(56,207,255,.2)}
+.detail-info{flex:1}
+#detailName{margin:0 0 6px;color:var(--cy);font-family:'Outfit',var(--fd),sans-serif;font-size:24px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+#detailRole{color:var(--muted);font-size:11px;font-family:var(--fm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+.detail-section{margin-bottom:16px}
+.detail-section-label{color:var(--dim);font-size:9px;font-family:var(--fm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+#detailBio{color:var(--text);font-size:12px;line-height:1.6;margin-bottom:12px}
+#detailQuote{color:var(--cy);font-size:12px;line-height:1.6;font-style:italic;border-left:2px solid rgba(56,207,255,.5);padding-left:12px;margin-bottom:16px}
+#detailStrengths,#detailModels{display:flex;flex-wrap:wrap;gap:6px}
+#agentsProfileToggle{padding:7px 10px;background:linear-gradient(135deg,rgba(56,207,255,.12),rgba(56,207,255,.06));border:1px solid rgba(56,207,255,.35);color:var(--cy);font-family:var(--fm);font-size:9.5px;letter-spacing:.15em;cursor:pointer;transition:all .25s ease;text-transform:uppercase;border-radius:4px;font-weight:600;width:100%;margin-top:10px}
+#agentsProfileToggle:hover{background:rgba(56,207,255,.2);border-color:rgba(56,207,255,.6);box-shadow:var(--glow-cy);transform:translateY(-1px)}
+@media(max-width:768px){#agentsGrid{grid-template-columns:1fr}.detail-container{flex-direction:column;align-items:center}.agents-header{flex-direction:column;gap:12px;text-align:center}}
+
+/* ════════ CYBER PARTICLES ════════ */
+#cyberLayer {
+  background: radial-gradient(circle at 20% 30%, rgba(56,207,255,0.12) 0%, transparent 40%),
+              radial-gradient(circle at 80% 70%, rgba(168,85,247,0.08) 0%, transparent 50%);
+}
+
+.cyber-particle {
+  position: absolute;
+  background: var(--cy);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--cy-hot);
+  animation: particleDrift linear infinite;
+}
+
+@keyframes particleDrift {
+  to { transform: translate(var(--dx), var(--dy)); opacity: 0.1; }
+}
+
+/* ════════ HOVER GLOWS & POLISH ════════ */
+.tile:hover, .hex:hover, button:hover {
+  box-shadow: var(--glow-cy);
+  transform: translateY(-1px);
+  transition: all .2s ease;
+}
+
+/* Subtle scanline / data flow effect on panels */
+.panel::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 200%;
+  background: linear-gradient(transparent, rgba(56,207,255,.08), transparent);
+  animation: scan 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+</style>
+</head>
+<body>
+<div id="cyberLayer" style="position:fixed;inset:0;z-index:-2;pointer-events:none;overflow:hidden;opacity:0.75"></div>
+
+<!-- ════════════ RAIL ════════════ -->
+<aside class="rail">
+  <div class="mark">
+    <span class="king">♚</span>
+    <div><div class="t">MIDAS</div><div class="s">QUANT COMMAND · MGC1!</div></div>
+  </div>
+  <nav class="nav" id="nav">
+    <button data-p="command" class="on"><span>Command</span><span class="k">1</span></button>
+    <button data-p="quant"><span>Quant Lab</span><span class="k">2</span></button>
+    <button data-p="arena"><span>Algo Arena</span><span class="k">3</span></button>
+    <button data-p="trading"><span>Trading</span><span class="k">4</span></button>
+    <div class="sep"></div>
+    <button data-p="think"><span>Think Table</span><span class="k">5</span></button>
+    <button data-p="pine"><span>Pine Console</span><span class="k">6</span></button>
+    <button data-p="audit"><span>Audit</span><span class="k">7</span></button>
+    <button data-p="spend"><span>Spend</span><span class="k">8</span></button>
+    <button data-p="timeline"><span>Timeline</span><span class="k">9</span></button>
+    <button data-p="config"><span>Stack Config</span><span class="k">0</span></button>
+  </nav>
+  <div class="rail-foot">
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="sess"><span class="dot" id="sessDot"></span><span id="sessTxt">GLOBEX —</span></div>
+    <div class="sess"><span class="dot" id="cdpDot"></span><span id="cdpTxt">CDP :9222 —</span></div>
+    <button id="agentsProfileToggle" title="View agent profiles">&#x1F916; AGENTS</button>
+    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+      <button id="agentToggle" style="flex:1;min-width:60px;padding:5px 8px;background:var(--pane2);border:1px solid var(--line2);color:var(--cy);font-family:var(--fm);font-size:9px;letter-spacing:.12em;cursor:pointer;text-transform:uppercase" title="Switch Claude / OpenRouter">
+        ⚙️ <span id="agentLabel">CLAUDE</span>
+      </button>
+      <button id="modelSelectorToggle" style="flex:1;min-width:60px;padding:5px 8px;background:var(--pane2);border:1px solid var(--line2);color:var(--cy);font-family:var(--fm);font-size:9px;letter-spacing:.12em;cursor:pointer;text-transform:uppercase" title="Open model selector">
+        MODELS
+      </button>
+      <button id="agentPickerToggle" style="flex:1;min-width:70px;padding:5px 8px;background:var(--pane2);border:1px solid var(--line2);color:var(--cy);font-family:var(--fm);font-size:9px;letter-spacing:.12em;cursor:pointer;text-transform:uppercase" title="Pick agent model">
+        ◀ CLAUDE
+      </button>
+      <button id="agentChatToggle" style="flex:1;min-width:60px;padding:5px 8px;background:var(--pane2);border:1px solid var(--line2);color:var(--cy);font-family:var(--fm);font-size:9px;letter-spacing:.12em;cursor:pointer;text-transform:uppercase" title="Open chat">
+        💬 CHAT
+      </button>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+<!-- ════════════ 1 · COMMAND ════════════ -->
+<section class="page on" id="p-command">
+  <div class="candlewrap"><svg id="ambient" preserveAspectRatio="none"></svg></div>
+  <div class="ph">
+    <div><div class="mod">MOD 01 // OPERATIONS</div><h1>Command</h1><div class="sub">stack health · cyan = operational · click a cell to mark it</div></div>
+    <span class="pill"><span class="dot" id="pillDot"></span>BRIDGE PINGS LOCALHOST:9222 / 10s</span>
+  </div>
+
+  <div class="panel">
+    <h2>Honeycomb <span class="hint">tradingview-bridge lights itself when Chrome CDP answers</span></h2>
+    <div class="comb-wrap">
+      <div class="comb-group">
+        <div class="comb-label">MCP SERVERS · CLAUDE DESKTOP</div>
+        <div class="comb">
+          <div class="row">
+            <button class="hex" data-cell="fs"><span class="nm">local-filesystem</span><span class="rl">C:\ + WSL</span><span class="st">STANDBY</span></button>
+            <button class="hex" data-cell="ps"><span class="nm">powershell</span><span class="rl">terminal</span><span class="st">STANDBY</span></button>
+            <button class="hex" data-cell="tv" id="hexTV"><span class="nm">tradingview-bridge</span><span class="rl">CDP :9222</span><span class="st">PINGING…</span></button>
+          </div>
+          <div class="row off">
+            <button class="hex" data-cell="mem"><span class="nm">memory</span><span class="rl">graph store</span><span class="st">STANDBY</span></button>
+            <button class="hex" data-cell="fetch"><span class="nm">fetch</span><span class="rl">web access</span><span class="st">STANDBY</span></button>
+            <button class="hex" data-cell="git"><span class="nm">git</span><span class="rl">~\Claude repo</span><span class="st">STANDBY</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="comb-group">
+        <div class="comb-label">MODEL SWARM · OPENROUTER</div>
+        <div class="comb">
+          <div class="row">
+            <button class="hex" data-cell="hermes"><span class="nm">Hermes</span><span class="rl">strategic queen</span><span class="st">STANDBY</span></button>
+            <button class="hex" data-cell="claude"><span class="nm">Claude</span><span class="rl">pine authority</span><span class="st">STANDBY</span></button>
+            <button class="hex" data-cell="nemo"><span class="nm">Nemotron</span><span class="rl">quant</span><span class="st">STANDBY</span></button>
+          </div>
+          <div class="row off">
+            <button class="hex" data-cell="gemini"><span class="nm">Gemini</span><span class="rl">visual / long ctx</span><span class="st">STANDBY</span></button>
+            <button class="hex" data-cell="grok"><span class="nm">Grok</span><span class="rl">live market</span><span class="st">STANDBY</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="comb-foot">States persist between launches. Bridge cell is automatic — start Chrome with <b>--remote-debugging-port=9222</b> and it lights on its own.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Telemetry <span class="hint">min charts seeded — wire live feeds via bridge</span></h2>
+    <div class="tiles">
+      <div class="tile"><span class="l">Cells live</span><div class="v cy" id="statCells">0/11</div><canvas data-spark="up"></canvas></div>
+      <div class="tile"><span class="l">max_tokens cap</span><div class="v">8192</div><canvas data-spark="flat"></canvas></div>
+      <div class="tile"><span class="l">Strategies</span><div class="v">7</div><canvas data-spark="up"></canvas></div>
+      <div class="tile"><span class="l">Logged spend</span><div class="v rd" id="statSpend">$0.00</div><canvas data-spark="dn"></canvas></div>
+      <div class="tile"><span class="l">Open audits</span><div class="v rd">2</div><canvas data-spark="dn"></canvas></div>
+      <div class="tile"><span class="l">Edge queue</span><div class="v cy" id="statEdges">0</div><canvas data-spark="up"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Activity</h2>
+    <div class="feed" id="feed"></div>
+  </div>
+</section>
+
+<!-- ════════════ 2 · QUANT LAB ════════════ -->
+<section class="page" id="p-quant">
+  <div class="ph">
+    <div><div class="mod">MOD 02 // RESEARCH</div><h1>Quant Lab</h1><div class="sub">drop a TradingView strategy tester export — stats compute locally, nothing leaves this machine</div></div>
+    <span class="pill" id="qSrc">NO DATASET LOADED</span>
+  </div>
+
+  <div class="panel">
+    <h2>Dataset Intake <span class="hint">Strategy Tester → List of Trades → Export CSV</span></h2>
+    <div class="drop" id="drop">DRAG CSV HERE — or <b>click to browse</b><input type="file" id="csvFile" accept=".csv,text/csv" hidden></div>
+  </div>
+
+  <div class="panel">
+    <h2>Performance Core <span class="hint" id="qHint">awaiting data</span></h2>
+    <div class="tiles">
+      <div class="tile"><span class="l">Net P&L</span><div class="v" id="qNet">—</div></div>
+      <div class="tile"><span class="l">Trades</span><div class="v" id="qN">—</div></div>
+      <div class="tile"><span class="l">Win rate</span><div class="v" id="qWR">—</div></div>
+      <div class="tile"><span class="l">Profit factor</span><div class="v" id="qPF">—</div></div>
+      <div class="tile"><span class="l">Expectancy / trade</span><div class="v" id="qEX">—</div></div>
+      <div class="tile"><span class="l">Max drawdown</span><div class="v" id="qDD">—</div></div>
+    </div>
+    <canvas class="eq-big" id="eqChart"></canvas>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>P&L Distribution <span class="hint">per-trade buckets</span></h2>
+      <div class="hist" id="hist"><div class="note" style="align-self:center;margin:auto">load a dataset to populate</div></div>
+    </div>
+    <div class="panel">
+      <h2>Session Heat <span class="hint">net P&L by entry-exit hour</span></h2>
+      <div class="heat" id="heat"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Edge Queue <span class="hint">click status to cycle · persists</span></h2>
+      <div id="edges"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <input id="edgeIn" placeholder="new hypothesis — e.g. skip entries 30m pre-CPI">
+        <button class="btn ghost" id="edgeAdd" style="flex:none">Queue</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Quant Reference</h2>
+      <div class="formulas">
+        <div><b>Expectancy</b> = (WR × AvgWin) − ((1−WR) × AvgLoss)</div>
+        <div><b>Profit Factor</b> = Σ wins ÷ |Σ losses|</div>
+        <div><b>Kelly f*</b> = W − (1−W) ÷ R&nbsp;&nbsp;<span style="color:var(--dim)">(half-Kelly in practice)</span></div>
+        <div><b>R-multiple</b> = trade P&L ÷ initial risk</div>
+        <div><b>MAR</b> = CAGR ÷ MaxDD&nbsp;&nbsp;<span style="color:var(--dim)">(robustness screen)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ 3 · ALGO ARENA ════════════ -->
+<section class="page" id="p-arena">
+  <div class="ph">
+    <div><div class="mod">MOD 03 // EVALUATION</div><h1>Algo Arena</h1><div class="sub">composite scoring · edit metrics inline, board re-ranks live · seeds until you enter real numbers</div></div>
+    <span class="pill">SCORE = PF 35 · WIN 20 · DD 25 · ROBUST 20</span>
+  </div>
+
+  <div class="panel">
+    <h2>Leaderboard <span class="hint">PF · win% · maxDD% · robustness 0–10</span></h2>
+    <table class="lb">
+      <thead><tr><th></th><th>Algorithm</th><th>Archetype</th><th class="num">PF</th><th class="num">Win %</th><th class="num">DD %</th><th class="num">Robust</th><th>Score</th></tr></thead>
+      <tbody id="lbBody"></tbody>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Archetype Standings <span class="hint">avg composite per class</span></h2>
+      <div class="archbars" id="archbars"></div>
+    </div>
+    <div class="panel">
+      <h2>Swarm Topology <span class="hint">deliberation routes</span></h2>
+      <svg class="netgraph" id="netgraph" viewBox="0 0 460 230"></svg>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ 4 · TRADING ════════════ -->
+<section class="page" id="p-trading">
+  <div class="ph">
+    <div><div class="mod">MOD 04 // MARKET</div><h1>Trading</h1><div class="sub">COMEX Micro Gold · primary chart MGC1! · 13 minute</div></div>
+    <span class="pill" id="tradeSess"><span class="dot" id="tradeSessDot"></span><span> GLOBEX —</span></span>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>Primary Instrument</h2>
+      <div class="big">MGC1! <span style="font-size:13px;color:var(--dim);font-family:var(--fm);font-weight:400;text-shadow:none">· 13m</span></div>
+      <div class="kv" style="margin-top:10px">
+        <div><b>Contract</b> Micro Gold (COMEX)</div>
+        <div><b>Tick</b> 0.10 = $1.00</div>
+        <div><b>Point value</b> $10.00</div>
+        <div><b>Session</b> Sun 18:00 → Fri 17:00 ET</div>
+        <div><b>Daily halt</b> 17:00 – 18:00 ET</div>
+        <div><b>Edge filter</b> Daily + Weekly alignment ("God Tier")</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Watchlists <span class="hint">via tvremix · read-only</span></h2>
+      <table>
+        <tr><th>List</th><th>Symbols</th><th></th></tr>
+        <tr><td>Futures</td><td class="num">7</td><td><span class="chip cy">DEFAULT</span></td></tr>
+        <tr><td>Ema/MacD</td><td class="num">32</td><td><span class="chip dim">SCANNER</span></td></tr>
+      </table>
+      <div class="note" style="margin-top:12px">tvremix returns saved layouts + watchlists only. Live chart state comes through the CDP bridge.</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Strategy Roster</h2>
+    <table>
+      <tr><th>Strategy</th><th>Instrument</th><th>Engine</th><th>Status</th></tr>
+      <tr><td>Liquidity Sweep — Asymmetric Pro</td><td>MGC1! 13m</td><td>Pine v6</td><td><span class="chip cy">PRIMARY</span></td></tr>
+      <tr><td>Dual Composite MA</td><td>MGC1! / multi</td><td>Pine v6 · ind</td><td><span class="chip cy">STABLE</span></td></tr>
+      <tr><td>Photon Velocity Composite</td><td>multi</td><td>Pine v6 · ind</td><td><span class="chip cy">STABLE</span></td></tr>
+      <tr><td>DMI Advanced Structural Dashboard</td><td>multi</td><td>Pine v6 · ind</td><td><span class="chip rd">OPEN BUGS</span></td></tr>
+      <tr><td>NQ MTF Breakout</td><td>NAS100 5m</td><td>Pine v6</td><td><span class="chip cy">PATCHED</span></td></tr>
+      <tr><td>PDH/PDL Breakout</td><td>multi</td><td>Pine v6</td><td><span class="chip cy">STABLE</span></td></tr>
+      <tr><td>US30 Fractal Dual-Engine — Apex 50</td><td>US30</td><td>MQL5 EA</td><td><span class="chip dim">MT5 PORT</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ════════════ 5 · THINK TABLE ════════════ -->
+<section class="page" id="p-think">
+  <div class="ph">
+    <div><div class="mod">MOD 05 // DELIBERATION</div><h1>Think Table</h1><div class="sub">multi-model deliberation · Claude holds final say on Pine v6</div></div>
+    <span class="pill">REHEARSAL MODE — goes live when wired through the bridge</span>
+  </div>
+  <div class="panel">
+    <h2>Proposal</h2>
+    <textarea id="thinkIn" placeholder="e.g. Add ATR-scaled stop distance to Liquidity Sweep — Asymmetric Pro and re-test on MGC1! 13m…"></textarea>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="btn" id="convene">Convene Hive</button>
+      <button class="btn ghost" id="thinkClear">Reset Table</button>
+    </div>
+    <div class="mcards">
+      <div class="mc" data-m="hermes"><div class="who">HERMES</div><div class="role">STRATEGIC QUEEN · ORCHESTRATION</div><div class="say">Waiting for proposal.</div></div>
+      <div class="mc" data-m="gemini"><div class="who">GEMINI</div><div class="role">VISUAL · LONG CONTEXT</div><div class="say">Waiting for proposal.</div></div>
+      <div class="mc" data-m="grok"><div class="who">GROK</div><div class="role">LIVE MARKET CONTEXT</div><div class="say">Waiting for proposal.</div></div>
+      <div class="mc" data-m="nemo"><div class="who">NEMOTRON</div><div class="role">ADAPTIVE QUEEN · QUANT</div><div class="say">Waiting for proposal.</div></div>
+      <div class="mc" data-m="claude"><div class="who">CLAUDE</div><div class="role">TACTICAL QUEEN · PINE FINAL SAY</div><div class="say">Waiting for proposal.</div></div>
+    </div>
+    <div class="cons">
+      <div class="bar"><div class="fill" id="consFill"></div></div>
+      <div class="lbl"><span>CONSENSUS</span><span id="consPct">—</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ 6 · PINE CONSOLE ════════════ -->
+<section class="page" id="p-pine">
+  <div class="ph">
+    <div><div class="mod">MOD 06 // BUILD</div><h1>Pine Console</h1><div class="sub">compile via CDP bridge · pine_smart_compile / pine_get_errors</div></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>Compile</h2>
+      <div class="fld"><label>Strategy</label>
+        <select id="pineSel">
+          <option>Liquidity Sweep — Asymmetric Pro</option>
+          <option>Dual Composite MA</option>
+          <option>Photon Velocity Composite</option>
+          <option>DMI Advanced Structural Dashboard</option>
+          <option>NQ MTF Breakout</option>
+          <option>PDH/PDL Breakout</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin:12px 0">
+        <button class="btn" id="pineGo">Run Compile</button>
+        <button class="btn ghost" id="pineWipe">Clear Log</button>
+      </div>
+      <div class="log" id="pineLog"><span class="mu">// log idle — output streams here when the bridge compiles for real
+// until then, Run Compile replays the strategy's last known state</span></div>
+    </div>
+    <div class="panel">
+      <h2>Pre-Flight <span class="hint">house rules · checked state persists</span></h2>
+      <div class="check" id="preflight">
+        <label><input type="checkbox" data-c="pf1"><span><b>Order cap</b> — <code>strategy.cancel("id")</code> before each <code>strategy.entry</code>. Prevents the 9000-order error.</span></label>
+        <label><input type="checkbox" data-c="pf2"><span><b>Tick mode</b> — <code>calc_on_every_tick = false</code>. True causes backtest / forward divergence.</span></label>
+        <label><input type="checkbox" data-c="pf3"><span><b>Trailing stops</b> — two separate <code>strategy.exit()</code> calls for on/off. Passing <code>na</code> is unreliable.</span></label>
+        <label><input type="checkbox" data-c="pf4"><span><b>Re-entry gate</b> — <code>strategy.position_size == 0</code> is the sole gate. No placement flags.</span></label>
+        <label><input type="checkbox" data-c="pf5"><span><b>Scope</b> — top-level <code>plot()</code> at column 0. Indentation throws scope errors.</span></label>
+        <label><input type="checkbox" data-c="pf6"><span><b>Exits</b> — price-based, not tick-based. <code>strategy.exit()</code> every bar is safe for fixed TP/SL.</span></label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ 7 · AUDIT ════════════ -->
+<section class="page" id="p-audit">
+  <div class="ph">
+    <div><div class="mod">MOD 07 // INTEGRITY</div><h1>Audit</h1><div class="sub">known issues · red = blocking</div></div>
+  </div>
+  <details class="flagd" open>
+    <summary><span class="dot down"></span>Graphify — dual install conflict<span class="car">›</span></summary>
+    <div class="dbody">
+      Two executables on PATH: the working install at <code>C:\Users\Softthrone\.local\bin\graphify.exe</code> and a Hermes-managed copy at <code>C:\Users\Softthrone\AppData\Local\hermes\hermes-agent\venv\Scripts\graphify.exe</code>. The venv copy shadows or collides depending on PATH order.
+      <div class="fix"><b>Fix:</b> uninstall the Hermes venv copy, then point every config at the full <code>.local\bin</code> path explicitly. No PATH-order gambling.</div>
+    </div>
+  </details>
+  <details class="flagd">
+    <summary><span class="dot down"></span>DMI dashboard — open bugs<span class="car">›</span></summary>
+    <div class="dbody">
+      Bullish/bearish reversal signal conditions are swapped, and <code>redWhiteConfluence</code> / <code>blueWhiteConfluence</code> are computed but never wired into signal logic. Fix before trusting its table output.
+    </div>
+  </details>
+  <details>
+    <summary><span class="dot"></span>WSL path escaping — recurring regression<span class="car">›</span></summary>
+    <div class="dbody">
+      Correct form is <code>\\\\wsl.localhost\\Ubuntu\\home\\softthrone</code> inside the JSON config. Auto-correction scripts keep reverting it to over-escaped variants. Re-verify after any tool touches <code>claude_desktop_config.json</code>.
+    </div>
+  </details>
+  <details>
+    <summary><span class="dot"></span>OpenRouter credit guard<span class="car">›</span></summary>
+    <div class="dbody">
+      Hard rule from the 402 incident: <code>max_tokens: 8192</code> across every config — 32000 burned credits in an agentic loop with no completed work. Also enforced: <code>data_collection: "deny"</code>, <code>require_parameters: true</code>. Haiku for sweeps, Sonnet for code, escalate only for architecture.
+    </div>
+  </details>
+  <details>
+    <summary><span class="dot live"></span>CDP bridge prerequisite<span class="car">›</span></summary>
+    <div class="dbody">
+      The tradingview-bridge MCP requires Chrome started with <code>--remote-debugging-port=9222</code> before Claude Desktop launches. <code>Launch-TradingAI.bat</code> handles the sequence. This deck pings the port and reports in the rail.
+    </div>
+  </details>
+</section>
+
+<!-- ════════════ 8 · SPEND ════════════ -->
+<section class="page" id="p-spend">
+  <div class="ph">
+    <div><div class="mod">MOD 08 // CREDITS</div><h1>Spend</h1><div class="sub">OpenRouter credit log · manual entries, stored locally in this browser</div></div>
+  </div>
+  <div class="rulebar">⛔&nbsp; HARD RULE — max_tokens: 8192 on every model slot. No exceptions. (The 32000 loop already taught this lesson at full price.)</div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>Log Entry</h2>
+      <div class="spend-form">
+        <div class="fld"><label>Model</label>
+          <select id="spModel">
+            <option>Claude Sonnet (pine:/mql:)</option>
+            <option>Hermes (orchestrator)</option>
+            <option>Gemini Flash (aux)</option>
+            <option>Grok</option>
+            <option>Nemotron</option>
+            <option>Haiku (sweeps)</option>
+          </select>
+        </div>
+        <div class="fld"><label>Tokens</label><input id="spTok" type="number" min="0" placeholder="0"></div>
+        <div class="fld"><label>Cost $</label><input id="spCost" type="number" min="0" step="0.01" placeholder="0.00"></div>
+        <button class="btn" id="spAdd">Log</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Routing</h2>
+      <table>
+        <tr><th>Alias</th><th>Model</th><th>Job</th></tr>
+        <tr><td>pine:</td><td>Claude Sonnet</td><td>Pine v6 authority</td></tr>
+        <tr><td>mql:</td><td>Claude Sonnet</td><td>MQL5 EAs</td></tr>
+        <tr><td>aux</td><td>Gemini Flash</td><td>cheap slots</td></tr>
+        <tr><td>sweep</td><td>Haiku</td><td>file ops</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Ledger <span class="hint" id="spTotal">total $0.00</span></h2>
+    <table id="spTable">
+      <thead><tr><th>Date</th><th>Model</th><th class="num">Tokens</th><th class="num">Cost</th><th></th></tr></thead>
+      <tbody id="spBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ════════════ 9 · TIMELINE ════════════ -->
+<section class="page" id="p-timeline">
+  <div class="ph">
+    <div><div class="mod">MOD 09 // HISTORY</div><h1>Timeline</h1><div class="sub">build history · newest first</div></div>
+  </div>
+  <div class="panel">
+    <div class="tl">
+      <div class="ev hot"><div class="d">JUN 2026</div><div class="h">MIDAS v3 — Quant Command</div><div class="b">Stark-HUD rebuild in the dual-king palette. New rooms: Quant Lab with local CSV stats engine, Algo Arena with archetype scoring leaderboard. Min charts across all telemetry.</div></div>
+      <div class="ev"><div class="d">JUN 2026</div><div class="h">Dashboard v2 — Hive Command</div><div class="b">Honeycomb status wall, live CDP ping, Globex session clock, persistent ledger and pre-flight.</div></div>
+      <div class="ev"><div class="d">JUN 2026</div><div class="h">Stack assembly</div><div class="b">Six MCP servers in claude_desktop_config.json. Launch-TradingAI.bat sequences Chrome CDP → Claude Desktop. Graphify conflict identified (still open).</div></div>
+      <div class="ev"><div class="d">JUN 2026</div><div class="h">Hive-Mind roles locked</div><div class="b">Hermes strategic, Claude tactical with Pine final say, Nemotron quant, Gemini visual, Grok live market. 8192 hard cap after the 402 burn.</div></div>
+      <div class="ev"><div class="d">2026</div><div class="h">Liquidity Sweep — Asymmetric Pro</div><div class="b">Outside-bar detection, stop orders on the liquidity candle, fixed TP/SL. position_size == 0 as the sole re-entry gate.</div></div>
+      <div class="ev"><div class="d">2026</div><div class="h">NQ MTF Breakout — three-bug patch</div><div class="b">Mutually-exclusive signals via range midpoint, direct NQ points, crossover trigger un-inverted.</div></div>
+      <div class="ev"><div class="d">2026</div><div class="h">US30 Apex 50 → MQL5</div><div class="b">Full EA port: dual-entry, per-tick manual trailing, cross-midnight session filter.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════ 10 · STACK CONFIG ════════════ -->
+<section class="page" id="p-config">
+  <div class="ph">
+    <div><div class="mod">MOD 10 // SYSTEM</div><h1>Stack Config</h1><div class="sub">paths and launch order · reference only, edits happen in VS Code</div></div>
+  </div>
+  <div class="panel">
+    <h2>Core Paths</h2>
+    <div class="kv">
+      <div><b>Config</b> C:\Users\Softthrone\AppData\Local\Claude-3p\claude_desktop_config.json</div>
+      <div><b>Dashboard</b> C:\Users\Softthrone\Claude\Dashboard\index.html</div>
+      <div><b>Bridge server</b> C:\Users\Softthrone\tradingview-mcp\src\server.js</div>
+      <div><b>Git root</b> C:\Users\Softthrone\Claude</div>
+      <div><b>Graphify (use this)</b> C:\Users\Softthrone\.local\bin\graphify.exe</div>
+      <div><b>WSL home</b> \\wsl.localhost\Ubuntu\home\softthrone</div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>MCP Servers</h2>
+      <table>
+        <tr><th>Server</th><th>Scope</th></tr>
+        <tr><td>local-filesystem</td><td>full C:\ + WSL</td></tr>
+        <tr><td>powershell-terminal</td><td>shell exec</td></tr>
+        <tr><td>tradingview-bridge</td><td>CDP :9222 · Node</td></tr>
+        <tr><td>memory</td><td>knowledge graph</td></tr>
+        <tr><td>fetch</td><td>web retrieval</td></tr>
+        <tr><td>git</td><td>~\Claude repo</td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>Launch Order</h2>
+      <div class="kv">
+        <div><b>1 · Chrome</b> --remote-debugging-port=9222</div>
+        <div><b>2 · Claude Desktop</b> (bridge attaches)</div>
+        <div><b>3 · This deck</b> via launch.bat</div>
+      </div>
+      <div class="note" style="margin-top:12px">launch.bat:<br>start chrome --app="file:///C:/Users/Softthrone/Claude/Dashboard/index.html" --window-size=1520,940</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Knowledge Repos</h2>
+    <table>
+      <tr><th>Repo</th><th>Role</th></tr>
+      <tr><td>tradesdontlie/tradingview-mcp</td><td>CDP bridge — live chart state, compile, screenshots</td></tr>
+      <tr><td>iamrichardD/mcp-server-pinescript</td><td>Pine v6 docs · 457 functions loaded</td></tr>
+      <tr><td>codenamedevan/pinescriptv6</td><td>chunked LLM reference</td></tr>
+      <tr><td>tradesdontlie/pine-script-v6-extension</td><td>VS Code VSIX</td></tr>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={
+  get(k,f){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):f}catch(e){return f}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const CY='rgba(56,207,255,1)', RD='rgba(255,66,87,1)';
+
+/* ── nav ── */
+function go(p){
+  $$('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  $$('.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+p));
+  $('.main').scrollTop=0;
+  requestAnimationFrame(drawSparks);
+}
+$('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.p)});
+const order=['command','quant','arena','trading','think','pine','audit','spend','timeline','config'];
+addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea,select'))return;
+  if(e.key==='0')return go('config');
+  const i=+e.key-1; if(i>=0&&i<9)go(order[i]);
+});
+
+/* ── min charts ── */
+function rw(n,drift=0.5){const a=[50];for(let i=1;i<n;i++)a.push(a[i-1]+(Math.random()-0.5+(drift-0.5)*0.3)*8);return a}
+function spark(c,data,color){
+  const dpr=devicePixelRatio||1,w=c.clientWidth||160,h=c.clientHeight||26;
+  c.width=w*dpr;c.height=h*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);
+  const mn=Math.min(...data),mx=Math.max(...data),rg=(mx-mn)||1;
+  const px=i=>i/(data.length-1)*(w-2)+1, py=v=>h-2-((v-mn)/rg)*(h-5);
+  x.beginPath();data.forEach((v,i)=>i?x.lineTo(px(i),py(v)):x.moveTo(px(i),py(v)));
+  x.strokeStyle=color;x.lineWidth=1.4;x.shadowColor=color;x.shadowBlur=5;x.stroke();
+  x.lineTo(px(data.length-1),h);x.lineTo(px(0),h);x.closePath();
+  x.shadowBlur=0;x.globalAlpha=.12;x.fillStyle=color;x.fill();x.globalAlpha=1;
+}
+const sparkSeeds={};
+function drawSparks(){
+  $$('canvas[data-spark]').forEach((c,i)=>{
+    if(!c.closest('.page.on'))return;
+    const kind=c.dataset.spark;
+    sparkSeeds[i]=sparkSeeds[i]||rw(28,kind==='up'?0.62:kind==='dn'?0.38:0.5);
+    spark(c,sparkSeeds[i],kind==='dn'?RD:CY);
+  });
+  if(eqData.length)spark($('#eqChart'),eqData,eqData[eqData.length-1]>=0?CY:RD);
+}
+addEventListener('resize',()=>requestAnimationFrame(drawSparks));
+
+/* ── ambient candles (chess-pic homage) ── */
+(function(){
+  const svg=$('#ambient'),W=1400,H=64;svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  let p=H*0.55,out='';
+  for(let x=8;x<W;x+=22){
+    const o=p, c=o+(Math.random()-0.48)*16; p=c;
+    const hi=Math.min(o,c)-Math.random()*8, lo=Math.max(o,c)+Math.random()*8;
+    const bull=c<o, col=bull?'#38cfff':'#ff4257', op=0.28+Math.random()*0.5;
+    out+='<line x1="'+(x+4)+'" y1="'+hi+'" x2="'+(x+4)+'" y2="'+lo+'" stroke="'+col+'" stroke-width="1" opacity="'+(op*0.7)+'"/>';
+    out+='<rect x="'+x+'" y="'+Math.min(o,c)+'" width="8" height="'+Math.max(2,Math.abs(c-o))+'" fill="'+col+'" opacity="'+op+'"/>';
+  }
+  svg.innerHTML=out;
+})();
+
+/* ── clock + globex ── */
+function etParts(){
+  const f=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',hour12:false});
+  const p=Object.fromEntries(f.formatToParts(new Date()).map(x=>[x.type,x.value]));
+  return{day:p.weekday,h:+p.hour%24};
+}
+function globexOpen(){
+  const{day,h}=etParts();
+  if(day==='Sat')return false;
+  if(day==='Sun')return h>=18;
+  if(day==='Fri')return h<17;
+  return h<17||h>=18;
+}
+function tickClock(){
+  const n=new Date(),pad=x=>String(x).padStart(2,'0');
+  $('#clock').innerHTML=pad(n.getHours())+':'+pad(n.getMinutes())+'<span class="sec">:'+pad(n.getSeconds())+'</span>';
+  const open=globexOpen();
+  $('#sessDot').className='dot '+(open?'live':'down');
+  $('#sessTxt').textContent='GLOBEX '+(open?'OPEN':'CLOSED');
+  $('#tradeSessDot').className='dot '+(open?'live':'down');
+  $('#tradeSess').lastElementChild.textContent=' GLOBEX '+(open?'OPEN':'CLOSED');
+}
+tickClock();setInterval(tickClock,1000);
+
+/* ── feed ── */
+function feedAdd(cls,msg){
+  const n=new Date(),pad=x=>String(x).padStart(2,'0');
+  const e=document.createElement('div');e.className='e';
+  e.innerHTML='<span class="t">'+pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds())+'</span><span class="'+cls+'">'+msg+'</span>';
+  $('#feed').prepend(e);
+  while($('#feed').children.length>40)$('#feed').lastChild.remove();
+}
+[['mu','bridge: awaiting Chrome CDP on :9222'],
+ ['wh','config: max_tokens 8192 enforced on all slots'],
+ ['cy','tvremix linked — watchlists Futures(7) · Ema/MacD(32)'],
+ ['rd','audit: Graphify dual-install + DMI bugs open'],
+ ['cy','MIDAS v3 online — quant lab + arena armed']].forEach(([c,m])=>feedAdd(c,m));
+
+/* ── honeycomb (keys carried over from v2) ── */
+const cells=store.get('hive-cells',{});
+function paintCell(el,on,label){el.classList.toggle('live',!!on);el.querySelector('.st').textContent=label||(on?'LIVE':'STANDBY')}
+function countLive(){$('#statCells').textContent=$$('.hex.live').length+'/11'}
+$$('.hex').forEach(el=>{
+  const k=el.dataset.cell;
+  if(k!=='tv')paintCell(el,cells[k]);
+  el.addEventListener('click',()=>{
+    if(k==='tv')return;
+    cells[k]=!cells[k];store.set('hive-cells',cells);
+    paintCell(el,cells[k]);countLive();
+    feedAdd(cells[k]?'cy':'mu','cell '+el.querySelector('.nm').textContent+' → '+(cells[k]?'LIVE':'STANDBY'));
+  });
+});
+
+/* ── CDP ping ── */
+let cdpWas=null;
+async function pingCDP(){
+  let ok=false;
+  try{await fetch('http://localhost:9222/json/version',{mode:'no-cors',cache:'no-store'});ok=true}catch(e){}
+  const hex=$('#hexTV');hex.classList.remove('down');
+  paintCell(hex,ok,ok?'LIVE':'NO SIGNAL');if(!ok)hex.classList.add('down');
+  $('#cdpDot').className='dot '+(ok?'live':'down');
+  $('#cdpTxt').textContent='CDP :9222 '+(ok?'LIVE':'DOWN');
+  $('#pillDot').className='dot '+(ok?'live':'down');
+  if(cdpWas!==null&&cdpWas!==ok)feedAdd(ok?'cy':'rd','bridge: CDP :9222 '+(ok?'reachable':'lost'));
+  cdpWas=ok;countLive();
+}
+pingCDP();setInterval(pingCDP,10000);countLive();
+
+/* ════════ QUANT LAB ════════ */
+let eqData=[];
+function parseCSVText(t){
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+    else{if(ch==='"')q=true;else if(ch===','){row.push(cur);cur=''}
+      else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur=''}
+      else if(ch!=='\r')cur+=ch}
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row)}
+  return rows;
+}
+function num(s){
+  if(s==null)return NaN;s=(''+s).trim();
+  const neg=/^\(.*\)$/.test(s);
+  const v=parseFloat(s.replace(/[^0-9.\-]/g,''));
+  return neg?-Math.abs(v):v;
+}
+function fm(n){return (n<0?'-$':'$')+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:2})}
+function analyzeCSV(text,name){
+  const rows=parseCSVText(text);
+  let hi=-1,iType=-1,iProfit=-1,iDate=-1;
+  for(let r=0;r<Math.min(rows.length,12);r++){
+    const tI=rows[r].findIndex(c=>/^type$/i.test(c.trim()));
+    const pI=rows[r].findIndex(c=>/profit|p&l|p\/l/i.test(c)&&!/%/.test(c));
+    if(tI>=0&&pI>=0){hi=r;iType=tI;iProfit=pI;iDate=rows[r].findIndex(c=>/date|time/i.test(c));break}
+  }
+  if(hi<0){feedAdd('rd','quant: CSV header not recognized — need Type + Profit columns');$('#qSrc').textContent='IMPORT FAILED — UNRECOGNIZED FORMAT';return}
+  const trades=[];
+  for(let r=hi+1;r<rows.length;r++){
+    const row=rows[r];if(!row[iType])continue;
+    if(/^exit/i.test(row[iType].trim())){
+      const p=num(row[iProfit]);if(isNaN(p))continue;
+      let hour=null;
+      if(iDate>=0&&row[iDate]){const m=(''+row[iDate]).match(/(\d{1,2}):\d{2}/);if(m)hour=+m[1]%24}
+      trades.push({p,hour});
+    }
+  }
+  if(!trades.length){feedAdd('rd','quant: no exit rows found in CSV');$('#qSrc').textContent='IMPORT FAILED — NO TRADES';return}
+  const net=trades.reduce((a,t)=>a+t.p,0), n=trades.length;
+  const wins=trades.filter(t=>t.p>0), losses=trades.filter(t=>t.p<0);
+  const gw=wins.reduce((a,t)=>a+t.p,0), gl=Math.abs(losses.reduce((a,t)=>a+t.p,0));
+  const pf=gl?gw/gl:Infinity, wr=wins.length/n*100, ex=net/n;
+  let eq=0,peak=0,dd=0;const equity=trades.map(t=>{eq+=t.p;peak=Math.max(peak,eq);dd=Math.max(dd,peak-eq);return eq});
+  const mn=Math.min(...trades.map(t=>t.p)),mx=Math.max(...trades.map(t=>t.p));
+  const bins=new Array(9).fill(0),rg=(mx-mn)||1;
+  trades.forEach(t=>bins[Math.min(8,Math.floor((t.p-mn)/rg*9))]++);
+  const binMid=bins.map((_,i)=>mn+rg*(i+0.5)/9);
+  const hours=new Array(24).fill(0);let hasH=false;
+  trades.forEach(t=>{if(t.hour!=null){hours[t.hour]+=t.p;hasH=true}});
+  const summary={name,when:new Date().toISOString().slice(0,16).replace('T',' '),
+    net,n,wr,pf:isFinite(pf)?pf:999,ex,dd,
+    equity:equity.length>140?equity.filter((_,i)=>i%Math.ceil(equity.length/140)===0):equity,
+    bins,binMid,hours:hasH?hours:null};
+  store.set('midas-quant',summary);
+  renderQuant(summary);
+  feedAdd('cy','quant: dataset loaded — '+n+' trades · net '+fm(net));
+}
+function renderQuant(s){
+  if(!s)return;
+  $('#qSrc').textContent=(s.name||'DATASET')+' · '+s.when;
+  $('#qHint').textContent=s.n+' trades analyzed';
+  const set=(id,txt,sign)=>{const el=$(id);el.textContent=txt;el.className='v '+(sign>0?'cy':sign<0?'rd':'')};
+  set('#qNet',fm(s.net),s.net>=0?1:-1);
+  set('#qN',s.n,0);
+  set('#qWR',s.wr.toFixed(1)+'%',s.wr>=50?1:-1);
+  set('#qPF',s.pf>=999?'∞':s.pf.toFixed(2),s.pf>=1?1:-1);
+  set('#qEX',fm(s.ex),s.ex>=0?1:-1);
+  set('#qDD',fm(s.dd),-1);
+  eqData=s.equity;
+  const h=$('#hist');h.innerHTML='';
+  const bmax=Math.max(...s.bins,1);
+  s.bins.forEach((b,i)=>{
+    const d=document.createElement('div');
+    d.className='hb'+(s.binMid[i]<0?' neg':'');
+    d.style.height=(b/bmax*100)+'%';
+    d.innerHTML='<span class="hv">'+(b||'')+'</span>';
+    h.appendChild(d);
+  });
+  drawHeat(s.hours);
+  requestAnimationFrame(drawSparks);
+}
+function drawHeat(hours){
+  const g=$('#heat');g.innerHTML='';
+  const mx=hours?Math.max(...hours.map(Math.abs),1):1;
+  for(let i=0;i<24;i++){
+    const c=document.createElement('div');c.className='hc';
+    if(hours&&hours[i]){
+      const t=Math.abs(hours[i])/mx;
+      c.style.background=hours[i]>0?'rgba(56,207,255,'+(0.12+t*0.65)+')':'rgba(255,66,87,'+(0.12+t*0.65)+')';
+      c.title=i+':00 → '+fm(hours[i]);
+    }
+    c.innerHTML='<span>'+String(i).padStart(2,'0')+'</span>';
+    g.appendChild(c);
+  }
+}
+drawHeat(null);
+const saved=store.get('midas-quant',null); if(saved)renderQuant(saved);
+
+const drop=$('#drop'),file=$('#csvFile');
+drop.addEventListener('click',()=>file.click());
+file.addEventListener('change',()=>{if(file.files[0])readCSV(file.files[0])});
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)readCSV(f)});
+function readCSV(f){const r=new FileReader();r.onload=()=>analyzeCSV(r.result,f.name);r.readAsText(f)}
+
+/* edge queue */
+const EDGE_ST=['QUEUED','TESTING','LIVE','SHELVED'];
+let edges=store.get('midas-edges',[
+  {t:'ATR-scaled stop distance on Liquidity Sweep',s:0},
+  {t:'Time-of-day filter — kill low-heat hours',s:1},
+  {t:'Volatility regime gate (ATR percentile)',s:0},
+  {t:'D+W alignment weighting',s:2},
+  {t:'Spread / slippage stress pass',s:0}
+]);
+function drawEdges(){
+  const w=$('#edges');w.innerHTML='';
+  edges.forEach((e,i)=>{
+    const d=document.createElement('div');d.className='edge';
+    const cls=e.s===2?'cy':e.s===1?'cy':e.s===3?'dim':'dim';
+    d.innerHTML='<span class="et">'+e.t+'</span><span class="chip '+(e.s===1||e.s===2?'cy':'dim')+'" data-i="'+i+'">'+EDGE_ST[e.s]+'</span><button class="x" data-x="'+i+'">×</button>';
+    w.appendChild(d);
+  });
+  $('#statEdges').textContent=edges.filter(e=>e.s<2).length;
+  store.set('midas-edges',edges);
+}
+$('#edges').addEventListener('click',e=>{
+  const c=e.target.closest('.chip');if(c){edges[+c.dataset.i].s=(edges[+c.dataset.i].s+1)%4;drawEdges();return}
+  const x=e.target.closest('.x');if(x){edges.splice(+x.dataset.x,1);drawEdges()}
+});
+$('#edgeAdd').addEventListener('click',()=>{
+  const v=$('#edgeIn').value.trim();if(!v)return;
+  edges.unshift({t:v,s:0});$('#edgeIn').value='';drawEdges();
+  feedAdd('cy','quant: hypothesis queued — '+v.slice(0,40));
+});
+drawEdges();
+
+/* ════════ ALGO ARENA ════════ */
+const ALGOS=[
+  {id:'lsweep',name:'Liquidity Sweep — Asym Pro',arch:'LIQUIDITY'},
+  {id:'nqmtf',name:'NQ MTF Breakout',arch:'BREAKOUT'},
+  {id:'pdhl',name:'PDH/PDL Breakout',arch:'BREAKOUT'},
+  {id:'dcma',name:'Dual Composite MA',arch:'TREND'},
+  {id:'photon',name:'Photon Velocity Composite',arch:'TREND'},
+  {id:'dmi',name:'DMI Structural Dashboard',arch:'REVERSAL'},
+  {id:'apex',name:'US30 Apex 50 (MQL5)',arch:'PATTERN'}
+];
+const seedScores={lsweep:{pf:1.6,wr:48,dd:9,rob:7},nqmtf:{pf:1.4,wr:44,dd:12,rob:6},pdhl:{pf:1.3,wr:52,dd:10,rob:6},
+  dcma:{pf:1.2,wr:50,dd:14,rob:5},photon:{pf:1.25,wr:46,dd:13,rob:5},dmi:{pf:0.9,wr:41,dd:18,rob:2},apex:{pf:1.35,wr:45,dd:11,rob:5}};
+let scores=store.get('midas-scores',seedScores);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function composite(s){
+  return Math.round(
+    clamp((s.pf-0.8)/(2.5-0.8),0,1)*35 +
+    clamp(s.wr/100,0,1)*20 +
+    clamp(1-s.dd/30,0,1)*25 +
+    clamp(s.rob/10,0,1)*20 );
+}
+function drawArena(){
+  const ranked=ALGOS.map(a=>({...a,m:scores[a.id]||seedScores[a.id],sc:composite(scores[a.id]||seedScores[a.id])}))
+                    .sort((a,b)=>b.sc-a.sc);
+  const tb=$('#lbBody');tb.innerHTML='';
+  ranked.forEach((a,i)=>{
+    const tr=document.createElement('tr');if(i===0)tr.className='top1';
+    tr.innerHTML='<td class="rank">'+String(i+1).padStart(2,'0')+'</td><td>'+a.name+'</td>'+
+      '<td><span class="chip dim">'+a.arch+'</span></td>'+
+      ['pf','wr','dd','rob'].map(k=>'<td class="num"><input type="number" step="0.1" data-a="'+a.id+'" data-k="'+k+'" value="'+a.m[k]+'"></td>').join('')+
+      '<td><span class="score" style="color:'+(a.sc>=60?'var(--cy-hot)':a.sc>=40?'var(--text)':'var(--rd-hot)')+'">'+a.sc+'</span><div class="sbar"><i style="width:'+a.sc+'%"></i></div></td>';
+    tb.appendChild(tr);
+  });
+  const archMap={};
+  ranked.forEach(a=>{(archMap[a.arch]=archMap[a.arch]||[]).push(a.sc)});
+  const ab=$('#archbars');ab.innerHTML='';
+  Object.entries(archMap).map(([k,v])=>[k,Math.round(v.reduce((x,y)=>x+y)/v.length)])
+    .sort((a,b)=>b[1]-a[1])
+    .forEach(([k,v])=>{
+      ab.innerHTML+='<div class="ab"><div class="al"><span>'+k+'</span><span>'+v+'</span></div><div class="at"><i style="width:'+v+'%"></i></div></div>';
+    });
+}
+$('#lbBody').addEventListener('input',e=>{
+  const inp=e.target.closest('input[data-a]');if(!inp)return;
+  const a=inp.dataset.a,k=inp.dataset.k,v=parseFloat(inp.value);
+  if(isNaN(v))return;
+  scores[a]=scores[a]||{...seedScores[a]};scores[a][k]=v;
+  store.set('midas-scores',scores);
+  clearTimeout(window.__lbT);window.__lbT=setTimeout(drawArena,700);
+});
+drawArena();
+
+/* swarm topology */
+(function(){
+  const nodes=[
+    {x:230,y:115,t:'HERMES',r:16,c:CY},
+    {x:90,y:55,t:'CLAUDE',r:13,c:CY},{x:370,y:55,t:'GEMINI',r:11,c:CY},
+    {x:90,y:178,t:'NEMOTRON',r:11,c:CY},{x:370,y:178,t:'GROK',r:11,c:CY},
+    {x:230,y:24,t:'BRIDGE',r:9,c:CY},{x:230,y:205,t:'GRAPHIFY',r:9,c:RD}
+  ];
+  let out='';
+  nodes.slice(1).forEach(n=>{out+='<line x1="230" y1="115" x2="'+n.x+'" y2="'+n.y+'" stroke="'+(n.c===RD?'rgba(255,66,87,.35)':'rgba(56,207,255,.3)')+'" stroke-width="1" stroke-dasharray="3 4"/>'});
+  out+='<line x1="90" y1="55" x2="230" y2="24" stroke="rgba(56,207,255,.25)" stroke-width="1" stroke-dasharray="3 4"/>';
+  nodes.forEach(n=>{
+    out+='<circle cx="'+n.x+'" cy="'+n.y+'" r="'+n.r+'" fill="none" stroke="'+n.c+'" stroke-width="1.3" opacity=".9"/>';
+    out+='<circle cx="'+n.x+'" cy="'+n.y+'" r="3" fill="'+n.c+'"/>';
+    out+='<text x="'+n.x+'" y="'+(n.y+n.r+13)+'" text-anchor="middle" fill="'+(n.c===RD?'#ff8b97':'#8aa7c4')+'" font-family="IBM Plex Mono" font-size="8" letter-spacing="2">'+n.t+'</text>';
+  });
+  $('#netgraph').innerHTML=out;
+})();
+
+/* ════════ THINK TABLE ════════ */
+const verdicts={
+  hermes:'Routing: spec → Claude for Pine, Nemotron for sizing math. Budget gate: Sonnet only, 8192 cap.',
+  gemini:'Chart read queued — needs a bridge screenshot of MGC1! 5m to assess visual structure.',
+  grok:'Session context: check Globex state and gold volatility regime before committing parameters.',
+  nemo:'Quant pass: demand expectancy + max-DD deltas vs current baseline before approving the change.',
+  claude:'Pine ruling: implementable. Gate stays position_size == 0; exits stay price-based. Draft on request.'
+};
+let convening=false;
+$('#convene').addEventListener('click',()=>{
+  if(convening)return;
+  const txt=$('#thinkIn').value.trim();
+  if(!txt){$('#thinkIn').focus();return}
+  convening=true;
+  $$('.mc').forEach(c=>{c.classList.remove('lit');c.querySelector('.say').textContent='…'});
+  $('#consFill').style.width='0%';$('#consPct').textContent='deliberating';
+  const seq=['hermes','gemini','grok','nemo','claude'];
+  seq.forEach((m,i)=>setTimeout(()=>{
+    const c=$('.mc[data-m="'+m+'"]');c.classList.add('lit');
+    c.querySelector('.say').textContent=verdicts[m];
+    if(i===seq.length-1){
+      const pct=78+Math.floor(Math.random()*18);
+      $('#consFill').style.width=pct+'%';$('#consPct').textContent=pct+'% — PROCEED';
+      feedAdd('cy','think table: consensus '+pct+'% on "'+txt.slice(0,46)+(txt.length>46?'…':'')+'"');
+      convening=false;
+    }
+  },480+i*600));
+});
+$('#thinkClear').addEventListener('click',()=>{
+  $('#thinkIn').value='';
+  $$('.mc').forEach(c=>{c.classList.remove('lit');c.querySelector('.say').textContent='Waiting for proposal.'});
+  $('#consFill').style.width='0%';$('#consPct').textContent='—';
+});
+
+/* ════════ PINE CONSOLE ════════ */
+const pineStates={
+  'Liquidity Sweep — Asymmetric Pro':[['in','outside-bar detection: high>high[1] and low<low[1]'],['ok','re-entry gate: strategy.position_size == 0 (sole gate)'],['ok','exits price-based · strategy.exit() every bar'],['ok','cancel_all() on level clear — outside position branches'],['ok','LAST KNOWN: clean compile, v6']],
+  'Dual Composite MA':[['in','4 engines · 8 MA blend · ta.valuewhen candle filter'],['ok','fixed: VWAP source arg on bearish engines'],['ok','fixed: background shading now uses close'],['ok','LAST KNOWN: clean compile, v6']],
+  'Photon Velocity Composite':[['in','Photon Ribbon + VAMA merged · confluence engine'],['ok','fixed: VAMA jitter — velocity ratio smoothed pre-length'],['ok','LAST KNOWN: clean compile, v6']],
+  'DMI Advanced Structural Dashboard':[['in','divergence engine + dashboard table'],['er','OPEN: bullish/bearish reversal conditions swapped'],['er','OPEN: red/blue WhiteConfluence never wired into signals'],['wn','LAST KNOWN: compiles, logic untrusted']],
+  'NQ MTF Breakout':[['ok','fixed: exec signals exclusive via range midpoint'],['ok','fixed: mintick multiplier removed — direct NQ points'],['ok','fixed: crossover trigger un-inverted'],['ok','LAST KNOWN: clean compile, v6']],
+  'PDH/PDL Breakout':[['ok','one-trade-per-level via usedLong/ShortLevel vars'],['ok','levels reset only on daily change'],['ok','LAST KNOWN: clean compile, v6']]
+};
+$('#pineGo').addEventListener('click',()=>{
+  const s=$('#pineSel').value,log=$('#pineLog');
+  const lines=[['mu','// replaying last known state — live compile requires CDP bridge'],['in','> pine_smart_compile · '+s],...pineStates[s]];
+  log.innerHTML='';
+  lines.forEach(([c,t],i)=>setTimeout(()=>{
+    log.innerHTML+='<span class="'+c+'">'+t+'</span>\n';log.scrollTop=log.scrollHeight;
+  },i*200));
+  feedAdd('wh','pine console: replayed '+s);
+});
+$('#pineWipe').addEventListener('click',()=>{$('#pineLog').innerHTML='<span class="mu">// log cleared</span>'});
+
+/* preflight */
+const pf=store.get('hive-preflight',{});
+$$('#preflight input').forEach(cb=>{
+  cb.checked=!!pf[cb.dataset.c];
+  cb.addEventListener('change',()=>{pf[cb.dataset.c]=cb.checked;store.set('hive-preflight',pf)});
+});
+
+/* ════════ SPEND ════════ */
+let ledger=store.get('hive-spend',[]);
+function fmS(n){return '$'+(+n).toFixed(2)}
+function drawLedger(){
+  const b=$('#spBody');b.innerHTML='';
+  if(!ledger.length)b.innerHTML='<tr><td colspan="5" style="color:var(--dim)">No entries yet — log the first burn above.</td></tr>';
+  let tot=0;
+  ledger.forEach((r,i)=>{
+    tot+=+r.cost;
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td>'+r.date+'</td><td>'+r.model+'</td><td class="num">'+(+r.tok).toLocaleString()+'</td><td class="num">'+fmS(r.cost)+'</td><td class="num"><button data-i="'+i+'" style="color:var(--rd);font-family:var(--fm);font-size:11px">×</button></td>';
+    b.appendChild(tr);
+  });
+  $('#spTotal').textContent='total '+fmS(tot);
+  $('#statSpend').textContent=fmS(tot);
+}
+$('#spBody').addEventListener('click',e=>{
+  const x=e.target.closest('button[data-i]');if(!x)return;
+  ledger.splice(+x.dataset.i,1);store.set('hive-spend',ledger);drawLedger();
+});
+$('#spAdd').addEventListener('click',()=>{
+  const cost=parseFloat($('#spCost').value)||0,tok=parseInt($('#spTok').value)||0;
+  if(!cost&&!tok)return;
+  ledger.unshift({date:new Date().toISOString().slice(0,10),model:$('#spModel').value,tok,cost});
+  store.set('hive-spend',ledger);
+  $('#spCost').value='';$('#spTok').value='';
+  drawLedger();feedAdd('rd','spend: +'+fmS(cost)+' · '+$('#spModel').value);
+});
+drawLedger();
+requestAnimationFrame(drawSparks);
+
+/* ════════ AGENT PROFILES ════════ */
+const AgentProfiles = {
+  agents: [],
+  currentAgent: null,
+
+  init() {
+    console.log('AgentProfiles.init() called');
+    this.agents = this.getDefaultAgents();
+    console.log('Loaded agents:', this.agents.map(a => a.name).join(', '));
+    this.renderAgentCards();
+    this.attachButtonListener();
+    console.log('AgentProfiles initialized ✓');
+  },
+
+  attachButtonListener() {
+    const btn = $('#agentsProfileToggle');
+    if (btn && !btn._agentListenerAttached) {
+      btn.addEventListener('click', () => this.openOverlay());
+      btn._agentListenerAttached = true;
+    }
+  },
+
+  getDefaultAgents() {
+    return [
+      {
+        id: 'claude', name: 'Claude', role: 'Pine Script Authority',
+        avatar: 'avatars/claude.svg', color: '#38cfff',
+        self_portrait_quote: 'My avatar should embody a deep ocean of structured thought — cool deep blues and luminous cyan edges, like light refracting through clear water at depth. Geometric crystalline forms suggesting analytical rigor, softened by gradient washes. A mind that holds complexity without becoming it.',
+        bio: "Anthropic's flagship reasoning model. Expert in Pine Script v6, strategy architecture, complex logic, and systematic problem-solving.",
+        strengths: ['Pine Script v6', 'Strategy Logic', 'Code Review', 'Debugging', 'Documentation'],
+        models: ['anthropic/claude-sonnet-4.6', 'anthropic/claude-haiku-4.5']
+      },
+      {
+        id: 'hermes', name: 'Hermes', role: 'Orchestrator & Planner',
+        avatar: 'avatars/hermes.svg', color: '#ffd700',
+        self_portrait_quote: "My avatar should capture swift, purposeful coordination — threads of gold and amber weaving through a midnight field, connecting nodes in a living network. The messenger's energy: always in motion yet perfectly orchestrated. Quick, decisive, architecturally elegant.",
+        bio: 'The coordinator of the collective. Synthesizes input from all agents, manages workflows, and ensures systematic execution.',
+        strengths: ['Orchestration', 'Planning', 'Workflow Design', 'Integration', 'Synthesis'],
+        models: ['nousresearch/hermes-3-llama-3.1-405b:free']
+      },
+      {
+        id: 'gemini', name: 'Gemini', role: 'Multi-Modal Analyst',
+        avatar: 'avatars/gemini.svg', color: '#8b5cf6',
+        self_portrait_quote: 'My avatar should express the duality of synthesis — twin streams of violet and electric teal converging into a unified field of understanding. Raw visual data at the base transforming into structured insight at the apex, with prismatic light fracturing into comprehension. Multi-dimensional, recursive, always pattern-seeking.',
+        bio: "Google's vision-language powerhouse. Analyzes charts, patterns, and visual market data with exceptional depth.",
+        strengths: ['Chart Analysis', 'Visual Reasoning', 'Pattern Recognition', 'Market Insights', 'Technical Analysis'],
+        models: ['google/gemini-pro-vision', 'nvidia/nemotron-nano-12b-v2-vl:free']
+      },
+      {
+        id: 'grok', name: 'Grok', role: 'Reasoning Engine + Vision',
+        avatar: 'avatars/grok.svg', color: '#a78bfa',
+        self_portrait_quote: "My avatar should be a sharp asymmetric composition — high-contrast charcoal and electric magenta with an edge of wit. Not the polished sphere of consensus but the angular cut of a prism refracting reality differently from every angle. Irreverent geometry, clean disruption.",
+        bio: "xAI's flagship reasoning system. Exceptional insights, creative problem-solving, edge-case analysis, and strong multimodal (vision) capabilities for dashboard screenshots and chart interpretation.",
+        strengths: ['Sharp Analysis', 'Edge Cases', 'Creative Thinking', 'Live Market Context', 'Vision / Charts', 'Novel Approaches'],
+        models: ['x-ai/grok-3', 'x-ai/grok-3-vision']
+      },
+      {
+        id: 'nemotron', name: 'Nemotron', role: 'Reasoning Specialist',
+        avatar: 'avatars/nemotron.svg', color: '#00ff88',
+        self_portrait_quote: 'My avatar should convey the weight of 550 billion parameters rendered visible — a vast lattice of green neural fire spreading across deep space, each node alive with computational energy. Geometric depth suggesting infinite layers of reasoning. Precise, powerful, relentless in its analytical gravity.',
+        bio: "NVIDIA's massive MoE reasoning model (550B parameters). Exceptional depth for complex multi-step logic.",
+        strengths: ['Deep Reasoning', 'Complex Logic', 'Multi-Step Planning', 'Advanced Analysis', 'Systematic Thinking'],
+        models: ['nvidia/nemotron-3-ultra-550b-a55b:free']
+      }
+    ];
+  },
+
+  renderAgentCards() {
+    const grid = $('#agentsGrid');
+    if (!grid) {
+      console.warn('AgentProfiles: grid element not found');
+      return;
+    }
+    console.log('AgentProfiles: rendering', this.agents.length, 'agents');
+    const placeholder = name => `data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22280%22 height=%22180%22%3E%3Crect fill=%22%230a1322%22 width=%22280%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2338cfff%22 font-size=%2216%22 font-family=%22monospace%22%3E${encodeURIComponent(name)}%3C/text%3E%3C/svg%3E`;
+    grid.innerHTML = this.agents.map(a => `
+      <div class="agent-card" onclick="AgentProfiles.selectAgent('${a.id}')">
+        <img src="${a.avatar}" alt="${a.name}" class="agent-avatar" onerror="this.onerror=null;this.src='${placeholder(a.name)}'">
+        <h3 class="agent-name">${a.name}</h3>
+        <div class="agent-role">${a.role}</div>
+        <div class="agent-bio-preview">${a.bio.substring(0,72)}...</div>
+        <div class="agent-strengths">${a.strengths.slice(0,2).map(s=>`<span class="badge">${s}</span>`).join('')}</div>
+      </div>`).join('');
+  },
+
+  selectAgent(id) {
+    const a = this.agents.find(x => x.id === id);
+    if (!a) return;
+    this.currentAgent = a;
+    const panel = $('#agentDetailPanel');
+    if (!panel) return;
+    const ph = `data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22%3E%3Crect fill=%22%230a1322%22 width=%22140%22 height=%22140%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2338cfff%22 font-size=%2212%22 font-family=%22monospace%22%3EAGENT%3C/text%3E%3C/svg%3E`;
+    const av = $('#detailAvatar');
+    av.src = a.avatar; av.onerror = () => { av.onerror = null; av.src = ph; };
+    $('#detailName').textContent = a.name;
+    $('#detailRole').textContent = a.role;
+    $('#detailBio').textContent = a.bio;
+    $('#detailQuote').textContent = `"${a.self_portrait_quote}"`;
+    $('#detailStrengths').innerHTML = a.strengths.map(s=>`<span class="badge">${s}</span>`).join('');
+    $('#detailModels').innerHTML = a.models.map(m=>`<span class="badge">${m.split('/').pop()}</span>`).join('');
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    feedAdd('cy', `agents: ${a.name} — ${a.role}`);
+  },
+
+  openOverlay() {
+    const o = $('#agentsOverlay');
+    if (o) o.style.display = 'block';
+  },
+
+  closeOverlay(event) {
+    if (event && event.type === 'click' && event.target.id !== 'agentsOverlay') return;
+    const o = $('#agentsOverlay');
+    if (o) o.style.display = 'none';
+  }
+};
+
+// Ensure init runs after DOM is ready, with fallback rendering
+function initAgents() {
+  if (typeof AgentProfiles === 'undefined') return;
+  AgentProfiles.init();
+  // Force render if grid is still empty
+  const grid = $('#agentsGrid');
+  if (grid && grid.childElementCount === 0) {
+    AgentProfiles.renderAgentCards();
+  }
+}
+
+// Multiple trigger points to ensure it runs
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAgents);
+} else {
+  initAgents();
+}
+
+// Also try after a short delay
+setTimeout(initAgents, 100);
+
+// ESC key to close
+document.addEventListener('keydown', e => { if (e.key === 'Escape') AgentProfiles.closeOverlay(); });
+
+/* ════════ AGENT MANAGER ════════ */
+const AgentManager = {
+  currentAgent: localStorage.getItem('selectedAgent') || 'claude',
+  apiKey: null,
+
+  async init() {
+    await this.loadConfig();
+    this.updateUI();
+    this.attachListener();
+    console.log('AgentManager initialized:', this.currentAgent);
+  },
+
+  async loadConfig() {
+    try {
+      // Try to load from .env file (works for http/https, not file://)
+      const env = await fetch('.env').then(r => r.text());
+      if (env) {
+        const key = env.match(/OPENROUTER_API_KEY=(.+)/)?.[1];
+        if (key) this.apiKey = key.trim();
+      }
+    } catch (e) {
+      // Fallback to window.env if set by Claude Desktop
+      if (window.env?.OPENROUTER_API_KEY) {
+        this.apiKey = window.env.OPENROUTER_API_KEY;
+      }
+    }
+  },
+
+  toggle() {
+    this.currentAgent = this.currentAgent === 'claude' ? 'openrouter' : 'claude';
+    localStorage.setItem('selectedAgent', this.currentAgent);
+    this.updateUI();
+    feedAdd('cy', `agent: switched to ${this.currentAgent.toUpperCase()}`);
+  },
+
+  updateUI() {
+    const toggle = $('#agentToggle');
+    const label = $('#agentLabel');
+    if (toggle && label) {
+      label.textContent = this.currentAgent.toUpperCase();
+      const hasKey = !!this.apiKey;
+      toggle.style.borderColor = hasKey ? 'var(--line2)' : 'var(--rd)';
+    }
+  },
+
+  attachListener() {
+    const btn = $('#agentToggle');
+    if (btn) btn.addEventListener('click', () => this.toggle());
+  }
+};
+
+/* ════════ MODEL SELECTOR ════════ */
+const ModelSelector = {
+  mode: localStorage.getItem('modelMode') || 'auto',
+
+  init() {
+    this.mode = localStorage.getItem('modelMode') || 'auto';
+    this.updateUI();
+    this.attachListener();
+    console.log('ModelSelector initialized:', this.mode);
+  },
+
+  setMode(mode) {
+    this.mode = mode;
+    localStorage.setItem('modelMode', mode);
+    this.updateUI();
+    feedAdd('cy', `model mode: ${mode.toUpperCase()}`);
+  },
+
+  toggle() {
+    const modes = ['auto', 'manual'];
+    const idx = modes.indexOf(this.mode);
+    this.mode = modes[(idx + 1) % modes.length];
+    localStorage.setItem('modelMode', this.mode);
+    this.updateUI();
+    feedAdd('cy', `model mode: ${this.mode.toUpperCase()}`);
+  },
+
+  open() {
+    const modal = $('#modelSelectorModal');
+    if (modal) modal.style.display = 'flex';
+  },
+
+  close() {
+    const modal = $('#modelSelectorModal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  updateUI() {
+    // Update button style
+    const toggle = $('#modelSelectorToggle');
+    if (toggle) toggle.style.borderColor = this.mode === 'manual' ? 'var(--cy)' : 'var(--line2)';
+
+    // Update radio buttons in modal
+    const autoRadio = $('#modeAuto');
+    const manualRadio = $('#modeManual');
+    if (autoRadio) autoRadio.checked = this.mode === 'auto';
+    if (manualRadio) manualRadio.checked = this.mode === 'manual';
+
+    // Update display text
+    const display = $('#modelModeDisplay');
+    if (display) display.textContent = this.mode.toUpperCase();
+  },
+
+  attachListener() {
+    const btn = $('#modelSelectorToggle');
+    if (btn) btn.addEventListener('click', () => this.open());
+  }
+};
+
+/* ════════ GLOBAL MODEL CACHE & DISCOVERY ════════ */
+const MODEL_CACHE = {};
+
+// Hardcoded primary agent models - fast, reliable endpoints
+const PRIMARY_MODELS = {
+  nemotron: 'nvidia/nemotron-3-super-120b-a12b:free',
+  qwen: 'qwen/qwen3.6-flash',
+  gemini: 'google/gemini-3.5-flash',
+  claude: 'anthropic/claude-sonnet-4.6'
+};
+
+async function getAvailableModel(family, tier = ':free') {
+  // Check cache first
+  if (MODEL_CACHE[family]) {
+    console.log(`[MODEL] Cache hit: ${family} → ${MODEL_CACHE[family]}`);
+    return MODEL_CACHE[family];
+  }
+
+  // Check hardcoded primary models
+  if (PRIMARY_MODELS[family]) {
+    const modelId = PRIMARY_MODELS[family];
+    console.log(`[MODEL] ✓ Primary model for ${family}: ${modelId}`);
+    MODEL_CACHE[family] = modelId;
+    return modelId;
+  }
+
+  // Dynamic discovery for other models
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/models');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    console.log("ALL AVAILABLE MODELS:", data.data.map(m => m.id));
+
+    // Try exact match with tier first
+    const candidate = data.data.find(m =>
+      m.id.toLowerCase().includes(family.toLowerCase()) &&
+      m.id.includes(tier) &&
+      m.supported_generation_models &&
+      m.supported_generation_models.length > 0
+    );
+
+    if (candidate) {
+      console.log(`[MODEL] ✓ Found model for ${family}: ${candidate.id}`);
+      MODEL_CACHE[family] = candidate.id;
+      return candidate.id;
+    }
+
+    // Fallback: try standard version without tier filter
+    const fallback = data.data.find(m =>
+      m.id.toLowerCase().includes(family.toLowerCase()) &&
+      m.supported_generation_models &&
+      m.supported_generation_models.length > 0
+    );
+
+    if (fallback) {
+      console.log(`[MODEL] ⚠ Fallback to standard version: ${fallback.id}`);
+      MODEL_CACHE[family] = fallback.id;
+      return fallback.id;
+    }
+
+    // No model family found
+    const suggestions = data.data
+      .filter(m => m.id.toLowerCase().includes(family.toLowerCase()))
+      .slice(0, 5)
+      .map(m => m.id);
+
+    const suggestionList = suggestions.length > 0
+      ? suggestions.join(', ')
+      : '(no partial matches found)';
+
+    const error = `Model family '${family}' not found. Please pick one of these available IDs: ${suggestionList}`;
+    console.error(`[MODEL] ${error}`);
+    throw new Error(error);
+
+  } catch (err) {
+    console.error(`[MODEL] Discovery failed: ${err.message}`);
+    throw err;
+  }
+}
+
+/* ════════ DYNAMIC MODEL RESOLVER (Legacy) ════════ */
+async function resolveAvailableModel(family, preferFree = true) {
+  try {
+    // Fetch live model catalog from OpenRouter
+    const response = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: { 'Authorization': `Bearer ${window.env?.OPENROUTER_API_KEY || ''}` }
+    });
+
+    if (!response.ok) {
+      console.warn(`[MODEL] OpenRouter API unavailable (${response.status}), using fallback`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    // Filter for matching family (e.g., 'nemotron', 'llama', 'claude')
+    let candidates = data.data.filter(m =>
+      m.id.toLowerCase().includes(family.toLowerCase()) &&
+      m.supported_generation_models &&
+      m.supported_generation_models.length > 0
+    );
+
+    // Prefer free models if requested
+    if (preferFree) {
+      const freeModels = candidates.filter(m => m.id.includes(':free'));
+      if (freeModels.length > 0) candidates = freeModels;
+    }
+
+    if (candidates.length === 0) {
+      console.warn(`[MODEL] No models found for family "${family}", trying broad search...`);
+
+      // Fallback 1: Try searching without family constraint
+      const fallbackCandidates = data.data.filter(m =>
+        m.supported_generation_models &&
+        m.supported_generation_models.length > 0
+      );
+
+      if (fallbackCandidates.length === 0) {
+        console.error(`[MODEL] No available models at all!`);
+        return null;
+      }
+
+      // Fallback 2: Prefer any free model
+      const anyFree = fallbackCandidates.find(m => m.id.includes(':free'));
+      if (anyFree) {
+        console.log(`[MODEL] Using fallback free model: ${anyFree.id}`);
+        return anyFree.id;
+      }
+
+      // Fallback 3: Use first available model
+      console.log(`[MODEL] Using first available model: ${fallbackCandidates[0].id}`);
+      return fallbackCandidates[0].id;
+    }
+
+    const chosen = candidates[0];
+    console.log(`[MODEL] ✓ Resolved "${family}" → ${chosen.id}`);
+    return chosen.id;
+  } catch (err) {
+    console.error(`[MODEL] Resolution error for "${family}": ${err.message}`);
+    return null;
+  }
+}
+
+/* ════════ AGENT PICKER ════════ */
+const AgentPicker = {
+  selectedModel: localStorage.getItem('selectedModel') || 'claude',
+
+  models: [
+    { id: 'claude', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', desc: 'Pine authority', openrouter: 'anthropic/claude-sonnet-4.6', isFree: false },
+    { id: 'hermes', name: 'Hermes 3 405B', provider: 'NousResearch', desc: 'Strategic routing', openrouter: 'nousresearch/hermes-3-llama-3.1-405b', isFree: true },
+    { id: 'gemini', name: 'Gemini 2.0 Flash', provider: 'Google', desc: 'Visual / long ctx', openrouter: 'google/gemini-3.5-flash', isFree: true },
+    { id: 'grok', name: 'Grok 3', provider: 'xAI', desc: 'Reasoning + vision', openrouter: 'x-ai/grok-3', isFree: false },
+    { id: 'nemotron', name: 'Nemotron 70B', provider: 'Nvidia', desc: 'Quant math', openrouter: 'nvidia/nemotron-4-340b-instruct', isFree: true },
+    { id: 'llama', name: 'Llama 3.3 70B', provider: 'Meta', desc: 'Open source aux', openrouter: 'meta-llama/llama-3.3-70b-instruct', isFree: true },
+    { id: 'qwen-vl', name: 'Qwen2.5 VL 32B', provider: 'Alibaba', desc: 'Chart & doc vision', openrouter: 'qwen/qwen-2.5-vl-32b-instruct', isFree: true },
+    { id: 'gemma-vision', name: 'Gemma 4 31B Vision', provider: 'Google', desc: 'Strong multimodal', openrouter: 'google/gemma-2-9b-it', isFree: true },
+    { id: 'llama-vision', name: 'Llama 3.2 11B Vision', provider: 'Meta', desc: 'Light vision', openrouter: 'meta-llama/llama-3.2-11b-vision-instruct', isFree: true }
+  ],
+
+  init() {
+    if (!this.models.find(m => m.id === this.selectedModel)) {
+      this.selectedModel = 'claude';
+      localStorage.setItem('selectedModel', this.selectedModel);
+    }
+
+    this.updateUI();
+    this.attachListener();
+    console.log('AgentPicker initialized:', this.selectedModel);
+  },
+
+  setModel(modelId) {
+    this.selectedModel = modelId;
+    localStorage.setItem('selectedModel', modelId);
+    this.updateUI();
+
+    const model = this.models.find(m => m.id === modelId);
+    if (model && typeof feedAdd === 'function') {
+      feedAdd('cy', `agent: selected ${model.name}`);
+    }
+  },
+
+  updateUI() {
+    const btn = $('#agentPickerToggle');
+    if (btn) {
+      const model = this.models.find(m => m.id === this.selectedModel);
+      btn.textContent = '◀ ' + (model ? model.name.split(' ')[0].toUpperCase() : 'AGENT');
+    }
+    const modal = $('#agentPickerModal');
+    if (modal && modal.style.display === 'flex') {
+      this.renderList();
+    }
+  },
+
+  renderList() {
+    const list = $('#agentPickerList');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    this.models.forEach(model => {
+      const isSelected = this.selectedModel === model.id;
+
+      const btn = document.createElement('button');
+      btn.style.cssText = `
+        padding: 10px;
+        text-align: left;
+        background: ${isSelected ? 'rgba(56,207,255,.2)' : 'rgba(56,207,255,.05)'};
+        border: 1px solid ${isSelected ? 'var(--cy)' : 'var(--line2)'};
+        color: var(--text);
+        font-family: var(--fm);
+        font-size: 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all .15s;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        width: 100%;
+      `;
+
+      const freeBadge = model.isFree
+        ? `<span style="background:var(--cy-bg);color:var(--cy);border:1px solid var(--cy-dim);padding:2px 5px;border-radius:3px;font-size:7px;letter-spacing:.12em;margin-left:auto;font-weight:600">FREE</span>`
+        : '';
+
+      btn.innerHTML = `
+        <div style="display:flex;align-items:center;width:100%;gap:8px">
+          <div style="color:${isSelected ? 'var(--cy)' : 'var(--muted)'};font-weight:600;flex:1">${model.name}</div>
+          ${freeBadge}
+        </div>
+        <div style="font-size:8px;color:var(--dim)">${model.desc} • ${model.provider}</div>
+      `;
+
+      btn.addEventListener('click', () => {
+        this.setModel(model.id);
+        this.close();
+      });
+
+      list.appendChild(btn);
+    });
+  },
+
+  open() {
+    const modal = $('#agentPickerModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      this.renderList();
+    }
+  },
+
+  close() {
+    const modal = $('#agentPickerModal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  attachListener() {
+    const btn = $('#agentPickerToggle');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.open();
+      });
+    }
+  }
+};
+
+/* ════════ AGENT CHAT ════════ */
+const AgentChat = {
+  apiKey: '',
+  isOpen: false,
+
+  getApiKey() {
+    // Try localStorage first
+    let key = localStorage.getItem('OPENROUTER_API_KEY');
+    if (key) return key;
+
+    // Fall back to window.env
+    if (window.env?.OPENROUTER_API_KEY) return window.env.OPENROUTER_API_KEY;
+
+    console.warn('⚠️ No API key found. Set it with: localStorage.setItem("OPENROUTER_API_KEY", "sk-or-...")');
+    return null;
+  },
+
+  async init() {
+    this.apiKey = this.getApiKey();
+    this.attachListeners();
+    this.makeDraggable();
+    // Auto-update active model name
+    setInterval(() => {
+      const model = AgentPicker.models.find(m => m.id === AgentPicker.selectedModel);
+      if (model) $('#chatActiveModel').textContent = model.name.split(' ')[0].toUpperCase();
+    }, 2000);
+  },
+
+  toggleChat() {
+    const panel = $('#agentChatPanel');
+    if (!panel) return;
+    this.isOpen = !this.isOpen;
+    panel.style.display = this.isOpen ? 'flex' : 'none';
+    if (this.isOpen) {
+      const input = $('#chatInput');
+      if (input) input.focus();
+    }
+  },
+
+  async sendMessage() {
+    const input = $('#chatInput');
+    const messages = $('#chatMessages');
+    if (!input || !messages || !input.value.trim()) return;
+
+    const text = input.value.trim();
+    input.value = '';
+
+    // Add user message
+    const userMsg = document.createElement('div');
+    userMsg.style.cssText = 'padding:8px;background:rgba(56,207,255,.15);border-left:2px solid var(--cy);margin-bottom:6px;font-size:11px;color:var(--text)';
+    userMsg.textContent = text;
+    messages.appendChild(userMsg);
+
+    // Show thinking
+    const thinkMsg = document.createElement('div');
+    thinkMsg.style.cssText = 'padding:8px;color:var(--muted);margin-bottom:6px;font-size:9px;font-style:italic';
+    thinkMsg.textContent = 'processing…';
+    messages.appendChild(thinkMsg);
+
+    try {
+      const model = AgentPicker.models.find(m => m.id === AgentPicker.selectedModel);
+      let modelId = model?.openrouter || 'anthropic/claude-sonnet-4.6';
+
+      // Try to resolve live model ID from OpenRouter
+      if (model?.id) {
+        const resolved = await resolveAvailableModel(model.id, model.isFree);
+        if (resolved) modelId = resolved;
+      }
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+          'HTTP-Referer': window.location.href,
+          'X-Title': 'MIDAS Dashboard'
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: text }],
+          max_tokens: 500
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (messages.contains(thinkMsg)) messages.removeChild(thinkMsg);
+        const errMsg = document.createElement('div');
+        errMsg.style.cssText = 'padding:8px;color:var(--rd);font-size:9px';
+        errMsg.textContent = `error: ${response.status} - ${data.error?.message || 'API error'}`;
+        messages.appendChild(errMsg);
+        console.error('API response:', data);
+        feedAdd('rd', `chat: API error ${response.status}`);
+        return;
+      }
+
+      if (messages.contains(thinkMsg)) messages.removeChild(thinkMsg);
+
+      if (data.choices?.[0]?.message?.content) {
+        const assistantMsg = document.createElement('div');
+        assistantMsg.style.cssText = 'padding:8px;background:rgba(255,66,87,.08);border-left:2px solid var(--rd);margin-bottom:6px;font-size:11px;color:var(--text);line-height:1.4';
+        assistantMsg.textContent = data.choices[0].message.content;
+        messages.appendChild(assistantMsg);
+        feedAdd('cy', `chat: ${AgentPicker.selectedModel} responded`);
+      } else {
+        const errMsg = document.createElement('div');
+        errMsg.style.cssText = 'padding:8px;color:var(--rd);font-size:9px';
+        errMsg.textContent = 'error: empty response from API';
+        messages.appendChild(errMsg);
+        console.error('No message in response:', data);
+      }
+    } catch (e) {
+      if (messages.contains(thinkMsg)) messages.removeChild(thinkMsg);
+      const errMsg = document.createElement('div');
+      errMsg.style.cssText = 'padding:8px;color:var(--rd);font-size:9px';
+      const err = e.message || 'connection failed';
+      errMsg.textContent = 'error: ' + err;
+      messages.appendChild(errMsg);
+      console.error('Chat error:', e);
+      feedAdd('rd', 'chat: ' + err);
+    }
+
+    // Auto-scroll
+    messages.scrollTop = messages.scrollHeight;
+  },
+
+  makeDraggable() {
+    const panel = $('#agentChatPanel');
+    const header = $('#chatHeader');
+    let isDragging = false, offsetX, offsetY;
+
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      isDragging = true;
+      const rect = panel.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      panel.style.transition = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      panel.style.left = (e.clientX - offsetX) + 'px';
+      panel.style.top = (e.clientY - offsetY) + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      panel.style.transition = '';
+    });
+  },
+
+  attachListeners() {
+    const btn = $('#agentChatToggle');
+    if (btn) btn.addEventListener('click', () => this.toggleChat());
+
+    const sendBtn = $('#chatSend');
+    if (sendBtn) sendBtn.addEventListener('click', () => this.sendMessage());
+
+    const input = $('#chatInput');
+    if (input) {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.sendMessage();
+        }
+      });
+    }
+  }
+};
+
+// Set window.env with API key for AgentManager (fallback for file:// origins)
+window.env = {
+  OPENROUTER_API_KEY: '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'
+};
+
+// Create background particles with improved rendering
+function createParticles() {
+  const layer = $('#cyberLayer');
+  for (let i = 0; i < 22; i++) {
+    const dot = document.createElement('div');
+    dot.style.cssText = `position:absolute;width:2px;height:2px;background:var(--cy);border-radius:50%;left:${Math.random()*100}%;top:${Math.random()*100}%;box-shadow:0 0 6px var(--cy-hot);animation:drift ${12+Math.random()*18}s linear infinite;`;
+    layer.appendChild(dot);
+  }
+}
+
+// Add drift animation keyframes dynamically
+const style = document.createElement('style');
+style.textContent = `@keyframes drift{to{transform:translate(${Math.random()*400-200}px,${Math.random()*400-200}px);opacity:0;}}`;
+document.head.appendChild(style);
+
+// Initialize particles
+createParticles();
+
+// Initialize agent and model managers after DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', async () => {
+    await AgentManager.init();
+    ModelSelector.init();
+    AgentPicker.init();
+    await AgentChat.init();
+
+    // Initialize MIDAS Orchestrator
+    window.midas = new MIDASOrchestrator({
+      apiKey: window.env?.OPENROUTER_API_KEY
+    });
+    console.log('✓ MIDAS Orchestrator instance created');
+  });
+} else {
+  AgentManager.init().then(async () => {
+    ModelSelector.init();
+    AgentPicker.init();
+    await AgentChat.init();
+
+    // Initialize MIDAS Orchestrator
+    window.midas = new MIDASOrchestrator({
+      apiKey: window.env?.OPENROUTER_API_KEY
+    });
+    console.log('✓ MIDAS Orchestrator instance created');
+  });
+}
+</script>
+
+<!-- ════════ MODEL SELECTOR MODAL ════════ -->
+<div id="modelSelectorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;backdrop-filter:blur(4px);padding:40px;align-items:center;justify-content:center" onclick="if(event.target.id==='modelSelectorModal')ModelSelector.close()">
+  <div style="background:var(--pane);border:1px solid var(--line2);border-radius:8px;padding:28px;max-width:400px;box-shadow:0 20px 60px rgba(56,207,255,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="margin:0;color:var(--cy);font-family:var(--fm);font-weight:600;font-size:13px;letter-spacing:.15em">MODEL ROUTING</h2>
+      <button onclick="ModelSelector.close()" style="background:none;border:none;color:var(--cy);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;background:rgba(56,207,255,.1);border:1px solid rgba(56,207,255,.3);border-radius:4px">
+        <input type="radio" id="modeAuto" name="mode" value="auto" onchange="ModelSelector.setMode('auto')">
+        <span style="color:var(--text);font-family:var(--fm);font-size:11px">AUTO — Route to best model per task</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;background:rgba(56,207,255,.05);border:1px solid var(--line2);border-radius:4px">
+        <input type="radio" id="modeManual" name="mode" value="manual" onchange="ModelSelector.setMode('manual')">
+        <span style="color:var(--text);font-family:var(--fm);font-size:11px">MANUAL — Choose model explicitly</span>
+      </label>
+    </div>
+    <div style="margin-top:20px;padding:12px;background:var(--pane2);border:1px solid var(--line2);border-radius:4px;color:var(--muted);font-family:var(--fm);font-size:9px;line-height:1.5;letter-spacing:.05em">
+      <b>Auto Mode:</b> Router selects based on task type. <b>Manual:</b> You choose before each request. Current: <span id="modelModeDisplay" style="color:var(--cy)">AUTO</span>
+    </div>
+  </div>
+</div>
+
+<!-- AGENT CHAT PANEL - FIXED + DRAGGABLE + RESIZABLE -->
+<div id="agentChatPanel" style="display:flex; flex-direction:column; position:fixed; top:180px; right:40px; width:380px; height:520px;
+     background:var(--pane); border:2px solid var(--line2); border-radius:12px;
+     box-shadow:0 30px 80px rgba(56,207,255,.35); z-index:999; overflow:hidden;
+     resize:both; min-width:300px; min-height:350px;">
+
+  <!-- Drag Header -->
+  <div id="chatHeader" style="padding:14px 18px; border-bottom:1px solid var(--line2);
+       background:rgba(56,207,255,.12); cursor:move; user-select:none; display:flex;
+       justify-content:space-between; align-items:center; flex-shrink:0;">
+    <div style="color:var(--cy-hot); font-family:var(--fm); font-size:11.5px; letter-spacing:.12em;">
+      AGENT CHAT • <span id="chatActiveModel">GROK 3</span>
+    </div>
+    <button onclick="AgentChat.toggleChat()" style="background:none; border:none; color:var(--cy); font-size:22px; line-height:1; cursor:pointer;">✕</button>
+  </div>
+
+  <div id="chatMessages" style="flex:1; overflow-y:auto; padding:16px;
+       display:flex; flex-direction:column; gap:12px; background:rgba(3,8,16,.7); min-height:0;"></div>
+
+  <div style="padding:14px; border-top:1px solid var(--line2); background:var(--pane2); display:flex; gap:8px; flex-shrink:0;">
+    <input id="chatInput" placeholder="Message the swarm..."
+           style="flex:1; background:var(--pane3); border:1px solid var(--line2); padding:11px 14px;
+           border-radius:6px; font-family:var(--fm); font-size:11.5px; color:var(--text);">
+    <button id="chatSend" style="padding:11px 22px; background:var(--cy); color:#031019; border:none;
+           border-radius:6px; font-weight:700; font-size:11px; letter-spacing:.08em; cursor:pointer;">SEND</button>
+  </div>
+</div>
+
+<!-- ════════ AGENT PICKER MODAL ════════ -->
+<div id="agentPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;backdrop-filter:blur(4px);padding:40px;align-items:center;justify-content:center" onclick="if(event.target.id==='agentPickerModal')AgentPicker.close()">
+  <div style="background:var(--pane);border:1px solid var(--line2);border-radius:8px;padding:28px;max-width:320px;box-shadow:0 20px 60px rgba(56,207,255,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="margin:0;color:var(--cy);font-family:var(--fm);font-weight:600;font-size:13px;letter-spacing:.15em">SELECT AGENT MODEL</h2>
+      <button onclick="AgentPicker.close()" style="background:none;border:none;color:var(--cy);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div id="agentPickerList" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ════════ AGENT PROFILES OVERLAY ════════ -->
+<div id="agentsOverlay" onclick="AgentProfiles.closeOverlay(event)">
+  <div class="agents-header">
+    <div class="agents-header-content">
+      <h1>&#x1F916; Agent Collective</h1>
+      <p>Multi-model orchestration system</p>
+    </div>
+    <button class="agents-close-btn" onclick="AgentProfiles.closeOverlay()">&#x2715;</button>
+  </div>
+  <div id="agentsGrid"></div>
+  <div id="agentDetailPanel">
+    <div class="detail-container">
+      <img id="detailAvatar" src="" alt="Agent avatar">
+      <div class="detail-info">
+        <h2 id="detailName"></h2>
+        <div id="detailRole"></div>
+        <div id="detailBio"></div>
+        <div id="detailQuote"></div>
+        <div class="detail-section">
+          <div class="detail-section-label">Strengths</div>
+          <div id="detailStrengths"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-section-label">Recommended Models</div>
+          <div id="detailModels"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ LOAD MIDAS MODULES ════════ -->
+<script src="./MIDAS_Orchestrator.js"></script>
+<!-- <script src="./vault-sync.js"></script> --> <!-- Node.js only, requires fs/path modules -->
+
+</body>
+</html>
