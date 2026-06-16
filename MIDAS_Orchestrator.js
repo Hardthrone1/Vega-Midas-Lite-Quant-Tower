@@ -11,14 +11,14 @@ class MIDASOrchestrator {
       qwen: {
         id: 'qwen',
         name: 'Qwen 2.5 72B',
-        model: 'qwen/qwen-2.5-72b-instruct',
+        model: 'meta-llama/llama-3.1-8b-instruct',
         tier: 'FREE',
         role: 'Vision + Reasoning'
       },
       nemotron: {
         id: 'nemotron',
         name: 'Nemotron 3 Ultra',
-        model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+        model: 'nousresearch/hermes-3-llama-3.1-405b:free',
         tier: 'FREE',
         role: 'Quant + Logic'
       },
@@ -32,14 +32,14 @@ class MIDASOrchestrator {
       gemini: {
         id: 'gemini',
         name: 'Gemini 3.5 Flash',
-        model: 'google/gemini-3.5-flash',
+        model: 'google/gemma-4-31b-it:free',
         tier: 'FREE',
         role: 'Fast Synthesis'
       },
       claude: {
         id: 'claude',
         name: 'Claude Sonnet 4.6',
-        model: 'anthropic/claude-sonnet-4.6',
+        model: 'meta-llama/llama-3.3-70b-instruct:free',
         tier: 'PREMIUM',
         role: 'High Quality Fallback'
       },
@@ -68,9 +68,25 @@ class MIDASOrchestrator {
 
     this.costTracker = { swarm: 0, gemini: 0, claude: 0, saved: 0 };
     this.taskLog = [];
-    this.vaultBridge = null; // Will init on first use
+    this.vaultBridge = null;
     this.vaultWriteQueue = Promise.resolve();
     this.vaultWriteSeq = 0;
+
+    // Initialize vault bridge immediately (not lazily) to avoid concurrent race conditions
+    this.initializeVaultBridge();
+  }
+
+  initializeVaultBridge() {
+    if (typeof require !== 'undefined') {
+      try {
+        const path = require('path');
+        const VaultSync = require('./vault-sync.js');
+        this.vaultBridge = new VaultSync(this.workspacePath + '/Obsidian');
+        console.log('[VAULT] ✓ Vault bridge initialized');
+      } catch (err) {
+        console.warn('[VAULT] Could not initialize vault bridge:', err.message);
+      }
+    }
   }
 
   // ==================== IMPROVED CALL AGENT ====================
@@ -119,8 +135,25 @@ class MIDASOrchestrator {
 
   // ==================== STRONGER CODE EXTRACTION ====================
   extractCodeGeneration(auditResult) {
-    const text = typeof auditResult === 'string' ? auditResult :
-                 (auditResult?.auditNotes || auditResult || '');
+    // Safely extract text before calling .match()
+    let text = auditResult;
+
+    if (typeof text !== 'string') {
+      if (text && text.auditNotes) {
+        text = text.auditNotes;
+      } else if (text && text.text) {
+        text = text.text;
+      } else if (typeof text === 'object') {
+        text = JSON.stringify(text);
+      } else {
+        text = '';
+      }
+    }
+
+    // NOW safe to call .match() on text
+    if (typeof text !== 'string') {
+      text = '';
+    }
 
     // Try various code block formats
     let match = text.match(/```(?:pinescript|pine|typescript|js)?\s*\n([\s\S]*?)\n```/i);
@@ -160,17 +193,6 @@ class MIDASOrchestrator {
 
       console.log(`[VAULT] Querying Obsidian for context...`);
       let context = {};
-
-      // Initialize vault bridge on first use
-      if (!this.vaultBridge && typeof require !== 'undefined') {
-        try {
-          const VaultSync = require('./vault-sync.js');
-          this.vaultBridge = new VaultSync(this.workspacePath + '/Obsidian');
-          console.log('[VAULT] ✓ Vault bridge initialized');
-        } catch (err) {
-          console.warn('[VAULT] Could not load vault-sync.js:', err.message);
-        }
-      }
 
       // Query vault for context by task tags
       if (this.vaultBridge && task.tags) {
@@ -301,15 +323,15 @@ Respond with agent IDs only, comma-separated. For now, respond with: qwen,nemotr
     const agents = routingDecision.split(',').map(s => s.trim().toLowerCase()).filter(id => this.agents[id]);
 
     console.log(`[ROUTER] Final agents: ${agents.join(', ')}`);
-    return agents.length > 0 ? agents : ['qwen', 'nemotron'];
+    return agents.length > 0 ? agents : ['qwen'];
   }
 
   getStaticRouting(task) {
     // Static routing rules based on task type
     const rules = {
       'vision': ['qwen'],
-      'setup-analysis': ['qwen', 'nemotron'],
-      'strategy-analysis': ['nemotron', 'qwen'],
+      'setup-analysis': ['qwen'],
+      'strategy-analysis': ['qwen'],
       'backtest': ['nemotron'],
       'code': ['nex', 'claude']
     };
@@ -324,15 +346,24 @@ Respond with agent IDs only, comma-separated. For now, respond with: qwen,nemotr
     // Get routing decision from Hermes
     const agentIds = await this.routeTask(task);
 
-    const promises = agentIds.map(id =>
-      this.callAgent(this.agents[id], this.buildSwarmPrompt(task, this.agents[id], obsidianContext))
-    );
-
-    const results = await Promise.allSettled(promises);
-    return results.map((r, i) => ({
-      agent: agentIds[i],
-      result: r.status === 'fulfilled' ? r.value : r.reason
-    }));
+    // Sequential execution - one agent at a time, safe for free tier
+    const results = [];
+    for (const agentId of agentIds) {
+      const agent = this.agents[agentId];
+      console.log(`[SWARM] → Calling ${agent.name} sequentially...`);
+      try {
+        const result = await this.callAgent(agent, this.buildSwarmPrompt(task, agent, obsidianContext));
+        results.push({ agent: agentId, result });
+        // Anti-Rate-Limit: 5sec cooldown before next agent
+        console.log(`[SWARM] ✓ ${agent.name} finished. Cooling down...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      } catch (error) {
+        console.error(`[SWARM] ❌ ${agentId} failed:`, error);
+        results.push({ agent: agentId, result: error.message });
+        // Continue to next agent even if one fails
+      }
+    }
+    return results;
   }
 
   buildSwarmPrompt(task, agent) {
@@ -355,7 +386,21 @@ Provide:
 4. PINE SCRIPT RECOMMENDATION: Indicator/strategy type to code
 5. CONFIDENCE: 0.0–1.0 score based on agent agreement`;
 
-    const synthesisText = await this.callAgent(this.agents.gemini, prompt);
+    let synthesisText = await this.callAgent(this.agents.gemini, prompt);
+
+    // Debug logging for synthesis result type
+    console.log('[SYNTHESIS DEBUG] Result type:', typeof synthesisText, 'Value:', synthesisText);
+
+    // Handle multiple return types from different models
+    if (typeof synthesisText !== 'string') {
+      if (synthesisText && synthesisText.text) {
+        synthesisText = synthesisText.text;
+      } else if (typeof synthesisText === 'object') {
+        synthesisText = JSON.stringify(synthesisText);
+      }
+    }
+
+    console.log('[SYNTHESIS DEBUG] After fix, type:', typeof synthesisText);
     return { synthesis: synthesisText, confidence: 0.82 };
   }
 

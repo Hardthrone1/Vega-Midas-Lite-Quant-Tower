@@ -1,6 +1,6 @@
 ---
 title: Concurrent Test Task C - Confluence Zone (setup-analysis)
-date: 2026-06-16T21:08:28.362Z
+date: 2026-06-16T21:36:17.190Z
 tags: analysis, concurrent, test-c
 winRate: null
 confidence: 0.82
@@ -8,132 +8,103 @@ confidence: 0.82
 
 ## Analysis
 ### 1. THESIS
-The proposed setup, "Concurrent Test Task C - Confluence Zone," represents a clear terminology collision between **Distributed Systems Engineering** (concurrent database/vault writes) and **Algorithmic Trading** (technical confluence zones). Because TradingView’s Pine Script is strictly single-threaded, sandboxed, and lacks external I/O or database write capabilities (such as writing to HashiCorp Vault), a literal execution of this task is impossible. However, the thesis can be salvaged by **metaphorically translating "concurrent vault writes" into a multi-indicator state machine**. By using Pine Script’s persistent state variables (`var`/`varip`), we can log and evaluate the "concurrent" (simultaneous) alignment of multiple independent technical indicators on a single bar close, treating this deterministic state resolution as our "vault write."
+The "Concurrent Test Task C - Confluence Zone" represents an advanced architectural framework rather than a simple directional trade setup. Translating the software engineering metaphor of "Concurrent Vault Writes" into Pine Script v5 quantitative architecture, the thesis centers on a **Multi-Timeframe (MTF) State-Synchronized Strategy**. High-probability entry signals are generated inside a dynamic "Confluence Zone" where macro-trend direction, micro-structure volume profiles, and momentum oscillators align. To prevent execution lag, data repainting, and state collisions (the Pine Script equivalent of concurrent write conflicts), the strategy utilizes `varip` (variable intra-bar persistent) arrays and synchronized `request.security` calls to manage real-time portfolio state and execute orders with sub-candle precision.
 
 ---
 
-### 2. DIRECTIONAL BIAS
-**NEUTRAL**  
-The underlying reports focus entirely on architectural, execution, and methodological parameters rather than directional market data. No specific asset, trend direction, or fundamental catalyst is defined. The bias must remain neutral until an asset class is selected and the confluence indicators are configured.
+### 2. DIRECTIONAL BIAS: Neutral (Execution-Focused)
+The directional bias is strictly **Neutral** because the synthesized reports define an execution system and structural architecture rather than a directional market bias for a specific asset. The system is designed to deploy capital bi-directionally (long or short) based on where the confluence of multi-timeframe indicators occurs. The bias is structurally optimized toward **mean-reversion inside volatility bands** or **breakout trend-following**, depending on the state of the global portfolio "Vault" variables.
 
 ---
 
 ### 3. KEY CONFLUENCES
-Despite the technical collision, the agents agree on the conceptual framework for a trading "Confluence Zone" within Pine Script's limitations:
-1. **Multi-Indicator Alignment (The Zone):** The simultaneous crossing of trend-following (e.g., EMA crossovers) and mean-reverting (e.g., RSI overbought/oversold) indicators.
-2. **State Persistence (The "Vault"):** Utilizing Pine Script’s `var` and `varip` keywords to store historical state variables across bar calculations, simulating an internal database.
-3. **Synchronous Execution (The Concurrency Solution):** Relying on Pine's single-threaded execution model on the `close` of the bar to guarantee that all indicator calculations are finalized simultaneously, eliminating the risk of race conditions or partial "writes."
+The agents agreed on three core conceptual pillars to define and execute within the "Confluence Zone":
+
+1. **Multi-Timeframe Alignment (The Confluence Zone):** Execution triggers only when macro-level trends (e.g., daily/4-hour EMAs) align with micro-level execution triggers (e.g., 5-minute VWAP deviations and RSI extremes).
+2. **Intra-Bar State Persistence ("Concurrent Vault Writes"):** Utilizing `varip` variables to safely track tick-by-tick order flow and volume delta within a single historical bar, preventing data corruption and ensuring backtest-to-live execution parity.
+3. **Strict Non-Repainting Data Ingestion:** Synchronizing multi-timeframe data streams using `barmerge.lookahead_off` to ensure that historical simulation matches real-time broker execution.
 
 ---
 
 ### 4. PINE SCRIPT RECOMMENDATION
-**Indicator/Strategy Type:** Multi-Timeframe Confluence State Strategy (`strategy`)  
+**Type:** Pine Script v5 Multi-Timeframe Strategy (`strategy()`)
 
-#### Implementation Architecture:
-* **State Engine:** Use `var` variables to act as the "Vault," tracking the status of three independent subsystems (Trend, Momentum, Volatility).
-* **Confluence Logic:** Require all three subsystems to output a positive state on the same bar to trigger an entry order.
-* **Execution:** Use `process_orders_on_close = true` to ensure orders are processed deterministically, mimicking a successful "write" to the broker exchange once the confluence zone is locked in.
-
-```pinescript
-//@version=5
-strategy("Confluence Vault Strategy", overlay=true, initial_capital=10000)
-
-// --- The "Vault" (State Variables) ---
-var bool trend_aligned = false
-var bool momentum_aligned = false
-
-// --- Subsystem 1: Trend (EMA) ---
-emaFast = ta.ema(close, 9)
-emaSlow = ta.ema(close, 21)
-trend_aligned := emaFast > emaSlow
-
-// --- Subsystem 2: Momentum (RSI) ---
-rsiVal = ta.rsi(close, 14)
-momentum_aligned := rsiVal > 50
-
-// --- Confluence Zone Evaluation (Simulated Concurrent Write) ---
-confluence_zone = trend_aligned and momentum_aligned
-
-if (confluence_zone and not confluence_zone[1])
-    strategy.entry("Vault_Buy", strategy.long)
-
-if (not confluence_zone and confluence_zone[1])
-    strategy.close("Vault_Buy")
-```
+#### Key Implementation Blueprint:
+* **State Management ("Vault"):** Use `var` and `varip` arrays to store global strategy states, trailing stops, and active exposure metrics to prevent race conditions during high-volatility, intra-bar execution.
+* **Data Fetching:** Use `request.security_lower_tf()` to access sub-chart resolution data safely without repainting, allowing the script to analyze the micro-structure of the "Confluence Zone."
+* **Confluence Logic:**
+  ```pinescript
+  // Example Confluence Zone Logic
+  bool macro_bullish = request.security(syminfo.tickerid, "240", close > ta.ema(close, 200))
+  bool micro_oversold = ta.rsi(close, 14) < 30
+  bool volume_confirm = volume > ta.sma(volume, 20) * 1.5
+  
+  bool confluence_long = macro_bullish and micro_oversold and volume_confirm
+  ```
+* **Execution Safety:** Implement an execution lock mechanism using `varip bool execution_active = false` to prevent multiple orders from being triggered concurrently on the same tick.
 
 ---
 
-### 5. CONFIDENCE SCORE
-**0.3 / 1.0**  
-*Reasoning:* While we can write a highly optimized Pine Script that measures technical confluence, the confidence score is low due to the fundamental incompatibility of the prompt's core DevOps terms ("concurrent writes," "vault") with TradingView's infrastructure. The strategy is viable only as a metaphorical translation.
+### 5. CONFIDENCE SCORE: 0.60
+* **Reasoning:** While the architectural confidence is high (**0.90**) regarding how to construct a robust, non-repainting, multi-timeframe state machine in Pine Script v5, the overall trading confidence is moderate (**0.60**). This is due to the source data being a metaphorical translation of a software engineering test task rather than live, asset-specific market data.
 
 ## Claude Audit
 ```pinescript
 //@version=5
-strategy("Confluence Vault Strategy [Production]", 
-     overlay=true, 
-     initial_capital=10000, 
-     default_qty_type=strategy.percent_of_equity, 
-     default_qty_value=10,       // 10% Equity per trade (adjustable via inputs)
-     currency=currency.USD,
-     commission_type=strategy.commission.percent,
-     commission_value=0.04,      // 0.04% per side (typical futures/crypto)
-     slippage=1,                 // 1 tick slippage
-     process_orders_on_close=true, // Critical: Deterministic execution on bar close (The "Concurrent Write")
-     calc_on_every_tick=false,   // Performance: Calculate on bar close only
-     max_bars_back=2000)
+strategy("MTF Confluence Zone Strategy [Concurrent Vault]", overlay=true, process_orders_on_close=false, calc_on_every_tick=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10, currency=currency.USD, commission_type=strategy.commission.percent, commission_value=0.04)
 
 // =============================================================================
-// 1. CONFIGURATION INPUTS (The "Vault Parameters")
+// 1. CORE ARCHITECTURE: THE "VAULT" (STATE MANAGEMENT)
 // =============================================================================
-grp_main      = "🔐 Core Confluence Logic"
-grp_risk      = "🛡️ Risk Management & Sizing"
-grp_visuals   = "🎨 Visuals & Alerts"
+// Using `varip` (variable intra-bar persistent) arrays to simulate "Concurrent Vault Writes".
+// This ensures state survives intra-bar updates (tick-by-tick) without repainting on historical bars.
+// Structure: [TradeID, EntryPrice, StopPrice, TargetPrice, TrailLevel, Direction(1/-1), IsActive, EntryBarIndex]
+varip float[] vault_trade_state = array.new_float(8, na)
 
-// --- Core Logic Inputs ---
-len_fast      = input.int(9,   "Fast EMA Length", minval=1, group=grp_main)
-len_slow      = input.int(21,  "Slow EMA Length", minval=1, group=grp_main)
-len_rsi       = input.int(14,  "RSI Length", minval=1, group=grp_main)
-rsi_ob        = input.int(70,  "RSI Overbought Threshold", minval=50, maxval=90, group=grp_main)
-rsi_os        = input.int(30,  "RSI Oversold Threshold", minval=10, maxval=50, group=grp_main)
-use_vol_filter= input.bool(true, "Enable Volatility Filter (ATR)", group=grp_main)
-len_atr       = input.int(14,  "ATR Length", minval=1, group=grp_main)
-
-// --- Risk Management Inputs ---
-risk_pct      = input.float(1.5, "Risk Per Trade (% Equity)", minval=0.1, maxval=10, step=0.1, group=grp_risk) / 100
-rr_ratio      = input.float(2.0, "Reward:Risk Ratio (TP Multiplier)", minval=0.5, step=0.1, group=grp_risk)
-use_atr_sl    = input.bool(true, "Use ATR for Stop Loss (vs Fixed %)", group=grp_risk)
-atr_mult_sl   = input.float(1.5, "ATR SL Multiplier", minval=0.5, step=0.1, group=grp_risk)
-fixed_sl_pct  = input.float(2.0, "Fixed SL % (if ATR off)", minval=0.1, step=0.1, group=grp_risk) / 100
-max_dd_pct    = input.float(10.0, "Max Drawdown Halt (% Equity)", minval=1, step=0.5, group=grp_risk) / 100
-pyramiding_en = input.bool(false, "Allow Pyramiding (Add to Winner)", group=grp_risk)
-max_entries   = input.int(1, "Max Concurrent Entries", minval=1, maxval=5, group=grp_risk)
-
-// --- Visuals ---
-show_signals  = input.bool(true, "Show Entry/Exit Labels", group=grp_visuals)
-show_bg       = input.bool(true, "Show Confluence Background", group=grp_visuals)
-alert_entry   = input.bool(true, "Trigger Alert on Entry", group=grp_visuals)
+// Execution Lock: Prevents "Race Conditions" (multiple orders same tick)
+varip bool vault_execution_lock = false
 
 // =============================================================================
-// 2. THE "VAULT" - PERSISTENT STATE ENGINE (var variables)
+// 2. USER INPUTS (CONFIGURATION)
 // =============================================================================
-// These variables survive across bar calculations, simulating a database state.
-// They track the *resolved* state of the previous bar to detect edges (crossovers).
+grp_macro = "🏛️ MACRO CONTEXT (HTF - The Vault Guard)"
+htf_tf          = input.timeframe("4H", "Macro Timeframe", group=grp_macro)
+htf_ema_len     = input.int(200, "HTF Trend EMA Length", group=grp_macro)
+htf_rsi_len     = input.int(14, "HTF RSI Length", group=grp_macro)
+htf_rsi_bull    = input.int(50, "HTF RSI Bull Threshold", group=grp_macro)
+htf_rsi_bear    = input.int(50, "HTF RSI Bear Threshold", group=grp_macro)
 
-// Trend Subsystem State
-var bool vault_trend_bull   = false
-var bool vault_trend_bear   = false
+grp_micro = "⚡ MICRO EXECUTION (LTF - Current Chart)"
+micro_rsi_len   = input.int(14, "Micro RSI Length", group=grp_micro)
+micro_rsi_ob    = input.int(70, "Micro RSI Overbought", group=grp_micro)
+micro_rsi_os    = input.int(30, "Micro RSI Oversold", group=grp_micro)
+vwap_len        = input.int(20, "VWAP Lookback (Sessions)", group=grp_micro)
+vol_mult        = input.float(1.5, "Volume Surge Multiplier", group=grp_micro)
 
-// Momentum Subsystem State
-var bool vault_momo_bull    = false
-var bool vault_momo_bear    = false
+grp_risk = "🛡️ RISK ENGINE (Vault Security)"
+risk_per_trade  = input.float(1.0, "Risk Per Trade (% Equity)", group=grp_risk) / 100
+atr_len         = input.int(14, "ATR Length (Volatility)", group=grp_risk)
+sl_atr_mult     = input.float(1.5, "Stop Loss ATR Multiplier", group=grp_risk)
+tp_rr_ratio     = input.float(2.0, "Take Profit Risk:Reward", group=grp_risk)
+trail_atr_mult  = input.float(1.0, "Trailing Stop ATR Multiplier (0=Off)", group=grp_risk)
+max_daily_loss  = input.float(3.0, "Max Daily Loss (% Equity)", group=grp_risk) / 100
 
-// Volatility/Regime Subsystem State
-var bool vault_vol_ok       = true
+grp_session = "🕰️ SESSION FILTERS"
+use_session     = input.bool(true, "Use Session Filter", group=grp_session)
+sess_start      = input.session("0930-1600", "Trading Session (Exchange Time)", group=grp_session)
 
-// Portfolio Protection State (Circuit Breaker)
-var float vault_peak_equity = initial_capital
-var bool  vault_halted      = false
+// =============================================================================
+// 3. NON-REPAINTING DATA INGESTION (SECURE CHANNELS)
+// =============================================================================
+// request.security with lookahead_off is MANDATORY for production parity.
+// We request HTF data on the LTF chart.
 
-/
+// [Macro Trend] HTF EMA & RSI
+[htf_ema, htf_rsi] = request.security(syminfo.tickerid, htf_tf, 
+    [ta.ema(close, htf_ema_len), ta.rsi(close, htf_rsi_len)], 
+    lookahead=barmerge.lookahead_off, gaps=barmerge.gaps_off)
+
+// [Micro Structure] Current Chart Calculations (LTF)
+micro_rsi = ta.rsi(close, micro_rsi_len)
+// VWAP Anchor: Session (Standard
 
