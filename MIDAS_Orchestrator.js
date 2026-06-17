@@ -3,6 +3,18 @@
  * Stable version with better proxy handling, code extraction, and new models
  */
 
+/**
+ * v1.5.1 NOTE - Vault Bridge Behavior:
+ *
+ * Node/CLI context: vaultBridge initialized via require() → vault sync works, analyses persist to Obsidian vault
+ * Browser context: vaultBridge is null (no require/fs access in sandboxed DOM environment)
+ *   → Vault queue accepts writes but fails gracefully (see _processVaultWrite null-check)
+ *   → Analyses stored in window.midasResults[taskId] for HUD display
+ *   → No Obsidian sync from browser (expected, accepted behavior for v1.5.1)
+ *
+ * Browser vault persistence deferred to v1.5.2 (requires server-side endpoint on localhost:8001).
+ * This design maintains v1.5.0's correctness: no silent failures, explicit error logs, graceful fallback.
+ */
 class MIDASOrchestrator {
   constructor(config = {}) {
     this.workspacePath = config.workspacePath || 'C:\\Users\\Softthrone\\Claude\\Dashboard';
@@ -279,7 +291,9 @@ class MIDASOrchestrator {
   }
 
   async routeTask(task) {
-    console.log(`[ROUTER] Routing task: ${task.type}`);
+    console.log(`[ROUTER] Routing task: ${task.type} (5s initial cooldown)...`);
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log('[ROUTER] Cooldown complete, testing models...');
 
     const routingPrompt = `You are a task router. Decide which specialized agents should handle this task:
 Task type: ${task.type}
