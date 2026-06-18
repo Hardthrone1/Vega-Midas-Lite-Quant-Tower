@@ -296,6 +296,109 @@ class VaultSync {
   }
 
   /**
+   * Create a validation/post-mortem entry from TradingView Replay + Rule Check
+   * Stores under Setups/Validation/ with extended schema (ruleCheck, backtestMetrics, replayTrades, slippageDelta)
+   */
+  async createValidationEntry(validationData) {
+    try {
+      const timestamp = new Date();
+      const dateStr = timestamp.toISOString().split('T')[0]; // YYYY-MM-DD
+      const filename = `${dateStr} ${validationData.title || 'Validation'}.md`;
+
+      const validationDir = path.join(this.vaultPath, 'Setups', 'Validation');
+      if (!fs.existsSync(validationDir)) {
+        fs.mkdirSync(validationDir, { recursive: true });
+      }
+
+      const filepath = path.join(validationDir, filename);
+
+      // Build frontmatter with extended schema
+      const frontmatter = [
+        '---',
+        `title: ${validationData.title || 'Validation Entry'}`,
+        `date: ${dateStr}`,
+        `tags: [${(validationData.tags || ['validation']).map(t => `"${t}"`).join(', ')}]`,
+        `confidence: ${validationData.confidence || 0}`,
+        `compileStatus: ${validationData.compileStatus || 'pending'}`,
+        validationData.ruleCheck ? `ruleCheckPassed: ${validationData.ruleCheck.passed}` : '',
+        validationData.ruleCheck && validationData.ruleCheck.violations?.length ? `ruleViolations: ${validationData.ruleCheck.violations.length}` : '',
+        validationData.ruleCheck && validationData.ruleCheck.warnings?.length ? `ruleWarnings: ${validationData.ruleCheck.warnings.length}` : '',
+        validationData.backtestMetrics ? `profitFactor: ${validationData.backtestMetrics.profitFactor || 'N/A'}` : '',
+        validationData.backtestMetrics ? `netProfit: ${validationData.backtestMetrics.netProfit || 'N/A'}` : '',
+        validationData.replayTrades?.length ? `replayTradeCount: ${validationData.replayTrades.length}` : '',
+        validationData.slippageDelta ? `slippageDelta: ${validationData.slippageDelta}` : '',
+        '---'
+      ].filter(line => line).join('\n');
+
+      // Build body with sections
+      const sections = [
+        `## Validation Report: ${validationData.title || 'Strategy Analysis'}`,
+        '',
+        '### Compile Status',
+        validationData.compileStatus || 'Pending',
+        ''
+      ];
+
+      if (validationData.ruleCheck) {
+        sections.push('### Rule Check (Anti-Cheat Linter)');
+        sections.push(`Status: ${validationData.ruleCheck.passed ? '✓ PASS' : '✗ FAIL'}`);
+        if (validationData.ruleCheck.violations?.length) {
+          sections.push(`**Violations (${validationData.ruleCheck.violations.length}):**`);
+          validationData.ruleCheck.violations.forEach(v => sections.push(`- ${v}`));
+        }
+        if (validationData.ruleCheck.warnings?.length) {
+          sections.push(`**Warnings (${validationData.ruleCheck.warnings.length}):**`);
+          validationData.ruleCheck.warnings.forEach(w => sections.push(`- ${w}`));
+        }
+        sections.push('');
+      }
+
+      if (validationData.backtestMetrics) {
+        sections.push('### Backtest Metrics (Strategy Tester)');
+        sections.push('*Note: Per blueprint policy, Strategy Tester figures are NOT proof of viability — use as signal only.*');
+        Object.entries(validationData.backtestMetrics).forEach(([key, val]) => {
+          sections.push(`- **${key}:** ${val}`);
+        });
+        sections.push('');
+      }
+
+      if (validationData.replayTrades?.length) {
+        sections.push('### Bar Replay Trades (Forward Test)');
+        validationData.replayTrades.forEach((trade, idx) => {
+          sections.push(`**Trade ${idx + 1}:**`);
+          sections.push(`- Action: ${trade.action}`);
+          sections.push(`- Bar: ${trade.date} @ ${trade.price}`);
+          sections.push(`- Size: ${trade.size}`);
+          sections.push('');
+        });
+      }
+
+      if (validationData.slippageDelta !== undefined) {
+        sections.push('### Live Trade Comparison (Slippage Delta)');
+        sections.push(`Difference between Strategy Tester fills and Bar Replay fills: **${validationData.slippageDelta}%**`);
+        sections.push('');
+      }
+
+      if (validationData.notes) {
+        sections.push('### Notes');
+        sections.push(validationData.notes);
+      }
+
+      const body = sections.join('\n');
+      const content = `${frontmatter}\n${body}`;
+
+      fs.writeFileSync(filepath, content, 'utf-8');
+      this.fileIndex.push(filepath);
+
+      console.log(`[VAULT] Validation entry created: ${filepath}`);
+      return { success: true, filepath };
+    } catch (err) {
+      console.error(`[VAULT] Failed to create validation entry: ${err.message}`);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
    * Get all available tags in vault
    * Used for tag autocomplete in UI
    */

@@ -1555,15 +1555,15 @@ const MODEL_CACHE = {};
 // Hardcoded primary agent models - production endpoints (verified 2026)
 const PRIMARY_MODELS = {
   // STEP 1: SWARM ANALYSIS (Parallel Processing - Fast & High-Efficiency)
-  qwen: 'qwen/qwen-2.5-72b-instruct',                           // Vision + reasoning (swarm)
-  nemotron: 'nvidia/nemotron-3-ultra-550b-a55b:free',          // High-parameter logic engine
+  qwen: 'meta-llama/llama-3.1-8b-instruct',                     // Vision + reasoning (swarm)
+  nemotron: 'nousresearch/hermes-3-llama-3.1-405b:free',        // High-parameter logic engine
   hermes: 'qwen/qwen3-next-80b-a3b-instruct:free',             // Router & Orchestrator (Primary)
 
   // STEP 2: GEMINI SYNTHESIS (Consolidating Swarm Data & Extracting Core Thesis)
-  gemini: 'google/gemini-3.5-flash',                            // Efficient multimodal master
+  gemini: 'google/gemma-4-31b-it:free',                         // Efficient multimodal master
 
-  // STEP 3 & STEP 6: CLAUDE AUDIT & REFLEXION (Premium Pine Script Optimization)
-  claude: 'anthropic/claude-sonnet-4.6',                        // Flagship coding + reasoning
+  // STEP 3 & STEP 6: CLAUDE AUDIT & REFLEXION (Pine Script Authority)
+  claude: 'anthropic/claude-haiku-4-5-20251001:free',           // Free tier Claude flagship
   gpt: 'openai/gpt-oss-120b'                                    // Open source reasoning
 };
 
@@ -1705,16 +1705,16 @@ const AgentPicker = {
   selectedModel: localStorage.getItem('selectedModel') || 'claude',
 
   models: [
-    { id: 'claude', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', desc: 'Pine authority', openrouter: 'anthropic/claude-sonnet-4.6', isFree: false },
+    { id: 'claude', name: 'Claude Haiku 4.5', provider: 'Anthropic', desc: 'Pine Script Authority', openrouter: 'anthropic/claude-haiku-4-5-20251001:free', isFree: true },
     { id: 'hermes', name: 'Qwen3-Next 80B', provider: 'Alibaba', desc: 'Router & Orchestrator (Primary)', openrouter: 'qwen/qwen3-next-80b-a3b-instruct:free', isFree: true },
-    { id: 'gemini', name: 'Gemini 2.0 Flash', provider: 'Google', desc: 'Visual / long ctx', openrouter: 'google/gemini-3.5-flash', isFree: true },
+    { id: 'gemini', name: 'Gemma 4 31B', provider: 'Google', desc: 'Fast Synthesis', openrouter: 'google/gemma-4-31b-it:free', isFree: true },
     { id: 'grok', name: 'Grok 3', provider: 'xAI', desc: 'Reasoning + vision', openrouter: 'x-ai/grok-3', isFree: false },
-    { id: 'nemotron', name: 'Nemotron 3 Ultra', provider: 'Nvidia', desc: 'Quant + Logic', openrouter: 'nvidia/nemotron-3-ultra-550b-a55b:free', isFree: true },
-    { id: 'gpt', name: 'GPT OSS 120B', provider: 'OpenAI', desc: 'Open source reasoning', openrouter: 'openai/gpt-oss-120b', isFree: true },
-    { id: 'llama', name: 'Llama 3.3 70B', provider: 'Meta', desc: 'Open source aux', openrouter: 'meta-llama/llama-3.3-70b-instruct', isFree: true },
-    { id: 'qwen-vl', name: 'Qwen2.5 VL 32B', provider: 'Alibaba', desc: 'Chart & doc vision', openrouter: 'qwen/qwen-2.5-vl-32b-instruct', isFree: true },
-    { id: 'gemma-vision', name: 'Gemma 4 31B Vision', provider: 'Google', desc: 'Strong multimodal', openrouter: 'google/gemma-2-9b-it', isFree: true },
-    { id: 'llama-vision', name: 'Llama 3.2 11B Vision', provider: 'Meta', desc: 'Light vision', openrouter: 'meta-llama/llama-3.2-11b-vision-instruct', isFree: true }
+    { id: 'nemotron', name: 'Nemotron 3 Ultra', provider: 'Nvidia', desc: 'Quant + Logic', openrouter: 'nousresearch/hermes-3-llama-3.1-405b:free', isFree: true },
+    { id: 'gpt', name: 'GPT OSS 120B', provider: 'OpenAI', desc: 'Open Source Reasoning', openrouter: 'openai/gpt-oss-120b', isFree: true },
+    { id: 'nex', name: 'Nex N2-Pro', provider: 'Nex-AGI', desc: 'Agentic Coding', openrouter: 'nex-agi/nex-n2-pro:free', isFree: true },
+    { id: 'qwen', name: 'Llama 3.1 8B', provider: 'Meta', desc: 'Vision + Reasoning', openrouter: 'meta-llama/llama-3.1-8b-instruct', isFree: true },
+    { id: 'llama', name: 'Llama 3.3 70B', provider: 'Meta', desc: 'Open source reasoning', openrouter: 'meta-llama/llama-3.3-70b-instruct:free', isFree: true },
+    { id: 'llama-vision', name: 'Llama 3.2 11B Vision', provider: 'Meta', desc: 'Light vision', openrouter: 'meta-llama/llama-3.2-11b-vision-instruct:free', isFree: true }
   ],
 
   init() {

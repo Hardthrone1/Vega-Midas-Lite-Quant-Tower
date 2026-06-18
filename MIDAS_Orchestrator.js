@@ -50,10 +50,10 @@ class MIDASOrchestrator {
       },
       claude: {
         id: 'claude',
-        name: 'Claude Sonnet 4.6',
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        tier: 'PREMIUM',
-        role: 'High Quality Fallback'
+        name: 'Claude',
+        model: 'anthropic/claude-haiku-4-5-20251001:free',
+        tier: 'FREE',
+        role: 'Pine Script Authority'
       },
       hermes: {
         id: 'hermes',
@@ -356,6 +356,64 @@ Respond with agent IDs only, comma-separated. For now, respond with: qwen,nemotr
     return agents.join(', ');
   }
 
+  // ==================== ANTI-CHEAT / OVERFITTING LINTER ====================
+  validatePineScriptRules(code) {
+    const violations = [];
+    const warnings = [];
+
+    if (typeof code !== 'string') {
+      code = String(code);
+    }
+
+    // 1. CONFIRMED BARS VALIDATION: barstate.isconfirmed must be present if strategy.entry() exists
+    const hasEntry = /strategy\.entry\s*\(/i.test(code);
+    if (hasEntry && !code.includes('barstate.isconfirmed')) {
+      violations.push('strategy.entry() detected but barstate.isconfirmed validation missing');
+    }
+
+    // 2. LOOKAHEAD DETECTION: negative offsets, close[-...], bar_index + negative
+    const lookaheadPatterns = [
+      /close\s*\[\s*-/i,           // close[-1], close[- etc.
+      /\[bar_index\s*\+\s*\d/i,    // [bar_index + 1] or larger
+      /security\([^)]*lookahead\s*=\s*barmerge\.lookahead_on/i  // security() with lookahead=on
+    ];
+
+    lookaheadPatterns.forEach((pattern, idx) => {
+      if (pattern.test(code)) {
+        violations.push(`Potential lookahead leakage detected (pattern ${idx + 1})`);
+      }
+    });
+
+    // 3. REPAINTING: security() with any lookahead parameter (overly broad but safe)
+    if (/security\s*\([^)]*lookahead/i.test(code)) {
+      violations.push('security() call with lookahead parameter may cause repainting');
+    }
+
+    // 4. OVERFITTING HEURISTIC: Count distinct ta.* indicator calls
+    const indicators = code.match(/ta\.\w+\s*\(/gi) || [];
+    const uniqueIndicators = new Set(indicators.map(i => i.toLowerCase()));
+    if (uniqueIndicators.size >= 5) {
+      warnings.push(`High indicator stacking detected (${uniqueIndicators.size} distinct ta.* calls) - risk of overfitting`);
+    }
+
+    // 5. MANDATORY SLIPPAGE/SPREAD MODELING
+    if (!/slippage|spread|commiss/i.test(code)) {
+      warnings.push('No slippage, spread, or commission modeling detected - may diverge from real-world fills');
+    }
+
+    // 6. ATR-BASED STOPS ON ENTRY BAR: heuristic check
+    const atrOnEntryPattern = /strategy\.entry[^}]*atr\s*\(/i;
+    if (atrOnEntryPattern.test(code) && !code.includes('barstate.isconfirmed')) {
+      warnings.push('ATR-based stops may be calculated on entry bar without bar confirmation - review manually');
+    }
+
+    return {
+      passed: violations.length === 0,
+      violations,
+      warnings
+    };
+  }
+
   async executeSwarm(task, obsidianContext) {
     // Get routing decision from Hermes
     const agentIds = await this.routeTask(task);
@@ -380,8 +438,54 @@ Respond with agent IDs only, comma-separated. For now, respond with: qwen,nemotr
     return results;
   }
 
-  buildSwarmPrompt(task, agent) {
-    return `Analyze this trading setup for Pine Script optimization:\nSetup: ${task.setup || 'General'}\nContext: ${task.context || ''}`;
+  buildSwarmPrompt(task, agent, obsidianContext = {}) {
+    const agentId = agent.id?.toLowerCase();
+    const contextStr = obsidianContext?.summary || '';
+
+    // Lane-specific prompts per blueprint's "Disciplined Swarm Roles & Lanes"
+    if (agentId === 'qwen') {
+      return `[ARCHITECT LANE] Analyze this trading setup for structural architecture and session-based logic:
+
+Setup: ${task.setup || 'General'}
+Context: ${task.context || 'None'}
+
+Vault Context: ${contextStr || 'No prior analysis'}
+
+Focus on:
+- Session filters (New York, London, Asian session openings)
+- Execution intervals and timeframe logic
+- Standard structural logic blocks (entry conditions, exit conditions)
+- Order routing flows (market, limit, stop orders)
+
+Respond with concrete architectural recommendations for Pine Script v5.`;
+    }
+
+    if (agentId === 'nemotron') {
+      return `[QUANT CORE LANE] Analyze this trading setup for advanced quantitative mathematics:
+
+Setup: ${task.setup || 'General'}
+Context: ${task.context || 'None'}
+
+Vault Context: ${contextStr || 'No prior analysis'}
+
+Focus on:
+- Complex indicator mathematics (Hull MA, LSMA, ZLEMA hybrid smoothing)
+- Multi-timeframe (MTF) array aggregation techniques
+- Fibonacci "Golden Zone" pullback coordinate calculations
+- Advanced smoothing and confirmation algorithms
+
+Respond with precise mathematical formulations ready for Pine Script implementation.`;
+    }
+
+    // Default generic prompt for other agents (Gemini, Nex, Claude, etc.)
+    return `Analyze this trading setup for Pine Script optimization:
+
+Setup: ${task.setup || 'General'}
+Context: ${task.context || 'None'}
+
+Vault Context: ${contextStr || 'No prior analysis'}
+
+Provide analysis and recommendations for Pine Script v5 strategy design.`;
   }
 
   async executeSynthesis(swarmResults) {
@@ -433,22 +537,67 @@ Requirements:
 - Clear comments explaining the logic
 - Ready to copy-paste into TradingView`;
 
+    const agents = [
+      { name: 'Nemotron', agent: this.agents.nemotron },
+      { name: 'Nex-N2-Pro', agent: this.agents.nex },
+      { name: 'Claude', agent: this.agents.claude }
+    ];
+
     let auditText = "";
+    let successAgent = null;
 
-    // 1. Primary: Nemotron (strong logic)
-    console.log(`[AUDIT 1/3] Trying Nemotron...`);
-    auditText = await this.callAgent(this.agents.nemotron, userPrompt);
+    // Try each agent in order, KEEP FIRST SUCCESS
+    for (let i = 0; i < agents.length; i++) {
+      const { name, agent } = agents[i];
+      console.log(`[AUDIT ${i + 1}/3] Trying ${name}...`);
 
-    // 2. Second: Nex-N2-Pro (agentic coding)
-    if (auditText.includes("[Error") || auditText.length < 400 || !auditText.includes("strategy.")) {
-        console.log(`[AUDIT 2/3] Trying Nex-N2-Pro (free)...`);
-        auditText = await this.callAgent(this.agents.nex, userPrompt);
+      const result = await this.callAgent(agent, userPrompt);
+
+      // LOG WHAT WE GOT
+      console.log(`[AUDIT DEBUG] ${name} returned ${result.length} chars`);
+      console.log(`[AUDIT DEBUG] First 150 chars:`, result.substring(0, 150));
+      console.log(`[AUDIT DEBUG] Has "strategy"?`, result.toLowerCase().includes("strategy"));
+      console.log(`[AUDIT DEBUG] Has "entry"?`, result.toLowerCase().includes("entry"));
+      console.log(`[AUDIT DEBUG] Has "//"?`, result.includes("//"));
+      console.log(`[AUDIT DEBUG] Has "[Error"?`, result.includes("[Error"));
+
+      // Validate: is this good code? (looser validation)
+      const isValid = !result.includes("[Error") &&
+                      result.length >= 50 &&
+                      (result.toLowerCase().includes("strategy") ||
+                       result.toLowerCase().includes("entry") ||
+                       result.toLowerCase().includes("exit") ||
+                       result.toLowerCase().includes("pine") ||
+                       result.toLowerCase().includes("var ") ||
+                       result.includes("//"));
+
+      console.log(`[AUDIT DEBUG] ${name} validation: ${isValid ? "✓ PASS" : "✗ FAIL"}`);
+
+      if (isValid) {
+        auditText = result;
+        successAgent = name;
+        console.log(`[AUDIT] ✓ ${name} succeeded (${result.length} chars)`);
+        break;  // STOP HERE, don't overwrite with next agent
+      } else {
+        console.log(`[AUDIT] ${name} failed validation`);
+      }
     }
 
-    // 3. Final fallback: Claude
-    if (auditText.includes("[Error") || auditText.length < 400 || !auditText.includes("strategy.")) {
-        console.log(`[AUDIT 3/3] Using Claude as final fallback...`);
-        auditText = await this.callAgent(this.agents.claude, userPrompt);
+    // If ALL agents failed, return error (never lose working code)
+    let ruleCheck = null;
+    if (!auditText) {
+      auditText = "[Error: All code generation agents exhausted]";
+      console.log(`[AUDIT] ✗ All agents failed`);
+    } else {
+      // Run static anti-cheat linter on successful code (non-blocking)
+      ruleCheck = this.validatePineScriptRules(auditText);
+      console.log(`[AUDIT LINT] passed=${ruleCheck.passed}, violations=${ruleCheck.violations.length}, warnings=${ruleCheck.warnings.length}`);
+      if (ruleCheck.violations.length > 0) {
+        console.warn(`[AUDIT LINT] Violations:`, ruleCheck.violations);
+      }
+      if (ruleCheck.warnings.length > 0) {
+        console.warn(`[AUDIT LINT] Warnings:`, ruleCheck.warnings);
+      }
     }
 
     console.log(`[AUDIT] Code generation finished (${auditText.length} chars)`);
@@ -456,6 +605,8 @@ Requirements:
     return {
         synthesis: synthesis.synthesis,
         auditNotes: auditText,
+        successAgent: successAgent,
+        ruleCheck: ruleCheck,
         confidence: 0.82
     };
   }
@@ -503,7 +654,34 @@ Requirements:
   async runReflexion() { console.log('[REFLEXION] Lesson extracted.'); return "Lesson learned."; }
   async writeCodeToWorkspace(taskId, codeArtifact) {
     console.log(`[MCP] Code ready: ${codeArtifact.code?.substring(0, 100)}...`);
-    return { success: true, filepath: `generated_strategies/strategy_${taskId}.pine` };
+
+    // Node.js context: write to disk
+    if (typeof require !== 'undefined') {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+
+        const strategyDir = path.join(this.workspacePath, 'generated_strategies');
+        const filepath = path.join(strategyDir, `strategy_${taskId}.pine`);
+
+        // Create directory if missing
+        if (!fs.existsSync(strategyDir)) {
+          fs.mkdirSync(strategyDir, { recursive: true });
+        }
+
+        // Write the Pine Script code
+        fs.writeFileSync(filepath, codeArtifact.code || '[Empty code artifact]', 'utf8');
+        console.log(`[MCP] Pine Script written: ${filepath}`);
+        return { success: true, filepath, context: 'Node.js', size: (codeArtifact.code || '').length };
+      } catch (err) {
+        console.error(`[MCP] File write failed: ${err.message}`);
+        return { success: false, error: err.message, context: 'Node.js' };
+      }
+    }
+
+    // Browser context: no fs access
+    console.warn('[MCP] Running in browser context - fs write unavailable');
+    return { success: false, reason: 'browser context - no fs access', filepath: `<client-side-only: generated_strategies/strategy_${taskId}.pine>` };
   }
 
   async callGraphify(analysisData) {

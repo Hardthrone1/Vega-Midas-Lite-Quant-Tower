@@ -1,9 +1,22 @@
+# --- Node & Environment ---
 node_modules/
 dist/
 build/
-*.log
 .env
 .env.local
+.cache/
+temp/
+tmp/
+*.log
+
+# --- Python & Lab Environment ---
+__pycache__/
+*.pyc
+venv/
+.venv/
+.ipynb_checkpoints/
+
+# --- IDE & OS Noise ---
 .DS_Store
 Thumbs.db
 *.swp
@@ -11,10 +24,18 @@ Thumbs.db
 *~
 .idea/
 .vscode/
-*.lock
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-.cache/
-temp/
-tmp/
+
+# --- Lock Files (Keep these tracked) ---
+# We keep lock files so your dependencies are identical on every machine.
+# Remove these if you want to force fresh installs every time.
+!package-lock.json
+!yarn.lock
+
+# --- CRITICAL: QUANT LAB DATA (Local Only) ---
+# NEVER sync these. They are too large and contain local proprietary data.
+*.csv
+*.bin
+*.db
+*.dat
+/ObsidianVault/
+/DataArchives/
