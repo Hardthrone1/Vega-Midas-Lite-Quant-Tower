@@ -1,4 +1,6 @@
-# --- Node & Environment ---
+# --- MIDAS Hardened .gitignore ---
+
+# Node & Environment
 node_modules/
 dist/
 build/
@@ -9,14 +11,14 @@ temp/
 tmp/
 *.log
 
-# --- Python & Lab Environment ---
+# Python & Lab Environment
 __pycache__/
 *.pyc
 venv/
 .venv/
 .ipynb_checkpoints/
 
-# --- IDE & OS Noise ---
+# IDE & OS Noise
 .DS_Store
 Thumbs.db
 *.swp
@@ -25,14 +27,11 @@ Thumbs.db
 .idea/
 .vscode/
 
-# --- Lock Files (Keep these tracked) ---
-# We keep lock files so your dependencies are identical on every machine.
-# Remove these if you want to force fresh installs every time.
+# Lock Files (Tracked)
 !package-lock.json
 !yarn.lock
 
-# --- CRITICAL: QUANT LAB DATA (Local Only) ---
-# NEVER sync these. They are too large and contain local proprietary data.
+# CRITICAL: QUANT LAB DATA (Local Only)
 *.csv
 *.bin
 *.db
