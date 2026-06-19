@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MIDAS :: Quant Lab</title>
-<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="lightweight-charts.standalone.production.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
@@ -26,89 +26,80 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
-  height: 100%;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'JetBrains Mono', monospace;
-  -webkit-font-smoothing: antialiased;
-}
-
+html, body { height: 100%; background: var(--bg); color: var(--ink);
+  font-family: 'JetBrains Mono', monospace; -webkit-font-smoothing: antialiased; }
 body {
-  display: flex; flex-direction: column;
-  padding: 14px; gap: 12px; overflow: hidden;
+  display: flex; flex-direction: column; padding: 14px; gap: 12px; overflow: hidden;
   background:
     radial-gradient(1200px 600px at 80% -10%, rgba(110,168,254,0.06), transparent 60%),
     radial-gradient(900px 500px at -5% 110%, rgba(45,212,167,0.05), transparent 55%),
     var(--bg);
 }
 
-.panel {
-  background: linear-gradient(180deg, var(--panel-1) 0%, var(--panel-2) 100%);
-  border: 1px solid var(--line); border-radius: 16px;
-}
+.panel { background: linear-gradient(180deg, var(--panel-1) 0%, var(--panel-2) 100%);
+  border: 1px solid var(--line); border-radius: 16px; }
+h3.eyebrow { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 600; }
 
-h3.eyebrow {
-  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--ink-faint); font-weight: 600;
-}
-
-/* HEADER */
+/* ── HEADER ── */
 header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; }
 .brand { display: flex; align-items: baseline; gap: 12px; }
 .brand .logo {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 26px; font-weight: 700; letter-spacing: -0.03em;
+  font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700;
+  letter-spacing: -0.03em;
   background: linear-gradient(92deg, var(--bull), var(--sweep));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .brand .ver { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.18em; }
 .head-right { display: flex; align-items: center; gap: 18px; }
 .live { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
-.dot {
-  height: 8px; width: 8px; border-radius: 50%;
-  background: var(--bull);
-  box-shadow: 0 0 0 0 var(--bull-glow);
-  animation: pulse 2.2s infinite;
-  transition: background 0.3s;
-  flex-shrink: 0;
-}
+.dot { height: 8px; width: 8px; border-radius: 50%; background: var(--bull);
+  box-shadow: 0 0 0 0 var(--bull-glow); animation: pulse 2.2s infinite; transition: background 0.3s; flex-shrink: 0; }
 @keyframes pulse {
   0%   { box-shadow: 0 0 0 0 var(--bull-glow); }
   70%  { box-shadow: 0 0 0 7px rgba(45,212,167,0); }
   100% { box-shadow: 0 0 0 0 rgba(45,212,167,0); }
 }
-.chip {
-  font-size: 11px; color: var(--ink-dim);
-  padding: 6px 12px;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid var(--line); border-radius: 999px;
-}
+.chip { font-size: 11px; color: var(--ink-dim); padding: 6px 12px;
+  background: rgba(0,0,0,0.35); border: 1px solid var(--line); border-radius: 999px; }
 .chip b { color: var(--bull); font-weight: 600; }
 
-/* BODY */
-.body { display: flex; flex: 1; gap: 12px; min-height: 0; }
+/* ── TAB NAV ── */
+.tab-nav { display: flex; gap: 4px; background: rgba(0,0,0,0.3);
+  border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.tab-btn {
+  padding: 7px 20px; border-radius: 8px; font-family: inherit; font-size: 11px;
+  font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase;
+  cursor: pointer; border: none; background: transparent; color: var(--ink-faint);
+  transition: background .15s, color .15s;
+}
+.tab-btn:hover { color: var(--ink-dim); }
+.tab-btn.active { background: var(--panel-1); color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line-hi); }
+.tab-btn[data-tab="replay"].active { color: var(--bull); }
+.tab-btn[data-tab="swarm"].active  { color: var(--struct); }
+.tab-btn[data-tab="vault"].active  { color: var(--vol); }
+
+/* ── TAB PANELS ── */
+.tab-panel { display: none; flex: 1; min-height: 0; }
+.tab-panel.active { display: flex; }
+
+/* ── REPLAY TAB (original layout) ── */
+#tab-replay { gap: 12px; }
 aside { width: 264px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 main  { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 
-/* ASSET */
 .asset { padding: 20px; }
-.asset .sym {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 46px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--ink);
-}
+.asset .sym { font-family: 'Space Grotesk', sans-serif; font-size: 46px; font-weight: 700;
+  letter-spacing: -0.04em; line-height: 1; color: var(--ink); }
 .asset .row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .asset .name { color: var(--ink-dim); font-size: 13px; }
 .asset .chg  { font-weight: 700; font-size: 14px; }
-.asset .meta {
-  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 8px; font-size: 11px;
-}
+.asset .meta { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 8px; font-size: 11px; }
 .asset .meta div span { display: block; color: var(--ink-faint); margin-bottom: 2px; }
 .asset .meta div b   { font-weight: 600; color: var(--ink); }
 
-/* ORDER FLOW */
 .flow { padding: 18px 18px 20px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .flow .legend { display: flex; gap: 14px; margin: 10px 0 14px; font-size: 10px; color: var(--ink-dim); }
 .flow .legend i { display: inline-block; height: 8px; width: 8px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
@@ -117,41 +108,29 @@ main  { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0
 .bar.b { background: linear-gradient(180deg, var(--bull) 0%, transparent 95%); }
 .bar.s { background: linear-gradient(180deg, var(--bear) 0%, transparent 95%); }
 
-/* REPLAY */
 .replay { padding: 18px; }
-.btn {
-  width: 100%; padding: 14px; border-radius: 12px;
-  font-family: inherit; font-weight: 700; font-size: 13px; letter-spacing: 0.04em;
-  cursor: pointer; transition: transform .08s, background .15s, border-color .15s, opacity .2s;
-  background: rgba(110,168,254,0.08); border: 1px solid var(--struct); color: var(--struct);
-}
+.btn { width: 100%; padding: 14px; border-radius: 12px; font-family: inherit; font-weight: 700;
+  font-size: 13px; letter-spacing: 0.04em; cursor: pointer;
+  transition: transform .08s, background .15s, border-color .15s, opacity .2s;
+  background: rgba(110,168,254,0.08); border: 1px solid var(--struct); color: var(--struct); }
 .btn:not(:disabled):hover  { background: rgba(110,168,254,0.16); }
 .btn:not(:disabled):active { transform: scale(0.975); }
 .btn:disabled { cursor: not-allowed; }
 .btn-row { display: flex; gap: 8px; margin-top: 10px; }
-.btn-ghost {
-  flex: 1; padding: 11px; border-radius: 10px;
-  font-family: inherit; font-size: 11px; font-weight: 500;
-  cursor: pointer; transition: border-color .15s, color .15s;
-  background: transparent; border: 1px solid var(--line-hi); color: var(--ink-dim);
-}
+.btn-ghost { flex: 1; padding: 11px; border-radius: 10px; font-family: inherit; font-size: 11px;
+  font-weight: 500; cursor: pointer; transition: border-color .15s, color .15s;
+  background: transparent; border: 1px solid var(--line-hi); color: var(--ink-dim); }
 .btn-ghost:hover { border-color: var(--ink-faint); color: var(--ink); }
 
-/* CHART */
 .chart-wrap { flex: 1; padding: 14px; position: relative; min-height: 0; }
 .chart-wrap .eyebrow { position: absolute; top: 16px; left: 20px; z-index: 5; }
-.chart-wrap .price-tag {
-  position: absolute; top: 16px; right: 20px; z-index: 5;
-  font-size: 12px; color: var(--ink-dim);
-}
+.chart-wrap .price-tag { position: absolute; top: 16px; right: 20px; z-index: 5;
+  font-size: 12px; color: var(--ink-dim); }
 .chart-wrap .price-tag b { color: var(--ink); font-weight: 600; }
 #chart { width: 100%; height: 100%; }
 
-/* LOG */
 .log { height: 230px; padding: 16px 18px; display: flex; flex-direction: column; }
 .log-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.log-head .counts { display: flex; gap: 12px; font-size: 10px; color: var(--ink-faint); }
-.log-head .counts span b { color: var(--ink-dim); font-weight: 600; }
 .log-list { flex: 1; overflow-y: auto; font-size: 12px; line-height: 1.55; padding-right: 8px; }
 .log-list::-webkit-scrollbar { width: 5px; }
 .log-list::-webkit-scrollbar-thumb { background: var(--line-hi); border-radius: 999px; }
@@ -166,20 +145,146 @@ main  { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0
 .log-row.info   .tag { color: var(--ink-faint); }
 .log-row .msg { color: var(--ink-dim); }
 
-footer { text-align: center; font-size: 10px; color: var(--ink-faint); letter-spacing: 0.04em; }
+/* ── SWARM TAB ── */
+#tab-swarm { gap: 12px; flex-direction: column; }
+.swarm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; overflow-y: auto; }
+.swarm-grid::-webkit-scrollbar { width: 5px; }
+.swarm-grid::-webkit-scrollbar-thumb { background: var(--line-hi); border-radius: 999px; }
 
-@media (max-width: 900px) { aside { width: 220px; } .asset .sym { font-size: 38px; } }
+.gw-panel { padding: 18px; }
+.gw-status { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.gw-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-faint); flex-shrink: 0; transition: background .3s; }
+.gw-dot.online  { background: var(--bull); box-shadow: 0 0 6px var(--bull-glow); }
+.gw-dot.offline { background: var(--bear); }
+.gw-label { font-size: 13px; font-weight: 600; }
+.gw-meta { font-size: 11px; color: var(--ink-faint); margin-top: 4px; }
+
+.agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.agent-card { padding: 10px 12px; background: rgba(0,0,0,0.25);
+  border: 1px solid var(--line); border-radius: 10px; }
+.agent-card .a-name { font-size: 11px; font-weight: 600; color: var(--ink); }
+.agent-card .a-role { font-size: 10px; color: var(--ink-faint); margin-top: 2px; }
+.agent-card .a-model { font-size: 9px; color: var(--struct); margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-card .a-tier { font-size: 9px; padding: 2px 6px; border-radius: 4px;
+  background: rgba(45,212,167,0.12); color: var(--bull); display: inline-block; margin-top: 4px; }
+
+.pine-panel { padding: 18px; display: flex; flex-direction: column; }
+.pine-out { flex: 1; margin-top: 12px; background: rgba(0,0,0,0.4);
+  border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+  font-size: 11px; color: var(--ink-dim); overflow-y: auto; white-space: pre-wrap;
+  min-height: 120px; max-height: 300px; line-height: 1.6; }
+.pine-out::-webkit-scrollbar { width: 4px; }
+.pine-out::-webkit-scrollbar-thumb { background: var(--line-hi); border-radius: 999px; }
+.pine-out .kw  { color: var(--struct); }
+.pine-out .str { color: var(--sweep); }
+.pine-out .cmt { color: var(--ink-faint); }
+
+.btn-swarm { width: 100%; padding: 13px; border-radius: 12px; font-family: inherit;
+  font-weight: 700; font-size: 12px; letter-spacing: 0.06em; cursor: pointer;
+  background: rgba(110,168,254,0.10); border: 1px solid var(--struct); color: var(--struct);
+  transition: background .15s, transform .08s; margin-top: 12px; }
+.btn-swarm:hover   { background: rgba(110,168,254,0.20); }
+.btn-swarm:active  { transform: scale(0.975); }
+.btn-swarm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.lint-result { margin-top: 10px; padding: 10px 12px; border-radius: 8px;
+  font-size: 11px; line-height: 1.6; }
+.lint-result.pass { background: rgba(45,212,167,0.08); border: 1px solid rgba(45,212,167,0.25); color: var(--bull); }
+.lint-result.fail { background: rgba(240,80,110,0.08); border: 1px solid rgba(240,80,110,0.25); color: var(--bear); }
+.lint-result.warn { background: rgba(244,166,35,0.08); border: 1px solid rgba(244,166,35,0.25); color: var(--sweep); }
+
+/* ── SWARM MODE TOGGLE ── */
+.mode-toggle { display: flex; gap: 4px; background: rgba(0,0,0,0.3);
+  border: 1px solid var(--line); border-radius: 10px; padding: 3px; margin-bottom: 14px; }
+.mode-btn { flex: 1; padding: 7px 12px; border-radius: 7px; font-family: inherit; font-size: 10px;
+  font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; cursor: pointer;
+  border: none; background: transparent; color: var(--ink-faint); transition: background .15s, color .15s; }
+.mode-btn.active { background: var(--panel-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-hi); }
+.mode-btn[data-mode="generate"].active { color: var(--struct); }
+.mode-btn[data-mode="repair"].active   { color: var(--sweep); }
+.mode-pane { display: none; }
+.mode-pane.active { display: flex; flex-direction: column; }
+
+/* ── REPAIR PANEL ── */
+.repair-input {
+  width: 100%; flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--ink); resize: vertical; min-height: 140px;
+  line-height: 1.6; outline: none; transition: border-color .15s; }
+.repair-input:focus { border-color: var(--sweep); }
+.repair-input::placeholder { color: var(--ink-faint); }
+.repair-request {
+  width: 100%; background: rgba(0,0,0,0.35); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--ink); outline: none; transition: border-color .15s;
+  margin-top: 8px; }
+.repair-request:focus { border-color: var(--sweep); }
+.repair-request::placeholder { color: var(--ink-faint); }
+.btn-repair { width: 100%; padding: 13px; border-radius: 12px; font-family: inherit;
+  font-weight: 700; font-size: 12px; letter-spacing: 0.06em; cursor: pointer;
+  background: rgba(244,166,35,0.10); border: 1px solid var(--sweep); color: var(--sweep);
+  transition: background .15s, transform .08s; margin-top: 10px; }
+.btn-repair:hover   { background: rgba(244,166,35,0.20); }
+.btn-repair:active  { transform: scale(0.975); }
+.btn-repair:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── AGENT MESSAGE WINDOW ── */
+.agent-window { display: flex; flex-direction: column; min-height: 0; }
+.agent-msgs { flex: 1; overflow-y: auto; padding: 10px 4px 4px;
+  display: flex; flex-direction: column; gap: 6px; min-height: 80px; max-height: 220px; }
+.agent-msgs::-webkit-scrollbar { width: 4px; }
+.agent-msgs::-webkit-scrollbar-thumb { background: var(--line-hi); border-radius: 999px; }
+.agent-msg { display: flex; gap: 10px; font-size: 11px; line-height: 1.55; padding: 2px 0; }
+.agent-msg .am-who { flex-shrink: 0; width: 72px; font-weight: 600; }
+.agent-msg .am-txt { color: var(--ink-dim); }
+.agent-msg.sys   .am-who { color: var(--ink-faint); }
+.agent-msg.route .am-who { color: var(--struct); }
+.agent-msg.lint  .am-who { color: var(--sweep); }
+.agent-msg.ok    .am-who { color: var(--bull); }
+.agent-msg.err   .am-who { color: var(--bear); }
+.agent-msg.work  .am-who { color: var(--vol); }
+
+/* ── VAULT TAB ── */
+#tab-vault { gap: 12px; flex-direction: column; }
+.vault-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; }
+.vault-list { flex: 1; overflow-y: auto; padding: 0 4px 4px; display: flex; flex-direction: column; gap: 8px; }
+.vault-list::-webkit-scrollbar { width: 5px; }
+.vault-list::-webkit-scrollbar-thumb { background: var(--line-hi); border-radius: 999px; }
+.vault-item { padding: 14px 18px; border-radius: 12px;
+  background: linear-gradient(180deg, var(--panel-1) 0%, var(--panel-2) 100%);
+  border: 1px solid var(--line); display: flex; align-items: center; gap: 14px; }
+.vault-item .vi-icon { font-size: 18px; flex-shrink: 0; }
+.vault-item .vi-body { flex: 1; min-width: 0; }
+.vault-item .vi-name { font-size: 13px; font-weight: 600; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vault-item .vi-meta { font-size: 10px; color: var(--ink-faint); margin-top: 3px; }
+.vault-item .vi-lint { font-size: 10px; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+.vault-item .vi-lint.pass { background: rgba(45,212,167,0.12); color: var(--bull); }
+.vault-item .vi-lint.fail { background: rgba(240,80,110,0.12); color: var(--bear); }
+.vault-item .vi-lint.unk  { background: rgba(90,101,119,0.20); color: var(--ink-faint); }
+.vault-empty { text-align: center; padding: 60px 20px; color: var(--ink-faint); font-size: 12px; line-height: 2; }
+
+footer { text-align: center; font-size: 10px; color: var(--ink-faint); letter-spacing: 0.04em; }
+@media (max-width: 900px) { aside { width: 220px; } .asset .sym { font-size: 38px; } .swarm-grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .dot { animation: none; } .bar { transition: none; } }
 </style>
 </head>
 <body>
 
+<!-- ══════════════════ HEADER ══════════════════ -->
 <header class="panel">
   <div class="brand">
     <span class="logo">MIDAS</span>
-    <span class="ver">QUANT LAB · v0.4</span>
+    <span class="ver">QUANT LAB · v0.6.1</span>
   </div>
   <div class="head-right">
+    <!-- Tab Nav -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="replay">▶ Replay</button>
+      <button class="tab-btn"        data-tab="swarm">⬡ Swarm</button>
+      <button class="tab-btn"        data-tab="vault">◈ Vault</button>
+    </nav>
     <div class="live">
       <span class="dot" id="conn-dot"></span>
       <span id="live-label" style="color:var(--sweep)">CONNECTING…</span>
@@ -188,7 +293,8 @@ footer { text-align: center; font-size: 10px; color: var(--ink-faint); letter-sp
   </div>
 </header>
 
-<div class="body">
+<!-- ══════════════════ TAB 1: REPLAY ══════════════════ -->
+<div class="tab-panel active" id="tab-replay">
   <aside>
     <div class="panel asset">
       <h3 class="eyebrow">Current asset</h3>
@@ -230,133 +336,244 @@ footer { text-align: center; font-size: 10px; color: var(--ink-faint); letter-sp
       <div class="price-tag">O <b id="t-o">—</b> · H <b id="t-h">—</b> · L <b id="t-l">—</b> · C <b id="t-c">—</b></div>
       <div id="chart"></div>
     </div>
-
     <div class="panel log">
       <div class="log-head">
         <h3 class="eyebrow">Execution &amp; validation log</h3>
-        <div class="counts">
-          <span><b id="log-count">0</b> events</span>
-        </div>
+        <span style="font-size:10px;color:var(--ink-faint)"><b id="log-count">0</b> events</span>
       </div>
       <div class="log-list" id="log-list"></div>
     </div>
   </main>
 </div>
 
-<footer>MIDAS v0.4 · Zero-Lookahead · Bar-Close Confirmed · MRE WebSocket Bridge</footer>
+<!-- ══════════════════ TAB 2: SWARM ══════════════════ -->
+<div class="tab-panel" id="tab-swarm">
+  <div class="swarm-grid">
+
+    <!-- LEFT COL: Gateway + Agent Window -->
+    <div style="display:flex;flex-direction:column;gap:12px;min-height:0;">
+
+      <!-- Gateway Status -->
+      <div class="panel gw-panel">
+        <h3 class="eyebrow">Gateway · Port 8001</h3>
+        <div class="gw-status">
+          <span class="gw-dot" id="gw-dot"></span>
+          <span class="gw-label" id="gw-label">Checking…</span>
+        </div>
+        <div class="gw-meta" id="gw-meta">—</div>
+        <div class="agent-grid" id="agent-grid"></div>
+      </div>
+
+      <!-- Agent Message Window -->
+      <div class="panel gw-panel agent-window" style="flex:1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <h3 class="eyebrow">Agent Messages</h3>
+          <button id="btn-clear-msgs" style="font-size:9px;padding:3px 8px;border-radius:5px;
+            background:transparent;border:1px solid var(--line-hi);color:var(--ink-faint);
+            cursor:pointer;font-family:inherit;">CLEAR</button>
+        </div>
+        <div class="agent-msgs" id="agent-msgs">
+          <div class="agent-msg sys"><span class="am-who">MIDAS</span><span class="am-txt">Agent message window ready.</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COL: Generate / Repair modes -->
+    <div style="display:flex;flex-direction:column;gap:12px;min-height:0;">
+
+      <!-- Mode Toggle -->
+      <div class="panel gw-panel" style="display:flex;flex-direction:column;">
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="generate">⬡ Generate</button>
+          <button class="mode-btn"        data-mode="repair">⚙ Repair</button>
+        </div>
+
+        <!-- GENERATE pane -->
+        <div class="mode-pane active" id="pane-generate">
+          <div style="font-size:11px;color:var(--ink-faint);line-height:1.7;margin-bottom:12px;">
+            Sends current replay context to the Swarm.<br>
+            Output is linted by the anti-cheat validator.
+          </div>
+          <button class="btn-swarm" id="btn-generate" disabled>⬡  GENERATE PINE SCRIPT</button>
+          <div id="lint-out" style="display:none" class="lint-result"></div>
+        </div>
+
+        <!-- REPAIR pane -->
+        <div class="mode-pane" id="pane-repair">
+          <div style="font-size:11px;color:var(--ink-faint);line-height:1.7;margin-bottom:10px;">
+            Paste any Pine Script. Describe what to fix — or leave blank to auto-diagnose.
+          </div>
+          <textarea class="repair-input" id="repair-input"
+            placeholder="Paste Pine Script here…&#10;&#10;//@version=5&#10;strategy(...)&#10;..."></textarea>
+          <input class="repair-request" id="repair-request"
+            placeholder="What to fix? e.g. fix SL/TP, remove repainting, add session filter, add barstate.isconfirmed…" />
+          <button class="btn-repair" id="btn-repair" disabled>⚙  REPAIR PINE SCRIPT</button>
+          <div id="repair-lint-out" style="display:none" class="lint-result"></div>
+        </div>
+      </div>
+
+      <!-- Pine Output (shared by both modes) -->
+      <div class="panel gw-panel" style="flex:1;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h3 class="eyebrow" id="pine-out-label">Output</h3>
+          <div style="display:flex;gap:6px;">
+            <button id="btn-validate-tv" style="font-size:10px;padding:4px 10px;border-radius:6px;
+              background:rgba(45,212,167,0.10);border:1px solid var(--bull);color:var(--bull);
+              cursor:pointer;font-family:inherit;display:none">▶ VALIDATE ON TRADINGVIEW</button>
+            <button id="btn-copy-pine" style="font-size:10px;padding:4px 10px;border-radius:6px;
+              background:rgba(110,168,254,0.10);border:1px solid var(--struct);color:var(--struct);
+              cursor:pointer;font-family:inherit;display:none">COPY</button>
+          </div>
+        </div>
+        <div class="pine-out" id="pine-out" style="flex:1;max-height:none;">Awaiting…</div>
+        <div id="tv-validate-out" style="display:none" class="lint-result"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TAB 3: VAULT ══════════════════ -->
+<div class="tab-panel" id="tab-vault">
+  <div style="display:flex;flex-direction:column;flex:1;gap:12px;min-height:0;">
+    <div class="panel" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <h3 class="eyebrow">Generated Strategies</h3>
+      <span style="font-size:11px;color:var(--ink-faint)">
+        <b id="vault-count" style="color:var(--vol)">0</b> files · <code style="color:var(--ink-faint);font-size:10px">generated_strategies/</code>
+      </span>
+    </div>
+    <div class="vault-list" id="vault-list">
+      <div class="vault-empty">
+        No strategies generated yet.<br>
+        Go to <b style="color:var(--struct)">Swarm</b> tab → Generate Pine Script.
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>MIDAS v0.6.1 · Zero-Lookahead · Bar-Close Confirmed · MRE WebSocket Bridge · Gateway Port 8001 · Pine Repair Engine</footer>
 
 <script>
-// ============================================================
-// MIDAS Quant Lab — WebSocket Engine v1.1
-// ============================================================
-//
-// ARCHITECTURE: Response-driven, zero-lookahead, bar-close only.
-//   AUTO mode requests the next bar only after the current one
-//   is received and rendered — never on a fixed timer.
-//   This prevents request queuing and guarantees backpressure.
-//
-// SERVER (MRE_Server.py) → CLIENT message contract:
-//
-//   { type: "HISTORY",  data: [{time, open, high, low, close}, ...] }
-//   { type: "BAR_DATA", data:  {time, open, high, low, close}       }
-//   { type: "EOF"                                                    }
-//   { type: "RESET_OK"                                               }
-//   { type: "ERROR",    message: "..."                               }
-//
-//   TIMESTAMP CONTRACT: `time` must be Unix epoch seconds (UTC).
-//   Never reconstruct dates in JS — use bar.time directly.
-//   Python: int(datetime_obj.timestamp()) gives the correct value.
-//
-// CLIENT → SERVER commands:
-//   { command: "NEXT_BAR" }
-//   { command: "RESET"    }
-//
-// AUTO-RECONNECT: exponential backoff, 1s → 2s → 4s … capped at 30s.
-//   Resets to 1s on successful open.
-// ============================================================
+'use strict';
 
+// ═══════════════════════════════════════════════════════════════
+// MIDAS Quant Lab v0.5 — Three-Tab Architecture
+//
+// Tab 1 REPLAY  — WebSocket bar replay engine (unchanged from v0.4)
+// Tab 2 SWARM   — Gateway health + code generation trigger
+// Tab 3 VAULT   — In-memory strategy store (generated this session)
+//
+// WebSocket stays alive across all tab switches — no reconnect on tab change.
+// ═══════════════════════════════════════════════════════════════
+
+// ── CONFIG ──────────────────────────────────────────────────────
 const WS_URL          = 'ws://127.0.0.1:8002/ws/stream';
-const AUTO_DELAY_MS   = 80;    // ms between response and next AUTO request
-const RECONNECT_BASE  = 1000;  // ms
-const RECONNECT_MAX   = 30000; // ms
+const GW_URL          = 'http://127.0.0.1:8001';
+const AUTO_DELAY_MS   = 80;
+const RECONNECT_BASE  = 1000;
+const RECONNECT_MAX   = 30000;
 const ATR_PERIOD      = 14;
 const BAR_HISTORY_MAX = 500;
+const GW_POLL_MS      = 8000;  // gateway health check interval
 
-// Single source of truth — never scatter state into loose vars
+// ── STATE ────────────────────────────────────────────────────────
 const S = {
+  // replay
   ws:             null,
   chart:          null,
   candle:         null,
-  bars:           [],        // closed bar history (capped at BAR_HISTORY_MAX)
-  sessionOpen:    null,      // first bar close for session %chg
+  bars:           [],
+  sessionOpen:    null,
   barCount:       0,
   autoPlaying:    false,
   reconnectDelay: RECONNECT_BASE,
   reconnectTimer: null,
-  wsErrored:      false,     // flag: suppress onclose ERR when onerror already fired
+  wsErrored:      false,
   logCount:       0,
-  viewFitted:     false,     // fit chart once on first data, then scrollToRealTime
+  viewFitted:     false,
+  // swarm
+  gatewayOnline:  false,
+  generating:     false,
+  lastOutputCode: '',
+  validating:     false,
+  // vault (in-memory this session)
+  strategies:     [],
 };
 
+// Known agents from Orchestrator v1.5 — displayed in Swarm tab
+const AGENTS = [
+  { name: 'Hermes',    role: 'Router · Primary',       model: 'qwen/qwen3-next-80b',              tier: 'FREE' },
+  { name: 'Qwen',      role: 'Vision + Reasoning',     model: 'meta-llama/llama-3.1-8b',          tier: 'FREE' },
+  { name: 'Nemotron',  role: 'Quant + Logic',          model: 'hermes-3-llama-3.1-405b',          tier: 'FREE' },
+  { name: 'Gemini',    role: 'Fast Synthesis',         model: 'google/gemma-4-31b-it',            tier: 'FREE' },
+  { name: 'Claude',    role: 'Pine Script Authority',  model: 'claude-haiku-4-5',                 tier: 'FREE' },
+  { name: 'Nex',       role: 'Agentic Coding',         model: 'nex-agi/nex-n2-pro',               tier: 'FREE' },
+];
+
+// ── UTILS ────────────────────────────────────────────────────────
 const $    = id => document.getElementById(id);
 const fmt  = v  => v == null ? '—' : (+v).toFixed(2);
 const fmtP = v  => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
 
-// ---- CHART -------------------------------------------------
+// ── TAB SWITCHING ────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-' + btn.dataset.tab).classList.add('active');
+
+    // Resize chart if switching back to replay
+    if (btn.dataset.tab === 'replay' && S.chart) {
+      setTimeout(() => {
+        S.chart.resize($('chart').clientWidth, $('chart').clientHeight);
+      }, 10);
+    }
+    // Refresh vault list when switching to vault tab
+    if (btn.dataset.tab === 'vault') renderVault();
+  });
+});
+
+// ── CHART ────────────────────────────────────────────────────────
 function initChart() {
   const el = $('chart');
   S.chart = LightweightCharts.createChart(el, {
     width:  el.clientWidth,
     height: el.clientHeight,
-    layout: {
-      background:  { color: 'transparent' },
-      textColor:   '#8893a7',
-      fontFamily:  'JetBrains Mono',
-    },
-    grid: {
-      vertLines: { color: 'rgba(140,160,200,0.05)' },
-      horzLines: { color: 'rgba(140,160,200,0.07)' },
-    },
+    layout: { background: { color: 'transparent' }, textColor: '#8893a7', fontFamily: 'JetBrains Mono' },
+    grid: { vertLines: { color: 'rgba(140,160,200,0.05)' }, horzLines: { color: 'rgba(140,160,200,0.07)' } },
     rightPriceScale: { borderColor: 'rgba(140,160,200,0.12)' },
-    timeScale: {
-      borderColor:    'rgba(140,160,200,0.12)',
-      timeVisible:    true,
-      secondsVisible: true,
-    },
+    timeScale: { borderColor: 'rgba(140,160,200,0.12)', timeVisible: true, secondsVisible: true },
     crosshair: {
-      mode:     LightweightCharts.CrosshairMode.Normal,
+      mode: LightweightCharts.CrosshairMode.Normal,
       vertLine: { color: 'rgba(110,168,254,0.4)', labelBackgroundColor: '#6ea8fe' },
       horzLine: { color: 'rgba(110,168,254,0.4)', labelBackgroundColor: '#6ea8fe' },
     },
-    handleScroll: true,
-    handleScale:  true,
+    handleScroll: true, handleScale: true,
   });
-
   S.candle = S.chart.addCandlestickSeries({
-    upColor:      '#2dd4a7',
-    downColor:    '#f0506e',
-    wickUpColor:  '#2dd4a7',
-    wickDownColor:'#f0506e',
-    borderVisible: false,
+    upColor: '#2dd4a7', downColor: '#f0506e',
+    wickUpColor: '#2dd4a7', wickDownColor: '#f0506e', borderVisible: false,
   });
 }
 
-// ---- CONNECTION STATUS (UI only) ---------------------------
+// ── CONNECTION STATUS ────────────────────────────────────────────
 const CONN = {
-  connecting:   { color: 'var(--sweep)', label: 'CONNECTING…',   anim: false },
-  connected:    { color: 'var(--bull)',  label: 'XAUUSD · LIVE',  anim: true  },
-  disconnected: { color: 'var(--bear)',  label: 'DISCONNECTED',   anim: false },
-  reconnecting: { color: 'var(--sweep)', label: 'RECONNECTING…',  anim: false },
+  connecting:   { color: 'var(--sweep)', label: 'CONNECTING…',  anim: false },
+  connected:    { color: 'var(--bull)',  label: 'XAUUSD · LIVE', anim: true  },
+  disconnected: { color: 'var(--bear)',  label: 'DISCONNECTED',  anim: false },
+  reconnecting: { color: 'var(--sweep)', label: 'RECONNECTING…', anim: false },
 };
 function setConnStatus(key) {
   const c = CONN[key];
-  $('conn-dot').style.background  = c.color;
-  $('conn-dot').style.animation   = c.anim ? '' : 'none';
-  $('live-label').textContent     = c.label;
-  $('live-label').style.color     = c.color;
+  $('conn-dot').style.background = c.color;
+  $('conn-dot').style.animation  = c.anim ? '' : 'none';
+  $('live-label').textContent    = c.label;
+  $('live-label').style.color    = c.color;
 }
 
-// ---- WEBSOCKET ---------------------------------------------
+// ── WEBSOCKET ────────────────────────────────────────────────────
 function connectMRE() {
   if (S.ws && S.ws.readyState <= WebSocket.OPEN) return;
   setConnStatus('connecting');
@@ -364,33 +581,27 @@ function connectMRE() {
   S.ws = new WebSocket(WS_URL);
 
   S.ws.onopen = () => {
-    S.reconnectDelay = RECONNECT_BASE; // reset backoff
+    S.reconnectDelay = RECONNECT_BASE;
     setConnStatus('connected');
     $('btn-next').disabled      = false;
     $('btn-next').style.opacity = '1';
     log('PASS', `MRE connected · ${WS_URL}`, 'pass');
   };
-
   S.ws.onmessage = (evt) => {
     let msg;
     try   { msg = JSON.parse(evt.data); }
     catch { log('ERR', `Malformed frame: ${String(evt.data).slice(0, 80)}`, 'err'); return; }
     dispatch(msg);
   };
-
   S.ws.onerror = () => {
     S.wsErrored = true;
     log('ERR', 'WebSocket error — connection failed or interrupted.', 'err');
   };
-
   S.ws.onclose = (e) => {
     stopAuto();
     $('btn-next').disabled      = true;
     $('btn-next').style.opacity = '0.4';
-    // Only log a second ERR if this wasn't caused by onerror (avoids duplicate)
-    if (!S.wsErrored && e.code !== 1000) {
-      log('ERR', `Connection closed (code ${e.code}).`, 'err');
-    }
+    if (!S.wsErrored && e.code !== 1000) log('ERR', `Connection closed (code ${e.code}).`, 'err');
     scheduleReconnect();
   };
 }
@@ -400,204 +611,132 @@ function scheduleReconnect() {
   setConnStatus('reconnecting');
   const delay = S.reconnectDelay;
   log('INFO', `Reconnecting in ${(delay / 1000).toFixed(0)}s…`, 'info');
-  S.reconnectTimer = setTimeout(() => {
-    S.reconnectTimer = null;
-    connectMRE();
-  }, delay);
+  S.reconnectTimer = setTimeout(() => { S.reconnectTimer = null; connectMRE(); }, delay);
   S.reconnectDelay = Math.min(S.reconnectDelay * 2, RECONNECT_MAX);
 }
 
-// ---- MESSAGE DISPATCH --------------------------------------
+// ── MESSAGE DISPATCH ─────────────────────────────────────────────
 function dispatch(msg) {
   switch (msg.type) {
-
     case 'HISTORY': {
-      // Bulk historical context — load chart in one shot on connect
       const hist = msg.data;
-      if (!Array.isArray(hist) || hist.length === 0) {
-        log('INFO', 'HISTORY received but empty — waiting for BAR_DATA.', 'info');
-        break;
-      }
-      S.bars        = hist.slice(-BAR_HISTORY_MAX);
-      S.barCount    = hist.length;
+      if (!Array.isArray(hist) || !hist.length) { log('INFO', 'HISTORY empty.', 'info'); break; }
+      S.bars = hist.slice(-BAR_HISTORY_MAX);
+      S.barCount = hist.length;
       S.sessionOpen = hist[0].close;
       S.candle.setData(hist);
       S.chart.timeScale().fitContent();
-      S.viewFitted  = true;
+      S.viewFitted = true;
       syncReadouts(hist[hist.length - 1]);
       renderOrderFlow();
       updateCounters();
       log('INFO', `${hist.length} history bars loaded · chart ready.`, 'info');
       break;
     }
-
     case 'BAR_DATA': {
       const b = msg.data;
-      if (!isValidBar(b)) {
-        log('ERR', `Invalid BAR_DATA: ${JSON.stringify(b)}`, 'err');
-        break;
-      }
+      if (!isValidBar(b)) { log('ERR', `Invalid BAR_DATA: ${JSON.stringify(b)}`, 'err'); break; }
       processBar(b);
-      // Response-driven AUTO — fire next request only after this bar is fully processed
-      if (S.autoPlaying) {
-        setTimeout(() => { if (S.autoPlaying) nextBar(); }, AUTO_DELAY_MS);
-      }
+      if (S.autoPlaying) setTimeout(() => { if (S.autoPlaying) nextBar(); }, AUTO_DELAY_MS);
       break;
     }
-
     case 'EOF':
       stopAuto();
       log('INFO', 'End of replay archive.', 'info');
       break;
-
     case 'RESET_OK':
-      S.bars        = [];
-      S.sessionOpen = null;
-      S.barCount    = 0;
-      S.viewFitted  = false;
+      S.bars = []; S.sessionOpen = null; S.barCount = 0; S.viewFitted = false;
       S.candle.setData([]);
-      clearReadouts();
-      renderOrderFlow();
-      updateCounters();
+      clearReadouts(); renderOrderFlow(); updateCounters();
       log('INFO', 'Replay reset · awaiting stream.', 'info');
       break;
-
     case 'ERROR':
       log('ERR', msg.message || 'Unspecified server error.', 'err');
       break;
-
     default:
       log('INFO', `Unknown msg type: "${msg.type}"`, 'info');
   }
 }
 
-// ---- BAR PROCESSING ----------------------------------------
+// ── BAR PROCESSING ───────────────────────────────────────────────
 function isValidBar(b) {
-  return (
-    b != null &&
-    typeof b.time  === 'number' && b.time > 0 &&
-    typeof b.open  === 'number' &&
-    typeof b.high  === 'number' &&
-    typeof b.low   === 'number' &&
-    typeof b.close === 'number' &&
-    b.high >= b.low &&
-    b.open  > 0 &&
-    b.close > 0
-  );
+  return b != null &&
+    typeof b.time === 'number' && b.time > 0 &&
+    typeof b.open === 'number' && typeof b.high === 'number' &&
+    typeof b.low  === 'number' && typeof b.close === 'number' &&
+    b.high >= b.low && b.open > 0 && b.close > 0;
 }
 
 function processBar(b) {
-  // Push to history before microstructure so prev bar is available
   S.bars.push(b);
   if (S.bars.length > BAR_HISTORY_MAX) S.bars.shift();
   S.barCount++;
-
-  // Update chart
   S.candle.update(b);
-
-  // Fit content on very first bar, then follow latest edge
-  if (!S.viewFitted) {
-    S.chart.timeScale().fitContent();
-    S.viewFitted = true;
-  } else {
-    S.chart.timeScale().scrollToRealTime();
-  }
-
-  syncReadouts(b);
-  renderOrderFlow();
-  updateCounters();
+  if (!S.viewFitted) { S.chart.timeScale().fitContent(); S.viewFitted = true; }
+  else S.chart.timeScale().scrollToRealTime();
+  syncReadouts(b); renderOrderFlow(); updateCounters();
   analyzeMicrostructure(b, S.bars);
 }
 
-// ---- MICROSTRUCTURE ANALYSIS (closed-bar only) -------------
 function analyzeMicrostructure(b, bars) {
   const body  = b.close - b.open;
   const range = b.high  - b.low;
   const prev  = bars.length >= 2 ? bars[bars.length - 2] : null;
-
-  if (range === 0) {
-    log('PASS', `Doji @ ${fmt(b.close)} · zero-range bar`, 'pass');
-    return;
-  }
-
+  if (range === 0) { log('PASS', `Doji @ ${fmt(b.close)} · zero-range bar`, 'pass'); return; }
   const bodyRatio = Math.abs(body) / range;
-
-  // 1. Liquidity sweeps (both directions) — highest priority
-  if (prev && b.low < prev.low && b.close > prev.low) {
+  if (prev && b.low < prev.low && b.close > prev.low)
     log('SWEEP', `Bullish sweep ↓${fmt(b.low)} · reclaimed ${fmt(prev.low)}`, 'sweep');
-
-  } else if (prev && b.high > prev.high && b.close < prev.high) {
+  else if (prev && b.high > prev.high && b.close < prev.high)
     log('SWEEP', `Bearish sweep ↑${fmt(b.high)} · rejected ${fmt(prev.high)}`, 'sweep');
-
-  // 2. Displacement / BOS (strong directional body)
-  } else if (bodyRatio > 0.72 && body > 0) {
+  else if (bodyRatio > 0.72 && body > 0)
     log('STRUCT', `Bullish BOS · ${(bodyRatio*100).toFixed(0)}% body @ ${fmt(b.close)}`, 'struct');
-
-  } else if (bodyRatio > 0.72 && body < 0) {
+  else if (bodyRatio > 0.72 && body < 0)
     log('STRUCT', `Bearish BOS · ${(bodyRatio*100).toFixed(0)}% body @ ${fmt(b.close)}`, 'struct');
-
-  // 3. Absorption / indecision
-  } else if (bodyRatio < 0.25) {
+  else if (bodyRatio < 0.25)
     log('VOL', `Absorption · body ${(bodyRatio*100).toFixed(0)}% of range @ ${fmt(b.close)}`, 'vol');
-
-  // 4. Clean bar
-  } else {
+  else
     log('PASS', `Bar #${S.barCount} closed · no signal`, 'pass');
-  }
 }
 
-// ---- ATR(14) — True Range, rolling window ------------------
 function calcATR(bars) {
   if (bars.length < 2) return null;
   const period = Math.min(ATR_PERIOD, bars.length - 1);
   const start  = bars.length - period;
   let sum = 0;
   for (let i = start; i < bars.length; i++) {
-    const c = bars[i], p = bars[i - 1];
-    sum += Math.max(
-      c.high - c.low,
-      Math.abs(c.high - p.close),
-      Math.abs(c.low  - p.close)
-    );
+    const c = bars[i], p = bars[i-1];
+    sum += Math.max(c.high-c.low, Math.abs(c.high-p.close), Math.abs(c.low-p.close));
   }
   return sum / period;
 }
 
-// ---- UI SYNC -----------------------------------------------
 function syncReadouts(b) {
-  $('t-o').textContent  = fmt(b.open);
-  $('t-h').textContent  = fmt(b.high);
-  $('t-l').textContent  = fmt(b.low);
-  $('t-c').textContent  = fmt(b.close);
+  $('t-o').textContent = fmt(b.open); $('t-h').textContent = fmt(b.high);
+  $('t-l').textContent = fmt(b.low);  $('t-c').textContent = fmt(b.close);
   $('last').textContent = fmt(b.close);
-
   const atr = calcATR(S.bars);
   $('atr').textContent = atr ? atr.toFixed(2) : '—';
-
   if (S.sessionOpen == null) S.sessionOpen = b.close;
   const chg = ((b.close - S.sessionOpen) / S.sessionOpen) * 100;
-  const ce  = $('chg');
+  const ce = $('chg');
   ce.textContent = fmtP(chg);
   ce.style.color = chg >= 0 ? 'var(--bull)' : 'var(--bear)';
 }
 
 function clearReadouts() {
   ['t-o','t-h','t-l','t-c','last','atr'].forEach(id => $(id).textContent = '—');
-  $('chg').textContent = '—';
-  $('chg').style.color = 'var(--ink-dim)';
+  $('chg').textContent = '—'; $('chg').style.color = 'var(--ink-dim)';
 }
 
 function renderOrderFlow() {
-  const wrap   = $('bars');
-  wrap.innerHTML = '';
-  const recent = S.bars.slice(-9);
-  if (!recent.length) return;
+  const wrap = $('bars'); wrap.innerHTML = '';
+  const recent = S.bars.slice(-9); if (!recent.length) return;
   const maxBody = Math.max(...recent.map(b => Math.abs(b.close - b.open)), 0.01);
   recent.forEach(b => {
     const up = b.close >= b.open;
     const h  = 25 + (Math.abs(b.close - b.open) / maxBody) * 70;
     const el = document.createElement('div');
-    el.className    = 'bar ' + (up ? 'b' : 's');
+    el.className = 'bar ' + (up ? 'b' : 's');
     el.style.height = h + '%';
     wrap.appendChild(el);
   });
@@ -608,73 +747,488 @@ function updateCounters() {
   $('log-count').textContent = S.logCount;
 }
 
-// ---- LOG ---------------------------------------------------
 function log(tag, msg, cls) {
   const list = $('log-list');
   const time = new Date().toLocaleTimeString('en-US', { hour12: false });
   const row  = document.createElement('div');
   row.className = 'log-row ' + cls;
-  row.innerHTML =
-    `<span class="t">${time}</span>` +
-    `<span class="tag">${tag}</span>` +
-    `<span class="msg">${msg}</span>`;
+  row.innerHTML = `<span class="t">${time}</span><span class="tag">${tag}</span><span class="msg">${msg}</span>`;
   list.appendChild(row);
   list.scrollTop = list.scrollHeight;
   S.logCount++;
   $('log-count').textContent = S.logCount;
 }
 
-// ---- REPLAY CONTROLS ---------------------------------------
 function nextBar() {
   if (!S.ws || S.ws.readyState !== WebSocket.OPEN) {
-    log('ERR', 'Cannot advance · WebSocket not connected.', 'err');
-    stopAuto();
-    return;
+    log('ERR', 'Cannot advance · WebSocket not connected.', 'err'); stopAuto(); return;
   }
   S.ws.send(JSON.stringify({ command: 'NEXT_BAR' }));
 }
 
 function startAuto() {
   if (S.autoPlaying) return;
-  S.autoPlaying                   = true;
-  $('btn-auto').textContent       = 'PAUSE';
-  $('btn-auto').style.color       = 'var(--sweep)';
+  S.autoPlaying = true;
+  $('btn-auto').textContent = 'PAUSE';
+  $('btn-auto').style.color = 'var(--sweep)';
   $('btn-auto').style.borderColor = 'var(--sweep)';
-  nextBar(); // kick off immediately; responses chain from here
+  nextBar();
 }
 
 function stopAuto() {
-  S.autoPlaying                   = false;
-  $('btn-auto').textContent       = 'AUTO';
-  $('btn-auto').style.color       = '';
+  S.autoPlaying = false;
+  $('btn-auto').textContent = 'AUTO';
+  $('btn-auto').style.color = '';
   $('btn-auto').style.borderColor = '';
 }
 
-// ---- LISTENERS ---------------------------------------------
 $('btn-next').addEventListener('click', () => { stopAuto(); nextBar(); });
 $('btn-auto').addEventListener('click', () => { S.autoPlaying ? stopAuto() : startAuto(); });
 $('btn-reset').addEventListener('click', () => {
   stopAuto();
-  if (S.ws?.readyState === WebSocket.OPEN) {
-    S.ws.send(JSON.stringify({ command: 'RESET' }));
+  if (S.ws?.readyState === WebSocket.OPEN) S.ws.send(JSON.stringify({ command: 'RESET' }));
+  else log('ERR', 'Cannot reset · not connected.', 'err');
+});
+
+// ── SWARM TAB ────────────────────────────────────────────────────
+
+// Agent message window
+function agentMsg(who, txt, cls = 'sys') {
+  const win  = $('agent-msgs');
+  const row  = document.createElement('div');
+  row.className = 'agent-msg ' + cls;
+  row.innerHTML = `<span class="am-who">${who}</span><span class="am-txt">${txt}</span>`;
+  win.appendChild(row);
+  win.scrollTop = win.scrollHeight;
+}
+
+$('btn-clear-msgs').addEventListener('click', () => {
+  $('agent-msgs').innerHTML =
+    '<div class="agent-msg sys"><span class="am-who">MIDAS</span><span class="am-txt">Cleared.</span></div>';
+});
+
+// Mode toggle
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mode-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('pane-' + btn.dataset.mode).classList.add('active');
+    // Enable repair button if pasting code
+    if (btn.dataset.mode === 'repair') {
+      $('btn-repair').disabled = !S.gatewayOnline || !$('repair-input').value.trim();
+    }
+  });
+});
+
+// Enable repair button when code is pasted
+$('repair-input').addEventListener('input', () => {
+  $('btn-repair').disabled = !S.gatewayOnline || !$('repair-input').value.trim();
+});
+
+function renderAgentGrid() {
+  const grid = $('agent-grid');
+  grid.innerHTML = AGENTS.map(a => `
+    <div class="agent-card">
+      <div class="a-name">${a.name}</div>
+      <div class="a-role">${a.role}</div>
+      <div class="a-model">${a.model}</div>
+      <span class="a-tier">${a.tier}</span>
+    </div>`).join('');
+}
+
+async function checkGateway() {
+  try {
+    const r = await fetch(`${GW_URL}/api/health`, { signal: AbortSignal.timeout(3000) });
+    const d = await r.json();
+    S.gatewayOnline = r.ok;
+    $('gw-dot').className    = 'gw-dot ' + (r.ok ? 'online' : 'offline');
+    $('gw-label').textContent = r.ok ? 'ONLINE' : 'OFFLINE';
+    $('gw-label').style.color = r.ok ? 'var(--bull)' : 'var(--bear)';
+    $('gw-meta').textContent  = r.ok
+      ? `v${d.version || '?'} · ${d.openrouter || '?'} · ${new Date(d.timestamp).toLocaleTimeString()}`
+      : 'Gateway not reachable — run: node MIDAS_Gateway_Server.js';
+    $('btn-generate').disabled = !r.ok;
+    if ($('repair-input').value.trim()) $('btn-repair').disabled = !r.ok;
+  } catch {
+    S.gatewayOnline = false;
+    $('gw-dot').className     = 'gw-dot offline';
+    $('gw-label').textContent = 'OFFLINE';
+    $('gw-label').style.color = 'var(--bear)';
+    $('gw-meta').textContent  = 'Gateway not reachable — run: node MIDAS_Gateway_Server.js';
+    $('btn-generate').disabled = true;
+    $('btn-repair').disabled   = true;
+  }
+}
+
+// Pine linter — mirrors Orchestrator validatePineScriptRules()
+function lintPine(code) {
+  const violations = [], warnings = [];
+  if (typeof code !== 'string') return { passed: false, violations: ['No code'], warnings: [] };
+  const hasEntry = /strategy\.entry\s*\(/i.test(code);
+  if (hasEntry && !code.includes('barstate.isconfirmed'))
+    violations.push('strategy.entry() without barstate.isconfirmed');
+  [/close\s*\[\s*-/i,
+   /\[bar_index\s*\+\s*\d/i,
+   /security\([^)]*lookahead\s*=\s*barmerge\.lookahead_on/i
+  ].forEach((p, i) => { if (p.test(code)) violations.push(`Lookahead pattern ${i+1} detected`); });
+  if (/security\s*\([^)]*lookahead/i.test(code))
+    violations.push('security() with lookahead — repainting risk');
+  const inds = new Set((code.match(/ta\.\w+\s*\(/gi) || []).map(x => x.toLowerCase()));
+  if (inds.size >= 5) warnings.push(`${inds.size} distinct ta.* calls — overfitting risk`);
+  if (!/slippage|spread|commiss/i.test(code))
+    warnings.push('No slippage/commission modeling');
+  return { passed: violations.length === 0, violations, warnings };
+}
+
+function showLintResult(elId, result) {
+  const el = $(elId);
+  el.style.display = 'block';
+  if (!result.passed) {
+    el.className = 'lint-result fail';
+    el.textContent = '✗ ' + result.violations.join(' · ');
+  } else if (result.warnings.length) {
+    el.className = 'lint-result warn';
+    el.textContent = '⚠ ' + result.warnings.join(' · ');
   } else {
-    log('ERR', 'Cannot reset · not connected.', 'err');
+    el.className = 'lint-result pass';
+    el.textContent = '✓ Lint passed · no violations · no warnings';
+  }
+}
+
+function highlightPine(code) {
+  return code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(\/\/[^\n]*)/g, '<span class="cmt">$1</span>')
+    .replace(/\b(strategy|indicator|input|ta|math|plot|var|if|else|for|while|true|false|and|or|not|barstate|syminfo)\b/g, '<span class="kw">$1</span>')
+    .replace(/(".*?"|'.*?')/g, '<span class="str">$1</span>');
+}
+
+function extractCode(raw) {
+  const match = raw.match(/```(?:pinescript|pine)?\s*\n([\s\S]*?)\n```/i)
+              || raw.match(/```([\s\S]*?)```/i);
+  return match ? match[1].trim() : raw.trim();
+}
+
+function storeStrategy(code, lint, label) {
+  const taskId = `task_${Date.now()}`;
+  S.strategies.push({
+    taskId,
+    name: `${label}_${taskId}.pine`,
+    code, lint,
+    ts: new Date().toISOString(),
+    bars: S.barCount,
+  });
+  $('vault-count').textContent = S.strategies.length;
+  return taskId;
+}
+
+// Render code to the shared output panel, store raw for validation, reveal actions.
+function showOutput(code) {
+  S.lastOutputCode = code;                       // raw text VALIDATE will send
+  $('pine-out').innerHTML = highlightPine(code);
+  $('btn-copy-pine').style.display   = 'inline-block';
+  $('btn-validate-tv').style.display = 'inline-block';
+  $('tv-validate-out').style.display = 'none';   // clear stale validation result
+}
+
+async function callGateway(messages) {
+  const resp = await fetch(`${GW_URL}/api/v1/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'anthropic/claude-haiku-4-5-20251001:free',
+      messages,
+      max_tokens: 4000,
+      temperature: 0.65,
+    }),
+    signal: AbortSignal.timeout(60000),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data?.error?.message || `Gateway HTTP ${resp.status}`);
+  return data?.choices?.[0]?.message?.content || '';
+}
+
+// ── GENERATE ────────────────────────────────────────────────────
+$('btn-generate').addEventListener('click', async () => {
+  if (S.generating || !S.gatewayOnline) return;
+  S.generating = true;
+  $('btn-generate').disabled = true;
+  $('btn-generate').textContent = '⏳  GENERATING…';
+  $('lint-out').style.display = 'none';
+  $('pine-out-label').textContent = 'Generated Pine Script';
+  $('pine-out').innerHTML = '<span style="color:var(--ink-faint)">Routing to swarm…</span>';
+  $('btn-copy-pine').style.display = 'none';
+
+  const last    = S.bars.length ? S.bars[S.bars.length - 1] : null;
+  const atr     = calcATR(S.bars);
+  const context = last
+    ? `XAUUSD 5m/13m · ${S.barCount} bars · last close ${fmt(last.close)} · ATR(14) ${atr ? atr.toFixed(2) : 'n/a'}`
+    : 'XAUUSD 5m/13m · no replay data yet';
+
+  agentMsg('ROUTER', 'Task: generate Pine Script v5 strategy', 'route');
+  agentMsg('CONTEXT', context, 'sys');
+  agentMsg('CLAUDE', 'Generating liquidity sweep + BOS strategy…', 'work');
+
+  try {
+    const raw = await callGateway([
+      { role: 'system', content: 'You are a Pine Script v5 expert. Output only a complete, production-ready Pine Script v5 strategy. Include //@version=5, strategy(), barstate.isconfirmed on all entries, commission_value, and slippage. No explanation outside the code block.' },
+      { role: 'user',   content: `Generate a Pine Script v5 liquidity sweep + BOS strategy for XAUUSD.\nContext: ${context}\nFocus: liquidity sweep detection, BOS confirmation, ATR-based stops.\nOutput in a single \`\`\`pinescript block.` }
+    ]);
+
+    const code = extractCode(raw);
+    showOutput(code);
+
+    const lint = lintPine(code);
+    showLintResult('lint-out', lint);
+    storeStrategy(code, lint, 'strategy');
+
+    agentMsg('LINTER', lint.passed
+      ? `✓ Passed · ${lint.warnings.length} warning(s)`
+      : `✗ ${lint.violations.length} violation(s): ${lint.violations[0]}`,
+      lint.passed ? 'ok' : 'lint');
+    agentMsg('DONE', `${code.length} chars · copied to output`, 'ok');
+    log('PASS', `Pine generated · ${lint.passed ? 'lint OK' : 'lint FAIL'}`, lint.passed ? 'pass' : 'err');
+
+  } catch (err) {
+    $('pine-out').textContent = `[Error: ${err.message}]`;
+    agentMsg('ERROR', err.message, 'err');
+    log('ERR', `Generation failed: ${err.message}`, 'err');
+  } finally {
+    S.generating = false;
+    $('btn-generate').disabled = false;
+    $('btn-generate').textContent = '⬡  GENERATE PINE SCRIPT';
   }
 });
 
-// ---- BOOT --------------------------------------------------
-window.addEventListener('load', () => {
-  if (typeof LightweightCharts === 'undefined') {
-    $('chart').innerHTML =
-      '<div style="display:flex;height:100%;align-items:center;justify-content:center;' +
-      'color:var(--bear);font-size:13px;text-align:center;padding:20px">' +
-      'Chart library failed to load · check CDN access or use the local build, then refresh.</div>';
-    log('ERR', 'LightweightCharts not loaded · chart disabled.', 'err');
+// ── REPAIR ──────────────────────────────────────────────────────
+$('btn-repair').addEventListener('click', async () => {
+  if (S.generating || !S.gatewayOnline) return;
+  const inputCode = $('repair-input').value.trim();
+  if (!inputCode) { agentMsg('ERROR', 'No code pasted.', 'err'); return; }
+  const request = $('repair-request').value.trim() || '';
+
+  S.generating = true;
+  $('btn-repair').disabled = true;
+  $('btn-repair').textContent = '⏳  REPAIRING…';
+  $('repair-lint-out').style.display = 'none';
+  $('pine-out-label').textContent = 'Repaired Pine Script';
+  $('pine-out').innerHTML = '<span style="color:var(--ink-faint)">Analysing code…</span>';
+  $('btn-copy-pine').style.display = 'none';
+
+  // Run linter first so we can show pre-repair state
+  const preLint = lintPine(inputCode);
+  const issueList = [
+    ...preLint.violations.map(v => `VIOLATION: ${v}`),
+    ...preLint.warnings.map(w => `WARNING: ${w}`),
+  ];
+  const issueStr = issueList.length
+    ? issueList.join('\n')
+    : 'No automatic violations detected — apply the user request below.';
+
+  agentMsg('LINTER', `Pre-repair: ${preLint.violations.length} violation(s), ${preLint.warnings.length} warning(s)`, 'lint');
+  if (request) agentMsg('REQUEST', `"${request}"`, 'route');
+  agentMsg('CLAUDE', 'Repairing code…', 'work');
+
+  const systemPrompt =
+    'You are a Pine Script v5 expert and code repair specialist. ' +
+    'You will receive broken or imperfect Pine Script code and a list of issues. ' +
+    'Fix ALL listed issues and apply ANY user request. ' +
+    'Return ONLY the complete repaired Pine Script in a single ```pinescript block. ' +
+    'Do not explain. Do not truncate. Do not omit any part of the original logic unless it is the bug itself.';
+
+  const userPrompt =
+    `PINE SCRIPT TO REPAIR:\n\`\`\`pinescript\n${inputCode}\n\`\`\`\n\n` +
+    `ISSUES DETECTED:\n${issueStr}\n\n` +
+    (request ? `USER REQUEST:\n${request}\n\n` : '') +
+    `REPAIR RULES:\n` +
+    `- Always use //@version=5\n` +
+    `- All strategy.entry() calls must use barstate.isconfirmed\n` +
+    `- No lookahead in security() calls\n` +
+    `- Include commission_value and slippage in strategy()\n` +
+    `- Preserve ALL original logic that is not part of the bug\n` +
+    `- Output only the repaired code in a \`\`\`pinescript block`;
+
+  try {
+    const raw  = await callGateway([
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userPrompt },
+    ]);
+
+    const code = extractCode(raw);
+    showOutput(code);
+
+    const postLint = lintPine(code);
+    showLintResult('repair-lint-out', postLint);
+    storeStrategy(code, postLint, 'repair');
+
+    // Show what changed
+    const fixed = preLint.violations.filter(v => !postLint.violations.includes(v));
+    const remain = postLint.violations;
+    if (fixed.length)  agentMsg('FIXED',  `Resolved: ${fixed.join(' · ')}`, 'ok');
+    if (remain.length) agentMsg('REMAIN', `Still open: ${remain.join(' · ')}`, 'lint');
+    if (!fixed.length && !remain.length) agentMsg('DONE', 'No violations before or after — code patched per request.', 'ok');
+    agentMsg('DONE', `${code.length} chars · ready to copy`, 'ok');
+
+    log('PASS', `Pine repaired · ${postLint.violations.length} violation(s) remaining`, postLint.passed ? 'pass' : 'err');
+
+  } catch (err) {
+    $('pine-out').textContent = `[Error: ${err.message}]`;
+    agentMsg('ERROR', err.message, 'err');
+    log('ERR', `Repair failed: ${err.message}`, 'err');
+  } finally {
+    S.generating = false;
+    $('btn-repair').disabled = false;
+    $('btn-repair').textContent = '⚙  REPAIR PINE SCRIPT';
+  }
+});
+
+$('btn-copy-pine').addEventListener('click', () => {
+  const code = $('pine-out').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    $('btn-copy-pine').textContent = 'COPIED ✓';
+    setTimeout(() => { $('btn-copy-pine').textContent = 'COPY'; }, 1500);
+  });
+});
+
+// ── VALIDATE ON TRADINGVIEW ─────────────────────────────────────
+// Sends the current output to the Gateway bridge → tv CLI → TradingView Desktop.
+// Full loop: inject → compile → check errors → pull REAL trades + metrics.
+// Real executed fills only — never LLM-guessed signals.
+function showTvResult(cls, html) {
+  const el = $('tv-validate-out');
+  el.style.display = 'block';
+  el.className = 'lint-result ' + cls;
+  el.innerHTML = html;
+}
+
+$('btn-validate-tv').addEventListener('click', async () => {
+  if (S.validating) return;
+  const code = S.lastOutputCode || $('pine-out').textContent;
+  if (!code || !code.trim()) { agentMsg('ERROR', 'No code in output to validate.', 'err'); return; }
+  if (!S.gatewayOnline)      { agentMsg('ERROR', 'Gateway offline — start MIDAS_Gateway_Server.js', 'err'); return; }
+
+  S.validating = true;
+  $('btn-validate-tv').disabled = true;
+  $('btn-validate-tv').textContent = '⏳ VALIDATING…';
+  showTvResult('warn', 'Injecting into TradingView · compiling · pulling real trades…');
+
+  agentMsg('BRIDGE', 'Sending to TradingView Desktop (CDP)…', 'route');
+  agentMsg('TV', 'inject → compile → check errors → read Strategy Tester', 'work');
+
+  try {
+    const resp = await fetch(`${GW_URL}/api/bridge/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: code }),
+      signal: AbortSignal.timeout(90000),
+    });
+    const r = await resp.json();
+
+    // Bridge unreachable or TradingView not connected
+    if (resp.status === 503) {
+      const msg = r.steps?.set?.error || r.error || 'Bridge/TradingView not reachable.';
+      showTvResult('fail', `✗ ${msg}`);
+      agentMsg('ERROR', msg, 'err');
+      log('ERR', `TV validate failed: ${msg}`, 'err');
+      return;
+    }
+
+    // Compile errors — stopped before any (fake) trades reported
+    if (r.ok === false && r.failedAt === 'compile') {
+      const errs = (r.compileErrors || []).map(e =>
+        `line ${e.line ?? '?'}: ${e.message ?? e}`).join(' · ') || 'compile error';
+      showTvResult('fail', `✗ Compile failed on TradingView — no trades reported.<br>${errs}`);
+      agentMsg('TV', `Compile errors: ${errs}`, 'err');
+      log('ERR', `TV compile failed · ${errs}`, 'err');
+      return;
+    }
+
+    if (r.ok === false) {
+      const msg = `Stopped at: ${r.failedAt || 'unknown'}`;
+      showTvResult('fail', `✗ ${msg}`);
+      agentMsg('TV', msg, 'err');
+      return;
+    }
+
+    // Success — extract REAL trades + metrics
+    const trades = r.steps?.trades?.data?.trades || [];
+    const strat  = r.steps?.strategy?.data || {};
+    const pf     = strat.profitFactor ?? strat.profit_factor;
+    const wr     = strat.winRate ?? strat.win_rate;
+    const np     = strat.netProfit ?? strat.net_profit;
+    const dd     = strat.maxDrawdown ?? strat.max_drawdown;
+
+    const parts = [];
+    if (np  != null) parts.push(`Net ${(+np).toFixed(2)}`);
+    if (pf  != null) parts.push(`PF ${(+pf).toFixed(2)}`);
+    if (wr  != null) parts.push(`Win ${(wr <= 1 ? (wr*100).toFixed(0) : (+wr).toFixed(0))}%`);
+    if (dd  != null) parts.push(`MaxDD ${(+dd).toFixed(2)}`);
+
+    showTvResult('pass',
+      `✓ Compiled clean on TradingView · <b>${trades.length}</b> real trade${trades.length === 1 ? '' : 's'}` +
+      (parts.length ? `<br>${parts.join(' · ')}` : '') +
+      `<br><span style="color:var(--ink-faint)">Real executed fills from Strategy Tester — not simulated.</span>`);
+
+    agentMsg('TV', `✓ ${trades.length} real trades · ${parts.join(' · ') || 'metrics n/a'}`, 'ok');
+    log('PASS', `TV validate · ${trades.length} real trades · ${parts.join(' · ')}`, 'pass');
+
+  } catch (err) {
+    const msg = err.name === 'TimeoutError' ? 'Timed out (90s) — TradingView slow or unresponsive.' : err.message;
+    showTvResult('fail', `✗ ${msg}`);
+    agentMsg('ERROR', msg, 'err');
+    log('ERR', `TV validate error: ${msg}`, 'err');
+  } finally {
+    S.validating = false;
+    $('btn-validate-tv').disabled = false;
+    $('btn-validate-tv').textContent = '▶ VALIDATE ON TRADINGVIEW';
+  }
+});
+
+// ── VAULT TAB ────────────────────────────────────────────────────
+function renderVault() {
+  const list = $('vault-list');
+  $('vault-count').textContent = S.strategies.length;
+  if (!S.strategies.length) {
+    list.innerHTML = `<div class="vault-empty">No strategies generated yet.<br>
+      Go to <b style="color:var(--struct)">Swarm</b> tab → Generate Pine Script.</div>`;
     return;
   }
-  initChart();
-  log('INFO', 'MIDAS Quant Lab ready · zero-lookahead · bar-close confirmed.', 'info');
-  log('INFO', 'Microstructure rules: sweep / BOS / absorption (both directions).', 'info');
+  list.innerHTML = S.strategies.slice().reverse().map(s => {
+    const lintCls = !s.lint ? 'unk' : s.lint.passed ? 'pass' : 'fail';
+    const lintTxt = !s.lint ? 'UNKNOWN' : s.lint.passed ? 'LINT OK' : `${s.lint.violations.length} VIOLATION${s.lint.violations.length > 1 ? 'S' : ''}`;
+    const ts = new Date(s.ts).toLocaleTimeString('en-US', { hour12: false });
+    return `
+    <div class="vault-item">
+      <span class="vi-icon">📄</span>
+      <div class="vi-body">
+        <div class="vi-name">${s.name}</div>
+        <div class="vi-meta">${ts} · ${s.bars} bars context · ${s.code.length} chars</div>
+      </div>
+      <span class="vi-lint ${lintCls}">${lintTxt}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  if (typeof LightweightCharts === 'undefined') {
+    $('chart').innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--bear);font-size:13px;text-align:center;padding:20px">Chart library failed to load · check lightweight-charts.standalone.production.js is in the same folder.</div>';
+    log('ERR', 'LightweightCharts not loaded · chart disabled.', 'err');
+  } else {
+    initChart();
+  }
+
+  // Populate agent grid
+  renderAgentGrid();
+
+  // Start gateway polling
+  checkGateway();
+  setInterval(checkGateway, GW_POLL_MS);
+
+  log('INFO', 'MIDAS v0.6.1 ready · Replay · Swarm · Vault', 'info');
+  log('INFO', 'Swarm tab: Generate mode + Repair mode + Agent window', 'info');
+
   connectMRE();
 });
 
