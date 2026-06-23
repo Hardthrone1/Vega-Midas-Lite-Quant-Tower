@@ -13,6 +13,11 @@
 const fs = require('fs');
 const path = require('path');
 
+// Robust YAML frontmatter parsing. Optional: if not installed, extractFrontmatter
+// falls back to the legacy line parser so this file never crashes on load.
+let yaml = null;
+try { yaml = require('js-yaml'); } catch (_) { /* fallback parser used */ }
+
 class VaultSync {
   constructor(vaultPath) {
     this.vaultPath = vaultPath || process.env.OBSIDIAN_VAULT_PATH || './MIDAS Trading Vault';
@@ -155,26 +160,64 @@ class VaultSync {
    * - confidence
    */
   extractFrontmatter(content) {
-    const metadata = {};
     const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!fmMatch) return {};
+    const fmRaw = fmMatch[1];
 
-    if (fmMatch) {
-      const fmContent = fmMatch[1];
-
-      // Parse YAML-like frontmatter
-      const lines = fmContent.split('\n');
-      for (const line of lines) {
-        const [key, ...valueParts] = line.split(':');
-        const value = valueParts.join(':').trim();
-
-        if (key === 'title') metadata.title = value;
-        if (key === 'tags') metadata.tags = value.split(',').map(t => t.trim());
-        if (key === 'date') metadata.date = new Date(value);
-        if (key === 'winRate') metadata.winRate = parseFloat(value);
-        if (key === 'confidence') metadata.confidence = parseFloat(value);
+    // Prefer robust YAML parsing: handles list-form tags (- tag on its own line),
+    // inline arrays (["a","b"]), and real nulls. Falls back to the legacy
+    // line parser if js-yaml is unavailable or the block is malformed.
+    if (yaml) {
+      try {
+        const parsed = yaml.load(fmRaw);
+        if (parsed && typeof parsed === 'object') return this._normalizeMetadata(parsed);
+      } catch (e) {
+        // fall through to legacy parser
       }
     }
+    return this._legacyFrontmatter(fmRaw);
+  }
 
+  /** Map a parsed YAML object onto the metadata shape the rest of the bridge expects. */
+  _normalizeMetadata(parsed) {
+    const md = {};
+    if (parsed.title != null) md.title = String(parsed.title);
+
+    // tags: accept a YAML list (array) OR a comma-joined string; trim each.
+    if (Array.isArray(parsed.tags)) {
+      md.tags = parsed.tags.map(t => String(t).trim()).filter(Boolean);
+    } else if (typeof parsed.tags === 'string') {
+      md.tags = parsed.tags.split(',').map(t => t.trim()).filter(Boolean);
+    }
+
+    if (parsed.date != null) md.date = new Date(parsed.date);
+
+    // numbers: only set when present AND finite (null/undefined omitted, not coerced to 0)
+    if (parsed.winRate != null) {
+      const wr = Number(parsed.winRate);
+      if (Number.isFinite(wr)) md.winRate = wr;
+    }
+    if (parsed.confidence != null) {
+      const cf = Number(parsed.confidence);
+      if (Number.isFinite(cf)) md.confidence = cf;
+    }
+
+    return md;
+  }
+
+  /** Original line-by-line parser, kept as a fallback when js-yaml is absent. */
+  _legacyFrontmatter(fmContent) {
+    const metadata = {};
+    const lines = fmContent.split('\n');
+    for (const line of lines) {
+      const [key, ...valueParts] = line.split(':');
+      const value = valueParts.join(':').trim();
+      if (key === 'title') metadata.title = value;
+      if (key === 'tags') metadata.tags = value.split(',').map(t => t.trim()).filter(Boolean);
+      if (key === 'date') metadata.date = new Date(value);
+      if (key === 'winRate') { const n = parseFloat(value); if (Number.isFinite(n)) metadata.winRate = n; }
+      if (key === 'confidence') { const n = parseFloat(value); if (Number.isFinite(n)) metadata.confidence = n; }
+    }
     return metadata;
   }
 
@@ -327,6 +370,12 @@ class VaultSync {
         validationData.backtestMetrics ? `netProfit: ${validationData.backtestMetrics.netProfit || 'N/A'}` : '',
         validationData.replayTrades?.length ? `replayTradeCount: ${validationData.replayTrades.length}` : '',
         validationData.slippageDelta ? `slippageDelta: ${validationData.slippageDelta}` : '',
+        validationData.task_id ? `task_id: ${validationData.task_id}` : '',
+        (validationData.adjusted_pf !== undefined && validationData.adjusted_pf !== null) ? `adjusted_pf: ${validationData.adjusted_pf}` : '',
+        (validationData.original_pf !== undefined && validationData.original_pf !== null) ? `original_pf: ${validationData.original_pf}` : '',
+        (validationData.ambiguous_traps !== undefined) ? `ambiguous_traps: ${validationData.ambiguous_traps}` : '',
+        (validationData.strategy_tags && validationData.strategy_tags.length) ? `strategy_tags: [${validationData.strategy_tags.map(t => `"${t}"`).join(', ')}]` : '',
+        ...Object.keys(validationData).filter(k => k.endsWith('_verdict')).map(k => `${k}: ${validationData[k]}`),
         '---'
       ].filter(line => line).join('\n');
 

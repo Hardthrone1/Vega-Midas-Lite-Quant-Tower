@@ -18,6 +18,15 @@ const app = express();
 const PORT = 8001;
 const API_KEY = process.env.OPENROUTER_API_KEY || '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';
 
+// Global CORS fallback
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', '*');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
 console.log('[PROXY] ═════════════════════════════════════');
 console.log('[PROXY] MIDAS Secure Key Proxy (Express)');
 console.log('[PROXY] ═════════════════════════════════════');
@@ -26,12 +35,23 @@ console.log(`[PROXY] API Key: ${API_KEY.substring(0, 30)}...`);
 console.log('[PROXY] ═════════════════════════════════════');
 console.log('');
 
+// Health check for frontend (matches what index_ws.html expects)
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    service: 'midas-proxy', 
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ════════ MIDDLEWARE ════════
 // Enable CORS for all requests from localhost:8000
 app.use(cors({
-  origin: ['http://localhost:8000', 'http://localhost:3000'],
+  origin: true,                    // Allow all origins (including null/file)
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
 }));
 
 // Parse JSON payloads
@@ -113,7 +133,7 @@ app.get('/api/v1/models', (req, res) => {
   console.log(`[PROXY] GET /api/v1/models`);
 
   const options = {
-    hostname: 'openrouter.io',
+    hostname: 'openrouter.ai',
     port: 443,
     path: '/api/v1/models',
     method: 'GET',

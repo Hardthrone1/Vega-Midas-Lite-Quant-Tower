@@ -22,15 +22,15 @@ class MIDASOrchestrator {
     this.agents = {
       qwen: {
         id: 'qwen',
-        name: 'Qwen 2.5 72B',
-        model: 'meta-llama/llama-3.1-8b-instruct',
+        name: 'Qwen 2.5 7B',
+        model: 'qwen/qwen-2.5-7b-instruct',
         tier: 'FREE',
         role: 'Vision + Reasoning'
       },
       nemotron: {
         id: 'nemotron',
         name: 'Nemotron 3 Ultra',
-        model: 'nousresearch/hermes-3-llama-3.1-405b:free',
+        model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
         tier: 'FREE',
         role: 'Quant + Logic'
       },
@@ -43,22 +43,22 @@ class MIDASOrchestrator {
       },
       gemini: {
         id: 'gemini',
-        name: 'Gemini 3.5 Flash',
-        model: 'google/gemma-4-31b-it:free',
+        name: 'Gemini 2.5 Flash Lite',
+        model: 'google/gemini-2.5-flash-lite',
         tier: 'FREE',
         role: 'Fast Synthesis'
       },
       claude: {
         id: 'claude',
-        name: 'Claude',
-        model: 'anthropic/claude-haiku-4-5-20251001:free',
+        name: 'Claude Sonnet (Latest)',
+        model: '~anthropic/claude-sonnet-latest',
         tier: 'FREE',
         role: 'Pine Script Authority'
       },
       hermes: {
         id: 'hermes',
-        name: 'Qwen3-Next 80B',
-        model: 'qwen/qwen3-next-80b-a3b-instruct:free',
+        name: 'Hermes 3 Llama 3.1 405B',
+        model: 'nousresearch/hermes-3-llama-3.1-405b:free',
         tier: 'FREE',
         role: 'Router & Orchestrator (Primary)'
       },
@@ -72,7 +72,7 @@ class MIDASOrchestrator {
       gpt: {
         id: 'gpt',
         name: 'GPT OSS 120B',
-        model: 'openai/gpt-oss-120b',
+        model: 'openai/gpt-oss-120b:free',
         tier: 'FREE',
         role: 'Open Source Reasoning'
       }
@@ -84,8 +84,46 @@ class MIDASOrchestrator {
     this.vaultWriteQueue = Promise.resolve();
     this.vaultWriteSeq = 0;
 
+    // Memory-conditioned prompt policy. OFF by default — enable explicitly with
+    // new MIDASOrchestrator({ memoryPolicy: true }). Kept dormant so it never
+    // alters prompts during troubleshooting.
+    this.memoryIndex = null;
+    this.PromptPolicy = null;
+    this.memoryPolicyEnabled = config.memoryPolicy === true;
+
     // Initialize vault bridge immediately (not lazily) to avoid concurrent race conditions
     this.initializeVaultBridge();
+    this.initializeMemoryPolicy();
+
+    // Reality Engine — independent of memory conditioning; always load in Node.
+    this.computeRealityPF = null;
+    if (typeof require !== 'undefined') {
+      try {
+        const { computeRealityPF } = require('./compute-reality-pf.js');
+        this.computeRealityPF = computeRealityPF;
+        console.log('[REALITY] ✓ Reality Engine loaded');
+      } catch (err) {
+        console.warn('[REALITY] Could not load compute-reality-pf.js:', err.message);
+      }
+    }
+  }
+
+  initializeMemoryPolicy() {
+    if (!this.memoryPolicyEnabled) {
+      console.log('[POLICY] Memory conditioning disabled via config.');
+      return;
+    }
+    if (typeof require === 'undefined') return; // browser context: no-op, like the vault bridge
+    try {
+      const { MidasMemoryIndex, PromptPolicy } = require('./midas-memory-policy.js');
+      this.PromptPolicy = PromptPolicy;
+      this.memoryIndex = new MidasMemoryIndex(this.workspacePath + '/Obsidian').buildIndex();
+      console.log('[POLICY] ✓ Memory conditioning initialized');
+    } catch (err) {
+      console.warn('[POLICY] Could not initialize memory policy:', err.message);
+      this.memoryIndex = null;
+      this.PromptPolicy = null;
+    }
   }
 
   initializeVaultBridge() {
@@ -153,12 +191,12 @@ class MIDASOrchestrator {
     if (typeof text !== 'string') {
       if (text && text.auditNotes) {
         text = text.auditNotes;
+      } else if (text && text.synthesis) {
+        text = text.synthesis;        // non-audit path: use the real synthesis text, not a JSON dump
       } else if (text && text.text) {
         text = text.text;
-      } else if (typeof text === 'object') {
-        text = JSON.stringify(text);
       } else {
-        text = '';
+        text = '';                    // never JSON.stringify a result object into a .pine file
       }
     }
 
@@ -240,8 +278,52 @@ class MIDASOrchestrator {
         summary: finalResult?.synthesis || finalResult || 'Analysis complete',
         auditNotes: codeArtifact?.code || ''
       };
-      await this.saveToVault(analysisData);
-
+     await this.saveToVault(analysisData);
+      // ── REALITY INJECTOR → VALIDATION → MEMORY ─────────────────────────
+      try {
+        const bt = task.backtest || {};   // dashboard/API supplies {grossProfit,grossLoss,totalTrades}
+        const reality = (this.computeRealityPF || (() => ({ adjusted_pf:null, original_pf:null, ambiguous_traps:0, injectedSlippage:0 })))({
+          grossProfit: bt.grossProfit,
+          grossLoss:   bt.grossLoss,
+          totalTrades: bt.totalTrades,
+          symbol:      task.symbol,
+          trades:      bt.trades,
+          trapCheck:   finalResult?.ruleCheck?.trapCheck
+        });
+        const agentKey = String(finalResult?.successAgent || 'unknown').toLowerCase() + '_verdict';
+        const verdict  = finalResult?.ruleCheck?.passed ? 'PASS' : 'FAIL';
+        const validationData = {
+          title: `${task.setup || 'Analysis'} (${task.type})`,
+          tags: task.tags || ['general'],
+          confidence: finalResult?.confidence || 0,
+          compileStatus: finalResult?.ruleCheck ? (finalResult.ruleCheck.passed ? 'pass' : 'fail') : 'pending',
+          ruleCheck: finalResult?.ruleCheck || null,
+          slippageDelta: reality.injectedSlippage || undefined,
+          task_id: taskId,
+          adjusted_pf: reality.adjusted_pf,
+          original_pf: reality.original_pf,
+          ambiguous_traps: reality.ambiguous_traps,
+          strategy_tags: task.tags || [],
+          [agentKey]: verdict
+        };
+        if (this.vaultBridge && typeof this.vaultBridge.createValidationEntry === 'function') {
+          await this.vaultBridge.createValidationEntry(validationData);
+        }
+        if (this.memoryIndex && typeof this.memoryIndex.hotInject === 'function') {
+          this.memoryIndex.hotInject({
+            task_id: taskId,
+            adjusted_pf: reality.adjusted_pf,
+            original_pf: reality.original_pf,
+            ambiguous_traps: reality.ambiguous_traps,
+            strategy_tags: task.tags || [],
+            [agentKey]: verdict
+          });
+        }
+        console.log(`[REALITY] adjusted_pf=${reality.adjusted_pf} (${verdict} on ${finalResult?.successAgent || 'unknown'})`);
+      } catch (e) {
+        console.warn('[REALITY] validation/memory wire skipped:', e.message);
+      }
+      // ───────────────────────────────────────────────────────────────────
       if (task.visualize !== false) {
         await this.callGraphify(task);
       }
@@ -407,10 +489,67 @@ Respond with agent IDs only, comma-separated. For now, respond with: qwen,nemotr
       warnings.push('ATR-based stops may be calculated on entry bar without bar confirmation - review manually');
     }
 
+    // 7. INTRA-BAR TRAP-DETECTION PRECONDITION
+    // The future Reality engine needs to read the actual SL/TP that were active at
+    // exit so it can replay 1m data and check whether stop or target printed first.
+    // This rule reports whether that audit is even POSSIBLE for this strategy.
+    // It does NOT fail the strategy - it always reports a status to the operator.
+    let trapStatus = 'n/a';   // no exit at all -> nothing to audit
+    const hasExit = /strategy\.(exit|close)\s*\(/i.test(code);
+    if (hasExit) {
+      // Optimistic default: assume detectable, then downgrade below if evidence is missing.
+      trapStatus = 'available';
+
+      // Detect trailing first - it changes how the SL/TP readability is reported.
+      // A trailing stop's exit-time value differs from its entry-time value, so a
+      // logger that captures SL at entry would audit the trade against a stale price.
+      const hasTrailingExit = /trail_(points|price|offset)\s*=/i.test(code) ||
+                              /strategy\.exit[^)]*trail/i.test(code);
+
+      // 7a. Are stop/limit prices passed as named variables, or inlined / absent?
+      const stopArg  = code.match(/\bstop\s*=\s*([^,\)\n]+)/i);
+      const limitArg = code.match(/\blimit\s*=\s*([^,\)\n]+)/i);
+
+      const looksLikeVariable = (m) => {
+        if (!m) return false;
+        const val = m[1].trim();
+        // a bare identifier (optionally with [n] history) reads as a variable;
+        // a literal number or an inline expression with operators does not.
+        return /^[A-Za-z_]\w*(\s*\[\s*\d+\s*\])?$/.test(val);
+      };
+
+      const stopReadable  = looksLikeVariable(stopArg);
+      const limitReadable = looksLikeVariable(limitArg);
+
+      if (!stopArg && !limitArg) {
+        trapStatus = 'unavailable';
+        warnings.push('TRAP-CHECK: no stop= / limit= found on exit - intra-bar trap detection unavailable (cannot recover SL/TP intent)');
+      } else if ((!stopReadable || !limitReadable) && !hasTrailingExit) {
+        trapStatus = 'partial';
+        warnings.push('TRAP-CHECK: SL/TP appear inlined as literals or expressions, not named variables - logger would record incomplete boundaries; expose them as var float for trap detection');
+      }
+
+      // 7b. Trailing is the louder flag - route these to manual replay, not the resolver.
+      if (hasTrailingExit) {
+        trapStatus = 'unreliable';
+        warnings.push('TRAP-CHECK: trailing stop detected - exit-time SL differs from entry-time SL; intra-bar trap detection is UNRELIABLE for this strategy (route to manual replay, not the static-bracket resolver)');
+      }
+    }
+
+    // 7c. Always emit a readable status message (was previously silent on the clean case).
+    const trapMessages = {
+      'available':   'TRAP-CHECK: intra-bar trap detection AVAILABLE - stop= and limit= are named variables; static-bracket resolver can replay 1m data against the recorded SL/TP.',
+      'partial':     'TRAP-CHECK: intra-bar trap detection PARTIAL - SL/TP inlined as literals/expressions; expose them as `var float` to recover full boundaries.',
+      'unavailable': 'TRAP-CHECK: intra-bar trap detection UNAVAILABLE - no stop=/limit= on exit; SL/TP intent cannot be recovered.',
+      'unreliable':  'TRAP-CHECK: intra-bar trap detection UNRELIABLE - trailing stop; exit-time SL differs from entry-time SL. Route to manual replay, not the static-bracket resolver.',
+      'n/a':         'TRAP-CHECK: not applicable - no strategy.exit() / strategy.close() found.'
+    };
+
     return {
       passed: violations.length === 0,
       violations,
-      warnings
+      warnings,
+      trapCheck: { status: trapStatus, message: trapMessages[trapStatus] }
     };
   }
 
@@ -442,9 +581,11 @@ Respond with agent IDs only, comma-separated. For now, respond with: qwen,nemotr
     const agentId = agent.id?.toLowerCase();
     const contextStr = obsidianContext?.summary || '';
 
+    let prompt;
+
     // Lane-specific prompts per blueprint's "Disciplined Swarm Roles & Lanes"
     if (agentId === 'qwen') {
-      return `[ARCHITECT LANE] Analyze this trading setup for structural architecture and session-based logic:
+      prompt = `[ARCHITECT LANE] Analyze this trading setup for structural architecture and session-based logic:
 
 Setup: ${task.setup || 'General'}
 Context: ${task.context || 'None'}
@@ -458,10 +599,8 @@ Focus on:
 - Order routing flows (market, limit, stop orders)
 
 Respond with concrete architectural recommendations for Pine Script v5.`;
-    }
-
-    if (agentId === 'nemotron') {
-      return `[QUANT CORE LANE] Analyze this trading setup for advanced quantitative mathematics:
+    } else if (agentId === 'nemotron') {
+      prompt = `[QUANT CORE LANE] Analyze this trading setup for advanced quantitative mathematics:
 
 Setup: ${task.setup || 'General'}
 Context: ${task.context || 'None'}
@@ -475,10 +614,9 @@ Focus on:
 - Advanced smoothing and confirmation algorithms
 
 Respond with precise mathematical formulations ready for Pine Script implementation.`;
-    }
-
-    // Default generic prompt for other agents (Gemini, Nex, Claude, etc.)
-    return `Analyze this trading setup for Pine Script optimization:
+    } else {
+      // Default generic prompt for other agents (Gemini, Nex, Claude, etc.)
+      prompt = `Analyze this trading setup for Pine Script optimization:
 
 Setup: ${task.setup || 'General'}
 Context: ${task.context || 'None'}
@@ -486,6 +624,19 @@ Context: ${task.context || 'None'}
 Vault Context: ${contextStr || 'No prior analysis'}
 
 Provide analysis and recommendations for Pine Script v5 strategy design.`;
+    }
+
+    // Append memory conditioning from prior vault audits.
+    // No-op when the policy is disabled, unavailable, or the vault lacks relevant history.
+    if (this.memoryPolicyEnabled && this.memoryIndex && this.PromptPolicy) {
+      try {
+        prompt += this.PromptPolicy.buildMemoryBriefing(agent.id, task.tags, this.memoryIndex);
+      } catch (err) {
+        console.warn('[POLICY] Briefing skipped:', err.message);
+      }
+    }
+
+    return prompt;
   }
 
   async executeSynthesis(swarmResults) {
@@ -592,6 +743,7 @@ Requirements:
       // Run static anti-cheat linter on successful code (non-blocking)
       ruleCheck = this.validatePineScriptRules(auditText);
       console.log(`[AUDIT LINT] passed=${ruleCheck.passed}, violations=${ruleCheck.violations.length}, warnings=${ruleCheck.warnings.length}`);
+      console.log(`[AUDIT LINT] trap-detection: ${ruleCheck.trapCheck.status} - ${ruleCheck.trapCheck.message}`);
       if (ruleCheck.violations.length > 0) {
         console.warn(`[AUDIT LINT] Violations:`, ruleCheck.violations);
       }
@@ -644,6 +796,11 @@ Requirements:
       const result = await this.vaultBridge.createAnalysisEntry(analysisData);
       if (result?.success) {
         console.log(`[VAULT] File created: ${result.filepath}`);
+        // Refresh memory index so the next swarm run sees this audit
+        if (this.memoryIndex) {
+          try { this.memoryIndex.buildIndex(); }
+          catch (e) { console.warn('[POLICY] Index refresh skipped:', e.message); }
+        }
       }
       return result;
     } catch (err) {
