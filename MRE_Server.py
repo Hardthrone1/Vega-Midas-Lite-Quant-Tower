@@ -1,4 +1,4 @@
-﻿import json
+import json
 import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import uvicorn
@@ -106,7 +106,7 @@ async def health():
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("MIDAS MRE Server v0.4")
+    print("Vega MRE Server v0.4")
     print("=" * 70)
     print(f"Loaded {len(REPLAY_BARS)} bars")
     print("Listening on ws://127.0.0.1:8002/ws/stream")

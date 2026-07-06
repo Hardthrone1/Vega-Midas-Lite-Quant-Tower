@@ -1,28 +1,30 @@
 {
-  "name": "dashboard",
+  "name": "tradingview-suite",
   "version": "1.0.0",
-  "description": "Autonomous Pine Script validation pipeline using multi-agent swarm architecture.",
-  "main": "launch_dashboard.js",
+  "description": "A spec-first dashboard for taking a futures strategy from idea → canonical spec → Pine + Python (generated from the *same* spec) → diagnostics → backtest → vault, with a deploy gate that blocks anything where the two execution paths disagree. Built for MGC / MNQ work.",
+  "main": "lightweight-charts.standalone.production.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Hardthrone1/MIDAS-Orchestrator.git"
+    "url": "git+https://github.com/Hardthrone1/Vega-Orchestrator.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/Hardthrone1/MIDAS-Orchestrator/issues"
+    "url": "https://github.com/Hardthrone1/Vega-Orchestrator/issues"
   },
-  "homepage": "https://github.com/Hardthrone1/MIDAS-Orchestrator#readme",
+  "homepage": "https://github.com/Hardthrone1/Vega-Orchestrator#readme",
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "js-yaml": "^4.2.0",
-    "ws": "^8.21.0"
+    "prom-client": "^15.1.3",
+    "rate-limiter-flexible": "^11.2.0",
+    "uuid": "^14.0.1",
+    "zod": "^4.4.3"
   }
 }

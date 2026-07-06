@@ -1,15 +1,11 @@
 @echo off
-title MIDAS Full Shutdown
-echo.
-echo ============================================
-echo MIDAS Full Shutdown Sequence Activating...
-echo ============================================
-echo.
+setlocal
 
-:: Fires your custom PowerShell termination backend script
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0midas-kill.ps1"
+:: Re-launch hidden when double-clicked (no visible CMD window)
+if /I not "%~1"=="hidden" (
+  start "" wscript.exe //nologo "%~dp0stop_Vega_suite.vbs"
+  exit /b 0
+)
 
-echo.
-echo ✅ All trading operations killed cleanly.
-timeout /t 4 >nul
-exit
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0Vega-kill.ps1"
+exit /b 0
