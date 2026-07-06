@@ -24,7 +24,7 @@ export function DiagnosticsPanel() {
   const pct = Math.round(deployProgress(deployStatus) * 100)
 
   return (
-    <Panel eyebrow="Step 03" title="Diagnostics & deploy gate" actions={
+    <Panel eyebrow="Step 05" title="Diagnostics & deploy gate" actions={
       <Button variant="primary" onClick={runChecks} disabled={!canonicalSpec}>Run checks</Button>
     }>
       <div className="col">

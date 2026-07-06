@@ -132,6 +132,36 @@ export function Empty({ children }: { children: React.ReactNode }) {
   return <div className="empty">{children}</div>
 }
 
+// MetricCard — glassmorphic stat tile with a semantic status accent.
+// Pair with className="stagger-item" and style={{ '--stagger-i': i }} inside
+// maps for staggered entry animation.
+export function MetricCard({
+  label,
+  value,
+  status = 'idle',
+  delta,
+  hint,
+  className = '',
+  style,
+}: {
+  label: string
+  value: React.ReactNode
+  status?: Status
+  delta?: string
+  hint?: string
+  className?: string
+  style?: React.CSSProperties
+}) {
+  return (
+    <div className={`metric-card metric-card--${status} ${className}`.trim()} style={style}>
+      <span className="metric-card-label">{label}</span>
+      <span className="metric-card-value mono tabular">{value}</span>
+      {delta && <span className="metric-card-delta">{delta}</span>}
+      {hint && <span className="metric-card-hint">{hint}</span>}
+    </div>
+  )
+}
+
 export { Portal } from './Portal'
 export { AnimatedPopover } from './AnimatedPopover'
 export { RangeSlider } from './RangeSlider'

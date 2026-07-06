@@ -1,5 +1,5 @@
 // src/features/agent-timeline/components/AgentTimelinePanel.tsx
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 import { Panel, Button, Empty, StatusDot } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import type { Status } from '../../../shared/ui'
@@ -24,8 +24,12 @@ export function AgentTimelinePanel() {
         <Empty>Agent activity appears here as the pipeline runs.</Empty>
       ) : (
         <div className="feed" role="log" aria-live="polite" aria-relevant="additions" aria-label="Agent activity log">
-          {agentMessages.map((m) => (
-            <div key={m.id} className="feed-row">
+          {agentMessages.map((m, i) => (
+            <div
+              key={m.id}
+              className="feed-row stagger-item"
+              style={{ '--stagger-i': Math.min(i, 6) } as CSSProperties}
+            >
               <StatusDot status={levelToStatus[m.level] ?? 'info'} />
               <span className="feed-agent mono">{m.agent}</span>
               <span className="feed-msg">{m.message}</span>
