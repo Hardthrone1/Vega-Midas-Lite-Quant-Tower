@@ -1,0 +1,108 @@
+//@version=5
+strategy("MTF Breakout (Precision) RE-ENTRY FIXED", overlay = true, initial_capital = 1000, max_boxes_count = 500, pyramiding = 0, calc_on_order_fills = true)
+
+strategy.risk.max_intraday_filled_orders(20)
+
+// =====================================================================
+// INPUTS
+// =====================================================================
+var GRP_TF = "Timeframe Settings"
+sourceTF = input.string("D", "Source Timeframe", options = ["D", "W", "240", "60", "30", "15", "5"], group = GRP_TF)
+
+var GRP_MODE = "Order Mode & Refresh"
+directionMode   = input.string("Both", "Trade Direction", options = ["Both", "Long Only", "Short Only"], group = GRP_MODE)
+maxTradesPerHTF = input.int(20, "Max Trades per HTF Bar", minval = 1, maxval = 20, group = GRP_MODE)
+cooldownBars    = input.int(0, "Cooldown Bars After Exit", minval = 0, group = GRP_MODE)
+
+// =====================================================================
+// RISK
+// =====================================================================
+slPoints     = input.float(50.0, "Stop Loss (Points)")
+tpPoints     = input.float(100.0, "Take Profit (Points)")
+trailStart   = input.float(40.0, "Trailing Start (Points)")
+trailOffset  = input.float(30.0, "Trailing Offset (Points)")
+entryBuffer  = input.float(1.0, "Entry Buffer (Points)")
+tradeQty     = input.float(0.1, "Lot Size")
+
+slTicks       = int(slPoints / syminfo.mintick)
+tpTicks       = int(tpPoints / syminfo.mintick)
+trailStartT   = int(trailStart / syminfo.mintick)
+trailOffsetT  = int(trailOffset / syminfo.mintick)
+
+// =====================================================================
+// DATA
+// =====================================================================
+[mtfOpen, mtfHigh, mtfLow, mtfClose] = request.security(syminfo.tickerid, sourceTF, [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+
+buyLevel  = mtfHigh + entryBuffer
+sellLevel = mtfLow  - entryBuffer
+
+newLevels = (ta.change(mtfHigh) != 0) or (ta.change(mtfLow) != 0)
+inDateRange = time >= input.time(timestamp("2025-01-01")) and time <= input.time(timestamp("2026-12-31"))
+
+// =====================================================================
+// STATE TRACKING
+// =====================================================================
+var int tradesThisHTFBar = 0
+var int lastExitBar = 0
+
+if newLevels
+    tradesThisHTFBar := 0
+    strategy.cancel_all()
+
+if strategy.closedtrades > strategy.closedtrades[1]
+    lastExitBar := bar_index
+
+if strategy.opentrades > strategy.opentrades[1]
+    tradesThisHTFBar += 1
+
+isFlat = strategy.position_size == 0
+cooldownPassed = (bar_index - lastExitBar) >= cooldownBars
+
+// =====================================================================
+// ENTRY FILTERS (The "Anti-Double-Dip" Logic)
+// =====================================================================
+// Only place a Buy Stop if price is currently BELOW the buy level
+canPlaceBuy  = close < buyLevel 
+// Only place a Sell Stop if price is currently ABOVE the sell level
+canPlaceSell = close > sellLevel
+
+// =====================================================================
+// ORDERS
+// =====================================================================
+if isFlat and inDateRange and cooldownPassed and (tradesThisHTFBar < maxTradesPerHTF)
+    
+    // Logic: Only "set the trap" if we aren't already past the level
+    if (directionMode == "Both" or directionMode == "Long Only") and canPlaceBuy
+        strategy.entry("Buy", strategy.long, qty = tradeQty, stop = buyLevel)
+    else
+        strategy.cancel("Buy") // Remove the order if price has already run past it
+        
+    if (directionMode == "Both" or directionMode == "Short Only") and canPlaceSell
+        strategy.entry("Sell", strategy.short, qty = tradeQty, stop = sellLevel)
+    else
+        strategy.cancel("Sell")
+
+// =====================================================================
+// EXITS
+// =====================================================================
+if strategy.position_size > 0
+    strategy.exit("Exit Buy", "Buy", loss = slTicks, profit = tpTicks, trail_points = trailStartT, trail_offset = trailOffsetT)
+
+if strategy.position_size < 0
+    strategy.exit("Exit Sell", "Sell", loss = slTicks, profit = tpTicks, trail_points = trailStartT, trail_offset = trailOffsetT)
+
+// =====================================================================
+// VISUALS (Updated Colors and Added Open/Close)
+// =====================================================================
+// HTF High and Low with requested colors
+plot(mtfHigh, "HTF High (Top)", color=color.new(#add8e6, 20), linewidth=2) // Light Blue
+plot(mtfLow, "HTF Low (Bottom)", color=color.new(#ffb6c1, 20), linewidth=2) // Light Pink
+
+// HTF Open and Close (plotted as thinner/dashed lines for clarity)
+plot(mtfOpen, "HTF Open", color=color.new(color.gray, 50), style=plot.style_stepline)
+plot(mtfClose, "HTF Close", color=color.new(color.white, 50), style=plot.style_stepline)
+
+// Entry Traps
+plot(isFlat and canPlaceBuy ? buyLevel : na, "Buy Trap", color=color.blue, style=plot.style_circles)
+plot(isFlat and canPlaceSell ? sellLevel : na, "Sell Trap", color=color.orange, style=plot.style_circles)

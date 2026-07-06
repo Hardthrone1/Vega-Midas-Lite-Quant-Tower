@@ -1,0 +1,24 @@
+---
+pid: 8240
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "Set-Location \"C:\\Users\\Softthrone\\Claude\\TradingView-Suite\\midas_code\"; npm install @radix-ui/react-portal @radix-ui/react-popover"
+started_at: 2026-07-05T10:02:35.994Z
+running_for_ms: 74959    
+---
+
+added 33 packages, and audited 314 packages in 22s
+npm warn allow-scripts 2 packages have install scripts not yet covered by allowScripts:
+npm warn allow-scripts   electron@23.3.13 (install: (install scripts present))
+npm warn allow-scripts   esbuild@0.21.5 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+47 packages are looking for funding
+  run `npm fund` for details
+
+12 vulnerabilities (4 moderate, 8 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.

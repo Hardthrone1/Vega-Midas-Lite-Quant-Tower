@@ -1,0 +1,116 @@
+//@version=5
+strategy("Mean Reversion - Dual Entry & Session", overlay=true, initial_capital=50000, default_qty_value=10, pyramiding=2, max_labels_count=500, close_entries_rule="FIFO")
+
+// =====================================================================
+// INPUTS
+// =====================================================================
+var GRP_SESSION = "Time & Session"
+useSession = input.bool(true, "Use Session Filter", group=GRP_SESSION)
+sessionInput = input.session("0800-1700", "Session Hours", group=GRP_SESSION, tooltip="Format: HHMM-HHMM (e.g., 0800-1700 for 8 AM to 5 PM)")
+sessionTz = input.string("UTC-5", "Timezone", group=GRP_SESSION, tooltip="Example: UTC-5 for EST, UTC+1 for London")
+
+var GRP_ENTRY = "Entry Settings"
+enableImmediate = input.bool(true, "Enable Immediate Limit Entry", group=GRP_ENTRY)
+enableConfirm   = input.bool(true, "Enable Candle Confirmation Entry", group=GRP_ENTRY)
+lookbackBars    = input.int(1, "Lookback Bars", minval=1, group=GRP_ENTRY)
+entryOffset     = input.float(0.0, "Entry Offset (Points)", step=0.1, group=GRP_ENTRY)
+
+var GRP_RISK = "Risk Management"
+tpPoints     = input.float(50.0, "Take Profit (Points)", group=GRP_RISK)
+slPoints     = input.float(30.0, "Stop Loss (Points)", group=GRP_RISK)
+useTrailing  = input.bool(true, "Use Trailing Stop", group=GRP_RISK)
+trailStart   = input.float(20.0, "Trail Start (Points)", group=GRP_RISK)
+trailOffset  = input.float(15.0, "Trail Offset (Points)", group=GRP_RISK)
+
+// =====================================================================
+// CALCULATIONS & SESSION FILTER
+// =====================================================================
+// Previous High/Low
+prevHigh = ta.highest(high, lookbackBars)[1]
+prevLow  = ta.lowest(low, lookbackBars)[1]
+
+sellLevel = prevHigh + entryOffset
+buyLevel  = prevLow - entryOffset
+
+// Session Check
+inSession = not useSession or not na(time(timeframe.period, sessionInput, sessionTz))
+
+// =====================================================================
+// ENTRY LOGIC
+// =====================================================================
+// Helper variables to track which trade types are currently active
+bool immShortActive  = false
+bool immLongActive   = false
+bool confShortActive = false
+bool confLongActive  = false
+
+// Reset tracking at start of each bar
+immShortActive  := false
+immLongActive   := false
+confShortActive := false
+confLongActive  := false
+
+// Loop through open trades to see what's already running
+if strategy.opentrades > 0
+    for i = 0 to strategy.opentrades - 1
+        string id = strategy.opentrades.entry_id(i)
+        if id == "Imm-Short"
+            immShortActive  := true
+        if id == "Imm-Long"
+            immLongActive   := true
+        if id == "Conf-Short"
+            confShortActive := true
+        if id == "Conf-Long"
+            confLongActive  := true
+
+if inSession
+    // 1. IMMEDIATE LIMIT ENTRY
+    if enableImmediate
+        // Only place the Short Limit if we don't already have an Immediate Short open
+        if not immShortActive
+            strategy.entry("Imm-Short", strategy.short, limit=sellLevel, comment="Limit Short")
+
+        // Only place the Long Limit if we don't already have an Immediate Long open
+        if not immLongActive
+            strategy.entry("Imm-Long", strategy.long, limit=buyLevel, comment="Limit Long")
+
+// 2. CANDLE CONFIRMATION ENTRY
+    if enableConfirm
+        // Only hunt for a Short Confirmation if we don't already have one active
+        if not confShortActive and high > sellLevel
+            strategy.entry("Conf-Short", strategy.short, stop=low, comment="Conf Short")
+
+        // Only hunt for a Long Confirmation if we don't already have one active
+        if not confLongActive and low < buyLevel
+            strategy.entry("Conf-Long", strategy.long, stop=high, comment="Conf Long")
+
+// Cancel all pending (unfilled) orders if we leave the session
+if not inSession
+    strategy.cancel_all()        
+
+// =====================================================================
+// EXIT LOGIC (Universal for all orders)
+// =====================================================================
+t_start  = math.round(trailStart / syminfo.mintick)
+t_offset = math.round(trailOffset / syminfo.mintick)
+
+// Apply exits to every open trade individually
+if strategy.position_size != 0
+    strategy.exit("Exit", qty_percent=100,
+         limit = strategy.position_size > 0 ? strategy.position_avg_price + tpPoints : strategy.position_avg_price - tpPoints,
+         stop  = strategy.position_size > 0 ? strategy.position_avg_price - slPoints : strategy.position_avg_price + slPoints,
+         trail_points = useTrailing ? t_start : na,
+         trail_offset = useTrailing ? t_offset : na)
+
+// =====================================================================
+// VISUALS
+// =====================================================================
+plot(prevHigh, "Level High", color=color.new(color.red, 50), style=plot.style_stepline)
+plot(prevLow, "Level Low", color=color.new(color.blue, 50), style=plot.style_stepline)
+
+// Session Background
+bgcolor(inSession ? color.new(color.green, 95) : color.new(color.red, 95))
+
+// Signal cues
+plotshape(enableConfirm and high > sellLevel, "Short Setup", shape.triangledown, location.abovebar, color.red, size=size.tiny)
+plotshape(enableConfirm and low < buyLevel, "Long Setup", shape.triangleup, location.belowbar, color.blue, size=size.tiny)

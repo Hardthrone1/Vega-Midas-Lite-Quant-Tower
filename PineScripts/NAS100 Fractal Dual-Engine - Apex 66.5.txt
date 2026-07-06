@@ -1,0 +1,104 @@
+//@version=6
+strategy("NAS100 Fractal Dual-Engine - Apex 66.5", overlay=true, initial_capital=120, default_qty_value = 1, pyramiding=2, margin_long=0.2, margin_short=0.2, close_entries_rule="FIFO", calc_on_every_tick=true)
+
+// =====================================================================
+// 🛠️ FRACTAL APEX INPUTS (FROM OPTIMIZATION)
+// =====================================================================
+var GRP_APEX = "Fractal Apex Settings"
+lookbackBars   = input.int(4, "Structural Lookback", minval=1, group=GRP_APEX)
+retracePct     = input.float(50.1, "Fractal Apex Retrace %", minval=0.1, maxval=100.0, step=0.1, group=GRP_APEX) / 100
+entryOffset    = input.float(-0.1, "Sniper Offset (Points)", step=0.1, group=GRP_APEX)
+
+var GRP_SESSION = "Time & Session"
+useSession     = input.bool(true, "Use Session Filter", group=GRP_SESSION)
+sessionInput   = input.session("1900-1645", "Session Hours", group=GRP_SESSION)
+sessionTz      = input.string("UTC-5", "Timezone", group=GRP_SESSION)
+
+var GRP_DATE = "Backtest Date Range"
+enableDateFilter = input.bool(true, "Enable Date Range Filter", group=GRP_DATE)
+fromDate         = input.time(timestamp("01 Jan 2024 00:00 +0000"), "Start Date", group=GRP_DATE)
+toDate           = input.time(timestamp("31 Dec 2099 00:00 +0000"), "End Date",   group=GRP_DATE)
+
+var GRP_ENTRY = "Dual-Entry Toggles"
+enableImmediate = input.bool(false, "Enable Sniper Limit Entry", group=GRP_ENTRY)
+enableConfirm   = input.bool(true, "Enable Fractal Confirmation (Stop)", group=GRP_ENTRY)
+
+var GRP_RISK = "Risk Management"
+mt4Lots      = input.float(0.01, "MT4 Lot Size (0.01 = $0.10/pt)", step=0.01, group=GRP_RISK)
+tvQty        = mt4Lots * 10 // Converts MT4 lots to TradingView contracts
+tpPoints     = input.float(130.0, "Take Profit (Points)", group=GRP_RISK)
+slPoints     = input.float(28.0, "Stop Loss (Points)", group=GRP_RISK)
+useTrailing  = input.bool(true, "Use Trailing Stop", group=GRP_RISK)
+trailStart   = input.float(5.0, "Trail Start (Points)", group=GRP_RISK)
+trailOffset  = input.float(1.0, "Trail Offset (Points)", group=GRP_RISK)
+
+// =====================================================================
+// CALCULATIONS
+// =====================================================================
+prevHigh = ta.highest(high, lookbackBars)[1]
+prevLow  = ta.lowest(low, lookbackBars)[1]
+
+stretchUpper = math.max(0, high - prevHigh)
+stretchLower = math.max(0, prevLow - low)
+
+fractalSell = high - (stretchUpper * retracePct)
+fractalBuy  = low  + (stretchLower * retracePct)
+
+sniperSell = prevHigh + entryOffset
+sniperBuy  = prevLow  - entryOffset
+
+inSession   = not useSession or not na(time(timeframe.period, sessionInput, sessionTz))
+inDateRange = not enableDateFilter or (time >= fromDate and time <= toDate)
+
+// =====================================================================
+// =====================================================================
+// DUAL-ENTRY ENGINE (FIXED WITH OCO)
+// =====================================================================
+string entryOCO = "Apex_OCO" // Defines the One-Cancels-Other group
+
+if inSession and inDateRange
+    if strategy.position_size == 0 // STRICT RULE: Only look for setups when flat
+        if enableImmediate
+            strategy.cancel("Sniper-S")
+            strategy.cancel("Sniper-L")
+            strategy.entry("Sniper-S", strategy.short, qty=tvQty, limit=sniperSell, oca_name=entryOCO, oca_type=strategy.oca.cancel, comment="Sniper Limit")
+            strategy.entry("Sniper-L", strategy.long,  qty=tvQty, limit=sniperBuy,  oca_name=entryOCO, oca_type=strategy.oca.cancel, comment="Sniper Limit")
+
+        if enableConfirm
+            strategy.cancel("Fractal-S")
+            strategy.cancel("Fractal-L")
+            if high > sniperSell
+                strategy.entry("Fractal-S", strategy.short, qty=tvQty, stop=fractalSell, oca_name=entryOCO, oca_type=strategy.oca.cancel, comment="Fractal Conf")
+            if low < sniperBuy
+                strategy.entry("Fractal-L", strategy.long,  qty=tvQty, stop=fractalBuy,  oca_name=entryOCO, oca_type=strategy.oca.cancel, comment="Fractal Conf")
+    else
+        // STRICT RULE: We are in an active trade. Cancel all pending entry orders to prevent premature reversals!
+        strategy.cancel("Sniper-S")
+        strategy.cancel("Sniper-L")
+        strategy.cancel("Fractal-S")
+        strategy.cancel("Fractal-L")
+    
+    if not inSession or not inDateRange
+        strategy.cancel_all()
+
+// =====================================================================
+// EXIT LOGIC
+// =====================================================================
+t_start  = math.round(trailStart  / syminfo.mintick)
+t_offset = math.round(trailOffset / syminfo.mintick)
+
+if strategy.position_size != 0
+    strategy.exit("Exit",
+         limit        = strategy.position_size > 0 ? strategy.position_avg_price + tpPoints : strategy.position_avg_price - tpPoints,
+         stop         = strategy.position_size > 0 ? strategy.position_avg_price - slPoints : strategy.position_avg_price + slPoints,
+         trail_points = useTrailing ? t_start  : na,
+         trail_offset = useTrailing ? t_offset : na)
+
+// =====================================================================
+// VISUALS
+// =====================================================================
+plot(prevHigh, "Old High", color=color.new(color.red,  60), style=plot.style_stepline)
+plot(prevLow,  "Old Low",  color=color.new(color.blue, 60), style=plot.style_stepline)
+plot(enableImmediate ? sniperSell : na, "Sniper Sell", color=color.red,  style=plot.style_circles)
+plot(enableImmediate ? sniperBuy  : na, "Sniper Buy",  color=color.blue, style=plot.style_circles)
+bgcolor(inSession ? color.new(color.green, 90) : color.new(color.red, 90))

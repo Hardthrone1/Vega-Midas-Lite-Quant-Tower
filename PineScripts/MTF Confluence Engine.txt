@@ -1,0 +1,121 @@
+//@version=5
+strategy("MTF Confluence Engine", overlay=true, initial_capital=50000, pyramiding=0)
+
+// =====================================================
+// INPUTS
+// =====================================================
+flipSignals = input.bool(false, "Flip All Signals (trade opposite direction)", group="Signal")
+
+// Trend Filters
+use1HFilter    = input.bool(true,  "Enable 1H Trend Filter",  group="Trend Filters")
+use30mFilter   = input.bool(false, "Enable 30m Trend Filter", group="Trend Filters")
+flipMA         = input.bool(false, "Flip MA Logic (Contrarian: sell above, buy below)", group="Trend Filters")
+maLen1H        = input.int(100,    "1H EMA Length",            group="Trend Filters")
+maLen30m       = input.int(50,     "30m EMA Length",           group="Trend Filters")
+
+// Exits
+tpPoints   = input.int(300, "Take Profit Points", group="Exits")
+slPoints   = input.int(40,  "Stop Loss Points",   group="Exits")
+beTrigger  = input.int(38,  "Breakeven Trigger Points", group="Exits")
+beOffset   = input.int(8,   "Breakeven Offset Points",  group="Exits")
+tsStart    = input.int(125, "Trailing Stop Start Points",  group="Exits")
+tsOffset   = input.int(25,  "Trailing Stop Offset Points", group="Exits")
+
+// =====================================================
+// MTF DATA
+// =====================================================
+// 1H
+[trend1HClose, trend1HMA] = request.security(syminfo.tickerid, "60", [close[1], ta.ema(close[1], maLen1H)], lookahead=barmerge.lookahead_on)
+trend1HBull = flipMA ? trend1HClose < trend1HMA : trend1HClose > trend1HMA
+trend1HBear = flipMA ? trend1HClose > trend1HMA : trend1HClose < trend1HMA
+
+// 30m
+[trend30mClose, trend30mMA] = request.security(syminfo.tickerid, "30", [close[1], ta.ema(close[1], maLen30m)], lookahead=barmerge.lookahead_on)
+trend30mBull = flipMA ? trend30mClose < trend30mMA : trend30mClose > trend30mMA
+trend30mBear = flipMA ? trend30mClose > trend30mMA : trend30mClose < trend30mMA
+
+// 15m range
+[execHigh, execLow, execClose] = request.security(syminfo.tickerid, "15", [ta.highest(high[1], 5), ta.lowest(low[1], 5), close[1]], lookahead=barmerge.lookahead_on)
+float execMid = (execHigh + execLow) / 2
+execBull = execClose > execMid
+execBear = execClose < execMid
+
+// 5m trigger
+[trigHigh, trigLow] = request.security(syminfo.tickerid, "5", [high[1], low[1]], lookahead=barmerge.lookahead_on)
+longTrigger  = ta.crossover(trigHigh, execHigh)
+shortTrigger = ta.crossunder(trigLow,  execLow)
+
+// =====================================================
+// FILTER LOGIC
+// =====================================================
+bool bull1H  = not use1HFilter  or trend1HBull
+bool bear1H  = not use1HFilter  or trend1HBear
+bool bull30m = not use30mFilter or trend30mBull
+bool bear30m = not use30mFilter or trend30mBear
+
+// =====================================================
+// SIGNALS
+// =====================================================
+finalLong  = bull1H and bull30m and execBull and longTrigger  and not shortTrigger
+finalShort = bear1H and bear30m and execBear and shortTrigger and not longTrigger
+
+// =====================================================
+// EXECUTION
+// =====================================================
+if flipSignals ? finalShort : finalLong
+    strategy.entry("MTF Long", strategy.long)
+
+if flipSignals ? finalLong : finalShort
+    strategy.entry("MTF Short", strategy.short)
+
+// =====================================================
+// EXIT LOGIC
+// =====================================================
+var float slPrice = na
+var float tpPrice = na
+
+if strategy.position_size > 0
+    if strategy.position_size[1] <= 0
+        slPrice := strategy.position_avg_price - slPoints
+        tpPrice := strategy.position_avg_price + tpPoints
+
+    float entryPrice   = strategy.position_avg_price
+    float profitPoints = high - entryPrice
+
+    if profitPoints >= beTrigger
+        slPrice := math.max(slPrice, entryPrice + beOffset)
+
+    if profitPoints >= tsStart
+        slPrice := math.max(slPrice, high - tsOffset)
+
+    strategy.exit("Exit Long", "MTF Long", stop=slPrice, limit=tpPrice, comment="L Exit")
+
+else if strategy.position_size < 0
+    if strategy.position_size[1] >= 0
+        slPrice := strategy.position_avg_price + slPoints
+        tpPrice := strategy.position_avg_price - tpPoints
+
+    float entryPrice   = strategy.position_avg_price
+    float profitPoints = entryPrice - low
+
+    if profitPoints >= beTrigger
+        slPrice := math.min(slPrice, entryPrice - beOffset)
+
+    if profitPoints >= tsStart
+        slPrice := math.min(slPrice, low + tsOffset)
+
+    strategy.exit("Exit Short", "MTF Short", stop=slPrice, limit=tpPrice, comment="S Exit")
+
+else
+    slPrice := na
+    tpPrice := na
+
+// =====================================================
+// VISUALS
+// =====================================================
+plot(trend1HMA,  "1H EMA",  color=color.orange, linewidth=2)
+plot(trend30mMA, "30m EMA", color=color.blue,   linewidth=1)
+
+bgcolor(finalLong ? color.new(color.green, 90) : finalShort ? color.new(color.red, 90) : na)
+plotshape(finalLong,  title="Long Signal",  location=location.belowbar, color=color.green, style=shape.triangleup,   size=size.tiny)
+plotshape(finalShort, title="Short Signal", location=location.abovebar, color=color.red,   style=shape.triangledown, size=size.tiny)

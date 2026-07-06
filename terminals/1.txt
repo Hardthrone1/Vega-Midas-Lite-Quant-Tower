@@ -1,0 +1,21 @@
+---
+pid: 7520
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "cd C:\\Users\\Softthrone\\Claude\\TradingView-Suite; node MIDAS_Gateway_Server.js"
+started_at: 2026-07-02T22:45:07.263Z
+running_for_ms: 4250009  
+---
+◇ injected env (1) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+=== MIDAS Gateway Server v1.4 ===
+Default Provider : nvidia
+http://127.0.0.1:8001
+Rate limiting + Retry + Circuit Breaker + Tracing + Prometheus enabled
+
+{"timestamp":"2026-07-02T22:45:17.093Z","requestId":"60c6f0c0-376e-44ae-95bd-7259123c383d","method":"GET","path":"/api/health","status":200,"durationMs":7,"provider":"nvidia"}
+{"timestamp":"2026-07-02T22:45:17.287Z","requestId":"d4ccda79-2c31-49c1-b9ce-2d3b76122d52","method":"GET","path":"/api/providers","status":200,"durationMs":1,"provider":"nvidia"}
+{"timestamp":"2026-07-02T22:45:22.542Z","requestId":"c30c6dd2-ebe9-4d78-aa94-49daea6005e3","method":"GET","path":"/metrics","status":200,"durationMs":3,"provider":"nvidia"}
+{"timestamp":"2026-07-02T22:45:22.878Z","requestId":"285d316f-203a-4e27-8a80-027a2b516aed","method":"GET","path":"/api/health","status":200,"durationMs":0,"provider":"nvidia"}
+{"timestamp":"2026-07-02T22:45:22.941Z","requestId":"35ea8263-3326-4b92-8c27-06a0ab10c2be","method":"GET","path":"/api/health","status":200,"durationMs":1,"provider":"nvidia"}
+{"timestamp":"2026-07-02T22:45:22.949Z","requestId":"089735c6-c1c3-4981-9e68-4322c7fa8ee1","method":"GET","path":"/metrics","status":200,"durationMs":1,"provider":"nvidia"}
+{"timestamp":"2026-07-02T22:45:38.276Z","requestId":"e36f6857-0626-4640-a2a6-6b6042b013c3","method":"GET","path":"/metrics","status":200,"durationMs":1,"provider":"nvidia"}

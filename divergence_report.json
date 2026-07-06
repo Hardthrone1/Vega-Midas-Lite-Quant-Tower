@@ -1,0 +1,640 @@
+{
+  "payload": "backtest_payload.json",
+  "pine_truth": "pine_truth_122_trades.csv",
+  "instrument": "MGC",
+  "summary": {
+    "total_python_trades": 2,
+    "total_pine_trades": 122,
+    "matched_trades": 0,
+    "unmatched_python": 2,
+    "unmatched_pine": 122,
+    "pass_count": 0,
+    "fail_count": 0,
+    "overall_status": "FAIL"
+  },
+  "matched_trades": [],
+  "unmatched_python_trades": [
+    {
+      "num": 1,
+      "entry": "2026-06-22T17:17:00+00:00",
+      "signal": "brk#3"
+    },
+    {
+      "num": 2,
+      "entry": "2026-06-22T22:00:00+00:00",
+      "signal": "brk#3"
+    }
+  ],
+  "unmatched_pine_trades": [
+    {
+      "num": 1,
+      "entry": "2026-02-09T07:05:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 2,
+      "entry": "2026-02-11T19:49:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 3,
+      "entry": "2026-02-12T18:05:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 4,
+      "entry": "2026-02-12T18:57:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 5,
+      "entry": "2026-02-16T00:22:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 6,
+      "entry": "2026-02-16T02:58:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 7,
+      "entry": "2026-02-16T10:20:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 8,
+      "entry": "2026-02-16T20:15:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 9,
+      "entry": "2026-02-17T01:53:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 10,
+      "entry": "2026-02-17T03:50:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 11,
+      "entry": "2026-02-18T21:33:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 12,
+      "entry": "2026-02-24T09:41:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 13,
+      "entry": "2026-02-24T10:59:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 14,
+      "entry": "2026-02-26T09:41:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 15,
+      "entry": "2026-02-27T05:47:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 16,
+      "entry": "2026-03-02T11:25:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 17,
+      "entry": "2026-03-03T12:04:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 18,
+      "entry": "2026-03-03T17:13:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 19,
+      "entry": "2026-03-03T18:31:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 20,
+      "entry": "2026-03-04T12:43:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 21,
+      "entry": "2026-03-04T17:00:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 22,
+      "entry": "2026-03-05T14:14:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 23,
+      "entry": "2026-03-05T17:00:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 24,
+      "entry": "2026-03-09T09:28:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 25,
+      "entry": "2026-03-09T13:22:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 26,
+      "entry": "2026-03-11T09:15:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 27,
+      "entry": "2026-03-11T11:38:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 28,
+      "entry": "2026-03-11T17:00:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 29,
+      "entry": "2026-03-11T20:41:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 30,
+      "entry": "2026-03-12T00:35:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 31,
+      "entry": "2026-03-12T17:13:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 32,
+      "entry": "2026-03-13T05:47:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 33,
+      "entry": "2026-03-15T18:57:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 34,
+      "entry": "2026-03-15T22:51:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 35,
+      "entry": "2026-03-16T01:01:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 36,
+      "entry": "2026-03-17T18:57:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 37,
+      "entry": "2026-03-18T11:12:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 38,
+      "entry": "2026-03-18T18:18:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 39,
+      "entry": "2026-03-18T20:28:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 40,
+      "entry": "2026-03-18T22:12:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 41,
+      "entry": "2026-03-19T04:29:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 42,
+      "entry": "2026-03-19T08:49:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 43,
+      "entry": "2026-03-19T12:17:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 44,
+      "entry": "2026-03-22T17:13:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 45,
+      "entry": "2026-03-23T03:11:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 46,
+      "entry": "2026-03-23T06:00:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 47,
+      "entry": "2026-03-26T15:06:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 48,
+      "entry": "2026-03-26T17:13:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 49,
+      "entry": "2026-03-26T17:39:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 50,
+      "entry": "2026-03-30T18:31:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 51,
+      "entry": "2026-03-30T19:36:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 52,
+      "entry": "2026-04-02T02:06:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 53,
+      "entry": "2026-04-02T08:36:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 54,
+      "entry": "2026-04-08T14:27:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 55,
+      "entry": "2026-04-08T17:00:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 56,
+      "entry": "2026-04-08T20:41:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 57,
+      "entry": "2026-04-08T23:04:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 58,
+      "entry": "2026-04-09T02:06:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 59,
+      "entry": "2026-04-09T20:02:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 60,
+      "entry": "2026-04-09T22:38:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 61,
+      "entry": "2026-04-10T05:21:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 62,
+      "entry": "2026-04-15T03:50:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 63,
+      "entry": "2026-04-15T06:13:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 64,
+      "entry": "2026-04-16T14:40:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 65,
+      "entry": "2026-04-19T20:02:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 66,
+      "entry": "2026-04-21T15:32:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 67,
+      "entry": "2026-04-22T08:36:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 68,
+      "entry": "2026-04-22T13:35:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 69,
+      "entry": "2026-04-23T06:13:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 70,
+      "entry": "2026-04-27T12:30:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 71,
+      "entry": "2026-04-28T01:53:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 72,
+      "entry": "2026-04-28T08:36:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 73,
+      "entry": "2026-04-28T09:54:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 74,
+      "entry": "2026-04-28T10:33:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 75,
+      "entry": "2026-04-28T12:30:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 76,
+      "entry": "2026-04-29T13:48:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 77,
+      "entry": "2026-04-29T17:26:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 78,
+      "entry": "2026-05-03T22:51:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 79,
+      "entry": "2026-05-04T05:34:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 80,
+      "entry": "2026-05-05T17:52:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 81,
+      "entry": "2026-05-07T18:44:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 82,
+      "entry": "2026-05-07T19:49:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 83,
+      "entry": "2026-05-13T09:28:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 84,
+      "entry": "2026-05-14T17:00:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 85,
+      "entry": "2026-05-15T05:47:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 86,
+      "entry": "2026-05-15T09:15:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 87,
+      "entry": "2026-05-15T12:04:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 88,
+      "entry": "2026-05-17T17:00:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 89,
+      "entry": "2026-05-19T18:18:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 90,
+      "entry": "2026-05-19T23:04:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 91,
+      "entry": "2026-05-21T01:01:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 92,
+      "entry": "2026-05-21T02:58:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 93,
+      "entry": "2026-05-21T08:49:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 94,
+      "entry": "2026-05-21T10:07:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 95,
+      "entry": "2026-05-21T11:51:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 96,
+      "entry": "2026-05-22T04:42:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 97,
+      "entry": "2026-05-22T10:07:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 98,
+      "entry": "2026-05-22T11:25:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 99,
+      "entry": "2026-05-24T17:00:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 100,
+      "entry": "2026-05-26T00:22:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 101,
+      "entry": "2026-05-26T08:36:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 102,
+      "entry": "2026-05-26T18:31:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 103,
+      "entry": "2026-05-27T08:49:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 104,
+      "entry": "2026-05-27T13:09:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 105,
+      "entry": "2026-06-01T05:47:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 106,
+      "entry": "2026-06-02T20:41:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 107,
+      "entry": "2026-06-03T12:04:00Z",
+      "signal": "brk#5"
+    },
+    {
+      "num": 108,
+      "entry": "2026-06-03T17:52:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 109,
+      "entry": "2026-06-03T18:44:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 110,
+      "entry": "2026-06-04T23:56:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 111,
+      "entry": "2026-06-05T01:27:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 112,
+      "entry": "2026-06-07T18:44:00Z",
+      "signal": "brk#3"
+    },
+    {
+      "num": 113,
+      "entry": "2026-06-09T23:56:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 114,
+      "entry": "2026-06-10T08:36:00Z",
+      "signal": "brk#4"
+    },
+    {
+      "num": 115,
+      "entry": "2026-06-10T12:56:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 116,
+      "entry": "2026-06-10T19:23:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 117,
+      "entry": "2026-06-11T00:35:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 118,
+      "entry": "2026-06-11T02:19:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 119,
+      "entry": "2026-06-15T18:31:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 120,
+      "entry": "2026-06-18T14:40:00Z",
+      "signal": "brk#6"
+    },
+    {
+      "num": 121,
+      "entry": "2026-06-23T06:13:00Z",
+      "signal": "brk#2"
+    },
+    {
+      "num": 122,
+      "entry": "2026-06-24T00:09:00Z",
+      "signal": "brk#2"
+    }
+  ]
+}

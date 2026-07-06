@@ -2,7 +2,7 @@ import './globals.css';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'MIDAS Orchestrator v1.5 | Pine Script Engine',
+  title: 'Vega Orchestrator v1.5 | Pine Script Engine',
   description: 'Multi-Agent Hive-Mind for Pine Script v5 Validation, Repair & Strategy Generation',
 };
 
@@ -40,7 +40,7 @@ export default function RootLayout({
                   className="text-sm font-bold tracking-tighter"
                   style={{ color: 'var(--text-hi)' }}
                 >
-                  MIDAS
+                  Vega
                   <span style={{ color: 'var(--signal)' }}>_</span>
                 </span>
               </Link>
@@ -121,7 +121,7 @@ export default function RootLayout({
         >
           <div className="max-w-screen-xl mx-auto px-4 flex items-center justify-between">
             <span className="label-xs" style={{ color: 'var(--muted)' }}>
-              MIDAS Orchestrator v1.5.1 · Pine Script v5 Authority
+              Vega Orchestrator v1.5.1 · Pine Script v5 Authority
             </span>
             <span className="label-xs" style={{ color: 'var(--muted)' }}>
               localhost:8001 · OpenRouter proxy

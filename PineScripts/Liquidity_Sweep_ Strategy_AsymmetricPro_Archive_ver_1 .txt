@@ -1,0 +1,385 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+
+//@version=5
+strategy("Liquidity Sweep Strategy - Asymmetric Pro", overlay=true, currency=currency.USD,
+         initial_capital=50000, default_qty_value=1, calc_on_every_tick=true,
+         process_orders_on_close=false, pyramiding=0)
+
+// =========================================================================
+// INPUTS — CORE
+// =========================================================================
+grp_entry   = "Entry Settings"
+offsetPrice = input.float(0, "Entry Offset (Price)", group=grp_entry, tooltip="Distance above high / below low to place entry stop")
+barWindow   = input.int(10,      "Execution Window (Bars)", group=grp_entry)
+
+grp_safety = "Safety Settings"
+safetyBars    = input.int(0,   "Max Hold (Bars) - 0 = Disable",     group=grp_safety, minval=0)
+
+grp_l = "Long Settings"
+tp_l  = input.float(5.0, "Long Take Profit (Price)",  group=grp_l)
+sl_l  = input.float(3.0,  "Long Stop Loss (Price)",    group=grp_l)
+
+grp_s = "Short Settings"
+tp_s  = input.float(5.0, "Short Take Profit (Price)", group=grp_s)
+sl_s  = input.float(3.0,  "Short Stop Loss (Price)",   group=grp_s)
+
+// =========================================================================
+// INPUTS — DUAL COMPOSITE MA (LONG SIDE)
+// =========================================================================
+grp_la         = "Long Composite ENGINE A (Primary)"
+use_la         = input.bool(true,    "Show Long Engine A?",       group=grp_la)
+useBullOnly_la = input.bool(true,    "Use Bullish Candles Only?", group=grp_la)
+maSrc_la       = input.source(open, "Engine A Base Source",      group=grp_la)
+maLen_la       = input.int(7,       "Engine A Length",           group=grp_la)
+maOff_la       = input.int(0,        "Engine A LSMA Offset",      group=grp_la)
+
+grp_lb         = "Long Composite ENGINE B (Secondary)"
+use_lb         = input.bool(true,    "Show Long Engine B?",       group=grp_lb)
+useBullOnly_lb = input.bool(false,    "Use Bullish Candles Only?", group=grp_lb)
+maSrc_lb       = input.source(close, "Engine B Base Source",      group=grp_lb)
+maLen_lb       = input.int(7,       "Engine B Length",           group=grp_lb)
+maOff_lb       = input.int(0,        "Engine B LSMA Offset",      group=grp_lb)
+
+grp_lw    = "Long Matrix (MAs to include in BOTH Long Engines)"
+w_ema_l   = input.bool(true, "Include EMA",   group=grp_lw)
+w_sma_l   = input.bool(true, "Include SMA",   group=grp_lw)
+w_lsma_l  = input.bool(true, "Include LSMA",  group=grp_lw)
+w_hma_l   = input.bool(true, "Include HMA",   group=grp_lw)
+w_vwma_l  = input.bool(true, "Include VWMA",  group=grp_lw)
+w_vwap_l  = input.bool(false, "Include VWAP",  group=grp_lw)
+w_zlema_l = input.bool(true, "Include ZLEMA", group=grp_lw)
+w_smma_l  = input.bool(true, "Include SMMA",  group=grp_lw)
+
+// =========================================================================
+// INPUTS — DUAL COMPOSITE MA (SHORT SIDE)
+// =========================================================================
+grp_sa         = "Short Composite ENGINE A (Primary)"
+use_sa         = input.bool(true,    "Show Short Engine A?",      group=grp_sa)
+useBearOnly_sa = input.bool(true,    "Use Bearish Candles Only?", group=grp_sa)
+maSrc_sa       = input.source(open, "Engine A Base Source",      group=grp_sa)
+maLen_sa       = input.int(20,       "Engine A Length",           group=grp_sa)
+maOff_sa       = input.int(0,        "Engine A LSMA Offset",      group=grp_sa)
+
+grp_sb         = "Short Composite ENGINE B (Secondary)"
+use_sb         = input.bool(true,    "Show Short Engine B?",      group=grp_sb)
+useBearOnly_sb = input.bool(true,    "Use Bearish Candles Only?", group=grp_sb)
+maSrc_sb       = input.source(close, "Engine B Base Source",      group=grp_sb)
+maLen_sb       = input.int(20,       "Engine B Length",           group=grp_sb)
+maOff_sb       = input.int(0,        "Engine B LSMA Offset",      group=grp_sb)
+
+grp_sw    = "Short Matrix (MAs to include in BOTH Short Engines)"
+w_ema_s   = input.bool(true, "Include EMA",   group=grp_sw)
+w_sma_s   = input.bool(true, "Include SMA",   group=grp_sw)
+w_lsma_s  = input.bool(true, "Include LSMA",  group=grp_sw)
+w_hma_s   = input.bool(true, "Include HMA",   group=grp_sw)
+w_vwma_s  = input.bool(true, "Include VWMA",  group=grp_sw)
+w_vwap_s  = input.bool(false, "Include VWAP",  group=grp_sw)
+w_zlema_s = input.bool(true, "Include ZLEMA", group=grp_sw)
+w_smma_s  = input.bool(true, "Include SMMA",  group=grp_sw)
+
+// =========================================================================
+// INPUTS — COMPOSITE TREND GATE
+// =========================================================================
+grp_ctg       = "Composite Trend Gate"
+useCompFilter = input.bool(true, "Enable Composite MA Filter?", group=grp_ctg,
+     tooltip="When enabled, price must be on the correct side of every checked engine before an entry is allowed.")
+useLongA  = input.bool(true,  "Long: Require above Engine A (Fast)", group=grp_ctg)
+useLongB  = input.bool(false, "Long: Require above Engine B (Slow)", group=grp_ctg)
+useShortA = input.bool(false,  "Short: Require below Engine A (Fast)", group=grp_ctg)
+useShortB = input.bool(false, "Short: Require below Engine B (Slow)", group=grp_ctg)
+
+// =========================================================================
+// INTERNAL SEPARATED VWAP ENGINE
+// =========================================================================
+isNewSession = ta.change(time("D")) != 0
+
+var float sumVolHighPrice = 0.0
+var float sumVolHigh      = 0.0
+var float sumVolLowPrice  = 0.0
+var float sumVolLow       = 0.0
+
+if isNewSession
+    sumVolHighPrice := 0.0
+    sumVolHigh      := 0.0
+    sumVolLowPrice  := 0.0
+    sumVolLow       := 0.0
+
+if volume > 0
+    sumVolHighPrice += high * volume
+    sumVolHigh      += volume
+    sumVolLowPrice  += low  * volume
+    sumVolLow       += volume
+
+vwapHigh = sumVolHighPrice / sumVolHigh
+vwapLow  = sumVolLowPrice  / sumVolLow
+
+// =========================================================================
+// PURE CANDLE ENGINE STREAM EXTRACTION
+// =========================================================================
+bullSrc_la = ta.valuewhen(close > open, maSrc_la, 0)
+bullSrc_lb = ta.valuewhen(close > open, maSrc_lb, 0)
+bearSrc_sa = ta.valuewhen(close < open, maSrc_sa, 0)
+bearSrc_sb = ta.valuewhen(close < open, maSrc_sb, 0)
+
+src_la = useBullOnly_la ? bullSrc_la : maSrc_la
+src_lb = useBullOnly_lb ? bullSrc_lb : maSrc_lb
+src_sa = useBearOnly_sa ? bearSrc_sa : maSrc_sa
+src_sb = useBearOnly_sb ? bearSrc_sb : maSrc_sb
+
+// =========================================================================
+// COMPOSITE MA CALCULATIONS
+// =========================================================================
+// --- Long Engine A ---
+ema_la   = ta.ema(src_la, maLen_la)
+sma_la   = ta.sma(src_la, maLen_la)
+lsma_la  = ta.linreg(src_la, maLen_la, maOff_la)
+hma_la   = ta.hma(src_la, maLen_la)
+vwma_la  = ta.vwma(src_la, maLen_la)
+vwap_la  = vwapHigh
+lag_la   = math.round((maLen_la - 1) / 2)
+zlema_la = ta.ema(src_la + (src_la - src_la[lag_la]), maLen_la)
+var float smma_la = na
+smma_la := na(smma_la[1]) ? sma_la : (smma_la[1] * (maLen_la - 1) + src_la) / maLen_la
+
+longSum_A   = (w_ema_l ? ema_la : 0) + (w_sma_l ? sma_la : 0) + (w_lsma_l ? lsma_la : 0) + (w_hma_l ? hma_la : 0) + (w_vwma_l ? vwma_la : 0) + (w_vwap_l ? vwap_la : 0) + (w_zlema_l ? zlema_la : 0) + (w_smma_l ? smma_la : 0)
+longCount_A = (w_ema_l ? 1 : 0) + (w_sma_l ? 1 : 0) + (w_lsma_l ? 1 : 0) + (w_hma_l ? 1 : 0) + (w_vwma_l ? 1 : 0) + (w_vwap_l ? 1 : 0) + (w_zlema_l ? 1 : 0) + (w_smma_l ? 1 : 0)
+comp_la     = longCount_A > 0 ? longSum_A / longCount_A : na
+
+// --- Long Engine B ---
+ema_lb   = ta.ema(src_lb, maLen_lb)
+sma_lb   = ta.sma(src_lb, maLen_lb)
+lsma_lb  = ta.linreg(src_lb, maLen_lb, maOff_lb)
+hma_lb   = ta.hma(src_lb, maLen_lb)
+vwma_lb  = ta.vwma(src_lb, maLen_lb)
+vwap_lb  = vwapHigh
+lag_lb   = math.round((maLen_lb - 1) / 2)
+zlema_lb = ta.ema(src_lb + (src_lb - src_lb[lag_lb]), maLen_lb)
+var float smma_lb = na
+smma_lb := na(smma_lb[1]) ? sma_lb : (smma_lb[1] * (maLen_lb - 1) + src_lb) / maLen_lb
+
+longSum_B   = (w_ema_l ? ema_lb : 0) + (w_sma_l ? sma_lb : 0) + (w_lsma_l ? lsma_lb : 0) + (w_hma_l ? hma_lb : 0) + (w_vwma_l ? vwma_lb : 0) + (w_vwap_l ? vwap_lb : 0) + (w_zlema_l ? zlema_lb : 0) + (w_smma_l ? smma_lb : 0)
+longCount_B = (w_ema_l ? 1 : 0) + (w_sma_l ? 1 : 0) + (w_lsma_l ? 1 : 0) + (w_hma_l ? 1 : 0) + (w_vwma_l ? 1 : 0) + (w_vwap_l ? 1 : 0) + (w_zlema_l ? 1 : 0) + (w_smma_l ? 1 : 0)
+comp_lb     = longCount_B > 0 ? longSum_B / longCount_B : na
+
+// --- Short Engine A ---
+ema_sa   = ta.ema(src_sa, maLen_sa)
+sma_sa   = ta.sma(src_sa, maLen_sa)
+lsma_sa  = ta.linreg(src_sa, maLen_sa, maOff_sa)
+hma_sa   = ta.hma(src_sa, maLen_sa)
+vwma_sa  = ta.vwma(src_sa, maLen_sa)
+vwap_sa  = vwapLow
+lag_sa   = math.round((maLen_sa - 1) / 2)
+zlema_sa = ta.ema(src_sa + (src_sa - src_sa[lag_sa]), maLen_sa)
+var float smma_sa = na
+smma_sa := na(smma_sa[1]) ? sma_sa : (smma_sa[1] * (maLen_sa - 1) + src_sa) / maLen_sa
+
+shortSum_A   = (w_ema_s ? ema_sa : 0) + (w_sma_s ? sma_sa : 0) + (w_lsma_s ? lsma_sa : 0) + (w_hma_s ? hma_sa : 0) + (w_vwma_s ? vwma_sa : 0) + (w_vwap_s ? vwap_sa : 0) + (w_zlema_s ? zlema_sa : 0) + (w_smma_s ? smma_sa : 0)
+shortCount_A = (w_ema_s ? 1 : 0) + (w_sma_s ? 1 : 0) + (w_lsma_s ? 1 : 0) + (w_hma_s ? 1 : 0) + (w_vwma_s ? 1 : 0) + (w_vwap_s ? 1 : 0) + (w_zlema_s ? 1 : 0) + (w_smma_s ? 1 : 0)
+comp_sa      = shortCount_A > 0 ? shortSum_A / shortCount_A : na
+
+// --- Short Engine B ---
+ema_sb   = ta.ema(src_sb, maLen_sb)
+sma_sb   = ta.sma(src_sb, maLen_sb)
+lsma_sb  = ta.linreg(src_sb, maLen_sb, maOff_sb)
+hma_sb   = ta.hma(src_sb, maLen_sb)
+vwma_sb  = ta.vwma(src_sb, maLen_sb)
+vwap_sb  = vwapLow
+lag_sb   = math.round((maLen_sb - 1) / 2)
+zlema_sb = ta.ema(src_sb + (src_sb - src_sb[lag_sb]), maLen_sb)
+var float smma_sb = na
+smma_sb := na(smma_sb[1]) ? sma_sb : (smma_sb[1] * (maLen_sb - 1) + src_sb) / maLen_sb
+
+shortSum_B   = (w_ema_s ? ema_sb : 0) + (w_sma_s ? sma_sb : 0) + (w_lsma_s ? lsma_sb : 0) + (w_hma_s ? hma_sb : 0) + (w_vwma_s ? vwma_sb : 0) + (w_vwap_s ? vwap_sb : 0) + (w_zlema_s ? zlema_sb : 0) + (w_smma_s ? smma_sb : 0)
+shortCount_B = (w_ema_s ? 1 : 0) + (w_sma_s ? 1 : 0) + (w_lsma_s ? 1 : 0) + (w_hma_s ? 1 : 0) + (w_vwma_s ? 1 : 0) + (w_vwap_s ? 1 : 0) + (w_zlema_s ? 1 : 0) + (w_smma_s ? 1 : 0)
+comp_sb      = shortCount_B > 0 ? shortSum_B / shortCount_B : na
+
+// =========================================================================
+// COMPOSITE PLOTS & TREND SHADING
+// =========================================================================
+plot(use_la ? comp_la : na, title="Long Engine A (Fast)",  color=color.rgb(41, 182, 114),   linewidth=2)
+plot(use_lb ? comp_lb : na, title="Long Engine B (Slow)",  color=color.rgb(15, 110, 101),   linewidth=2)
+plot(use_sa ? comp_sa : na, title="Short Engine A (Fast)", color=color.rgb(212, 41, 41),    linewidth=2)
+plot(use_sb ? comp_sb : na, title="Short Engine B (Slow)", color=color.rgb(187, 120, 19),   linewidth=2)
+
+isLongTrend  = close > comp_la
+isShortTrend = close < comp_sa
+bgcolor(isLongTrend  and not isShortTrend and use_la ? color.new(color.green, 93) : na, title="Long Control Shading")
+bgcolor(isShortTrend and not isLongTrend  and use_sa ? color.new(color.red,   93) : na, title="Short Control Shading")
+
+// =========================================================================
+// LIQUIDITY CANDLE LOGIC & VISUALS
+// =========================================================================
+isLiqCandle = high > high[1] and low < low[1]
+barcolor(isLiqCandle ? color.white : na)
+
+var float buyLevel  = na
+var float sellLevel = na
+
+if isLiqCandle
+    buyLevel  := high + offsetPrice
+    sellLevel := low  - offsetPrice
+
+var line lineHigh = na
+var line lineLow  = na
+
+if isLiqCandle
+    lineHigh := line.new(bar_index, high, bar_index, high, color=color.green, width=1)
+    lineLow  := line.new(bar_index, low,  bar_index, low,  color=color.red,   width=1)
+else if not na(lineHigh)
+    line.set_x2(lineHigh, bar_index)
+    line.set_x2(lineLow,  bar_index)
+
+// =========================================================================
+// ENTRY LOGIC — FLEXIBLE (Raw + Optional MA Filter)
+// =========================================================================
+barsSinceLiq = ta.barssince(isLiqCandle)
+
+// === Composite Trend Gate ===
+trendLong  = (not useCompFilter) or 
+             ((not useLongA or close > comp_la) and (not useLongB or close > comp_lb))
+
+trendShort = (not useCompFilter) or 
+             ((not useShortA or close < comp_sa) and (not useShortB or close < comp_sb))
+
+if strategy.position_size == 0
+    if isLiqCandle
+        // LONG
+        if trendLong
+            strategy.entry("Long", strategy.long, stop=buyLevel)
+        else
+            strategy.cancel("Long")
+            buyLevel := na
+
+        // SHORT
+        if trendShort
+            strategy.entry("Short", strategy.short, stop=sellLevel)
+        else
+            strategy.cancel("Short")
+            sellLevel := na
+
+    else if barsSinceLiq > barWindow
+        buyLevel  := na
+        sellLevel := na
+        strategy.cancel_all()
+
+// =========================================================================
+// EXITS — TP/SL + Advanced Trailing (Fixed/ATR/Percent + Breakeven)
+// =========================================================================
+grp_trail = "Trailing Stop Settings"
+useTrail       = input.bool(false, "Enable Trailing Stop",           group=grp_trail)
+trailType      = input.string("ATR", "Trailing Type", options=["Fixed", "ATR", "Percent"], group=grp_trail)
+trailFixed     = input.float(12.0, "Fixed Trail (Points)",           group=grp_trail, inline="fixed")
+trailATRmult   = input.float(2.0,  "ATR Multiplier",                 group=grp_trail, inline="atr")
+trailATRlen    = input.int(14,     "ATR Length",                     group=grp_trail, inline="atr")
+trailPercent   = input.float(0.5,  "Trail % of Price",               group=grp_trail, inline="perc")
+
+// Breakeven Settings
+useBreakeven   = input.bool(false, "Use Breakeven + Trail",          group=grp_trail, tooltip="Moves stop to breakeven after profit target, then trails")
+beProfit       = input.float(8.0,  "Breakeven Trigger (Points)",     group=grp_trail, tooltip="Move to breakeven when profit reaches this")
+beBuffer       = input.float(1.0,  "Breakeven Buffer (Points)",      group=grp_trail, tooltip="Small profit lock above/below entry")
+
+atrValue = ta.atr(trailATRlen)
+var float trailLevel = na
+
+// Initial Exit Orders (TP + SL)
+if strategy.position_size > 0 and strategy.position_size[1] <= 0
+    strategy.exit("Exit Long", from_entry="Long",
+         limit = tp_l > 0 ? strategy.position_avg_price + tp_l : na,
+         stop  = sl_l > 0 ? strategy.position_avg_price - sl_l : na)
+
+if strategy.position_size < 0 and strategy.position_size[1] >= 0
+    strategy.exit("Exit Short", from_entry="Short",
+         limit = tp_s > 0 ? strategy.position_avg_price - tp_s : na,
+         stop  = sl_s > 0 ? strategy.position_avg_price + sl_s : na)
+
+// === Dynamic Trailing + Breakeven Logic ===
+if useTrail and strategy.position_size != 0
+    float currentProfit = strategy.position_size > 0 ? (close - strategy.position_avg_price) : (strategy.position_avg_price - close)
+    
+    if strategy.position_size > 0
+        // Breakeven activation
+        if useBreakeven and currentProfit >= beProfit
+            trailLevel := math.max(trailLevel, strategy.position_avg_price + beBuffer)
+        
+        // Normal trailing
+        if trailType == "Fixed"
+            trailLevel := math.max(trailLevel, close - trailFixed)
+        else if trailType == "ATR"
+            trailLevel := math.max(trailLevel, close - atrValue * trailATRmult)
+        else if trailType == "Percent"
+            trailLevel := math.max(trailLevel, close * (1 - trailPercent/100))
+        
+        strategy.exit("Trail Long", from_entry="Long", stop=trailLevel)
+
+    else if strategy.position_size < 0
+        // Breakeven activation for shorts
+        if useBreakeven and currentProfit >= beProfit
+            trailLevel := math.min(trailLevel, strategy.position_avg_price - beBuffer)
+        
+        // Normal trailing
+        if trailType == "Fixed"
+            trailLevel := math.min(trailLevel, close + trailFixed)
+        else if trailType == "ATR"
+            trailLevel := math.min(trailLevel, close + atrValue * trailATRmult)
+        else if trailType == "Percent"
+            trailLevel := math.min(trailLevel, close * (1 + trailPercent/100))
+        
+        strategy.exit("Trail Short", from_entry="Short", stop=trailLevel)
+
+    // Reset on new trade
+    if strategy.position_size != strategy.position_size[1]
+        trailLevel := strategy.position_avg_price
+
+// === Safety Exit Bars ===
+var int entryBar = na
+
+// Record entry bar when new trade opens
+if strategy.position_size != 0 and strategy.position_size[1] == 0
+    entryBar := bar_index
+
+// === Safety by Bars ===
+if safetyBars > 0 and strategy.position_size != 0 and not na(entryBar)
+    if (bar_index - entryBar) >= safetyBars
+        strategy.close_all(comment="Safety Exit - Max Bars")
+
+// =========================================================================
+// DEBUG
+// =========================================================================
+
+// =========================================================================
+// MULTI-TIMEFRAME DASHBOARD
+// =========================================================================
+tf1 = input.timeframe("5",   "Timeframe 1", group="Dashboard Timeframes")
+tf2 = input.timeframe("15",  "Timeframe 2", group="Dashboard Timeframes")
+tf3 = input.timeframe("60",  "Timeframe 3", group="Dashboard Timeframes")
+tf4 = input.timeframe("240", "Timeframe 4", group="Dashboard Timeframes")
+tf5 = input.timeframe("D",   "Timeframe 5", group="Dashboard Timeframes")
+tf6 = input.timeframe("W",   "Timeframe 6", group="Dashboard Timeframes")
+
+tf1_liq = request.security(syminfo.tickerid, tf1, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf2_liq = request.security(syminfo.tickerid, tf2, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf3_liq = request.security(syminfo.tickerid, tf3, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf4_liq = request.security(syminfo.tickerid, tf4, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf5_liq = request.security(syminfo.tickerid, tf5, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf6_liq = request.security(syminfo.tickerid, tf6, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+isBlink = second(timenow) % 8 == 0
+getBlinkColor(isActive) => isActive ? (isBlink ? color.new(#4774a1, 0) : color.new(#0e58a3, 0)) : color.new(#ad1616, 0)
+
+var table liqTable = table.new(position.top_right, 6, 2, border_width=1, border_color=color.new(color.black, 100))
+
+if barstate.islast
+    table.cell(liqTable, 0, 0, tf1, text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6096b2, 70))
+    table.cell(liqTable, 1, 0, tf2, text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6096b2, 70))
+    table.cell(liqTable, 2, 0, tf3, text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6096b2, 70))
+    table.cell(liqTable, 3, 0, tf4, text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6096b2, 70))
+    table.cell(liqTable, 4, 0, tf5, text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6096b2, 70))
+    table.cell(liqTable, 5, 0, tf6, text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6096b2, 70))
+
+    table.cell(liqTable, 0, 1, tf1_liq ? "Yes" : "No", text_color=color.white, text_size=size.tiny, bgcolor=getBlinkColor(tf1_liq))
+    table.cell(liqTable, 1, 1, tf2_liq ? "Yes" : "No", text_color=color.white, text_size=size.tiny, bgcolor=getBlinkColor(tf2_liq))
+    table.cell(liqTable, 2, 1, tf3_liq ? "Yes" : "No", text_color=color.white, text_size=size.tiny, bgcolor=getBlinkColor(tf3_liq))
+    table.cell(liqTable, 3, 1, tf4_liq ? "Yes" : "No", text_color=color.white, text_size=size.tiny, bgcolor=getBlinkColor(tf4_liq))
+    table.cell(liqTable, 4, 1, tf5_liq ? "Yes" : "No", text_color=color.white, text_size=size.tiny, bgcolor=getBlinkColor(tf5_liq))
+    table.cell(liqTable, 5, 1, tf6_liq ? "Yes" : "No", text_color=color.white, text_size=size.tiny, bgcolor=getBlinkColor(tf6_liq))

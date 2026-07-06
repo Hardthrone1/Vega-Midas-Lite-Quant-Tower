@@ -1,0 +1,8 @@
+---
+pid: 3044
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "cd C:\\Users\\Softthrone\\Claude\\TradingView-Suite; node -e \"const fs=require('fs');const env=Object.fromEntries(fs.readFileSync('.env','utf8').split(/\\r?\\n/).filter(l=>l&&!l.startsWith('#')).map(l=>{const i=l.indexOf('=');return [l.slice(0,i),l.slice(i+1)]})); const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),25000); fetch('https://integrate.api.nvidia.com/v1/chat/completions',{method:'POST',signal:ctrl.signal,headers:{Authorization:'Bearer '+env.NVIDIA_KEY_INTAKE,'Content-Type':'application/json'},body:JSON.stringify({model:'meta/llama-3.3-70b-instruct',messages:[{role:'user',content:'hi'}],max_tokens:10})}).then(async r=>{const d=await r.json(); console.log(r.status, JSON.stringify(d).slice(0,500))}).catch(e=>console.error('ERR',e.message))\""
+started_at: 2026-07-04T18:01:02.966Z
+running_for_ms: 959986   
+---
+ERR This operation was aborted

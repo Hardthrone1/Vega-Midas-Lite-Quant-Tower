@@ -1,0 +1,15 @@
+---
+pid: 6776
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "Set-Location \"C:\\Users\\Softthrone\\Claude\\TradingView-Suite\\midas_code\"; npx --yes tsx -e \"import { normalizeCondition } from './src/shared/validation/strategySchema.ts'; const r = normalizeCondition({ id: 'cond_1', description: 'atr expansion', expression: 'atr_expansion(atrLength=14, multiplier=1.5)', enabled: true }, 0); console.log(JSON.stringify(r, null, 2));\""
+started_at: 2026-07-05T10:37:07.202Z
+running_for_ms: 34024994 
+---
+{
+  "type": "atr_expansion",
+  "parameters": {
+    "atrLength": 14,
+    "multiplier": 1.5
+  },
+  "description": "atr expansion"
+}

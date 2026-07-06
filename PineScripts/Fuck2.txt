@@ -1,0 +1,98 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+
+//@version=5
+strategy("S2 Trend + Range Strategy", overlay=true, calc_on_every_tick=true, process_orders_on_close=true)
+
+// =====================
+// 🔷 INPUTS
+// =====================
+emaLen    = input.int(50, "EMA Length")
+adxLen    = input.int(14, "ADX Length")
+adxThresh = input.int(20, "ADX Threshold")
+adxSmooth = input.int(14, "ADX Smoothing")
+rsiLen    = input.int(14, "RSI Length")
+stochLen  = input.int(14, "Stoch Length")
+
+// =====================
+// 🔷 EMAs
+// =====================
+ema_5m = ta.ema(close, emaLen)
+// Note: request.security can cause repainting on historical data if not handled with lookahead.
+ema_1h = request.security(syminfo.tickerid, "60", ta.ema(close, emaLen), lookahead=barmerge.lookahead_off)
+
+plot(ema_5m, color=color.yellow, title="5M EMA 50")
+plot(ema_1h, color=color.blue, linewidth=2, title="1H EMA 50")
+
+// =====================
+// 🔷 ADX (Trend vs Range)
+// =====================
+[diplus, diminus, adx] = ta.dmi(adxLen, adxSmooth)
+
+isTrend = adx > adxThresh
+isRange = adx < adxThresh
+
+// =====================
+// 🔷 RSI + STOCH
+// =====================
+rsi = ta.rsi(close, rsiLen)
+
+k = ta.stoch(close, high, low, stochLen)
+d = ta.sma(k, 3)
+
+// =====================
+// 🔷 TREND CONDITIONS
+// =====================
+trendBull = close > ema_5m and close > ema_1h and isTrend
+trendBear = close < ema_5m and close < ema_1h and isTrend
+
+trendBuy  = trendBull and ta.crossover(k, 50) and rsi > 50
+trendSell = trendBear and ta.crossunder(k, 50) and rsi < 50
+
+// =====================
+// 🔷 RANGE CONDITIONS
+// =====================
+rangeBuy  = isRange and rsi < 30 and ta.crossover(k, d)
+rangeSell = isRange and rsi > 70 and ta.crossunder(k, d)
+
+// =====================
+// 🔷 HYBRID EXECUTION (Trend = normal, Range = inverted)
+// =====================
+// Trend = normal
+longTrend  = trendBuy
+shortTrend = trendSell
+
+// Range = inverted
+longRange  = rangeSell
+shortRange = rangeBuy
+
+longCondition  = longTrend or longRange
+shortCondition = shortTrend or shortRange
+
+if (longCondition and strategy.position_size <= 0)
+    strategy.close("Short")
+    strategy.entry("Long", strategy.long, comment=isTrend ? "Trend" : "Range Inverse")
+
+if (shortCondition and strategy.position_size >= 0)
+    strategy.close("Long")
+    strategy.entry("Short", strategy.short, comment=isTrend ? "Trend" : "Range Inverse")
+
+strategy.exit("Exit Long", from_entry="Long", profit=20, loss=10)
+strategy.exit("Exit Short", from_entry="Short", profit=20, loss=10)
+
+// =====================
+// 🔷 VISUALS
+// =====================
+bgcolor(isTrend ? color.new(color.blue, 90) : color.new(color.red, 90))
+
+plotshape(trendBuy,  title="Original Trend Buy (Now Sell Signal)", 
+     location=location.abovebar, color=color.red, style=shape.triangledown)
+
+plotshape(trendSell, title="Original Trend Sell (Now Buy Signal)", 
+     location=location.belowbar, color=color.green, style=shape.triangleup)
+
+plotshape(rangeBuy,  title="Original Range Buy (Now Sell Signal)", 
+     location=location.abovebar, color=color.orange, style=shape.circle)
+
+plotshape(rangeSell, title="Original Range Sell (Now Buy Signal)", 
+     location=location.belowbar, color=color.lime, style=shape.circle)

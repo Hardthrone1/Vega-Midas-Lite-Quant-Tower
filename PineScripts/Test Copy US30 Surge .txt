@@ -1,0 +1,362 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+
+//@version=5
+strategy("US30 Surge", shorttitle="TEST BOT", overlay=true, initial_capital=50000, process_orders_on_close = true)
+
+// ═════════════════════════════════════════════════════════════
+// MAIN INPUTS
+// ═════════════════════════════════════════════════════════════
+ls_group     = "Lambda Signal Settings"
+ls_sigType   = input.string("RSI", "Lambda - Signal Source", options=["RSI", "Momentum"], group=ls_group)
+ls_bSource   = input.string("SMA", "Lambda - Baseline Modulator", options=["SMA", "EMA", "Volume"], group=ls_group)
+rsiperiod    = input.int(3, "RSI Period", group=ls_group)
+ls_upper_in  = input.float(0.77, "Lambda Overbought Level", minval=0.51, maxval=1.0, step=0.01, group=ls_group)
+ls_lower_in  = input.float(0.19, "Lambda Oversold Level", minval=0.0, maxval=0.49, step=0.01, group=ls_group)
+
+ema_group    = "EMA Settings"
+ema1_length  = input.int(3, "EMA 1 Length", minval=1, group=ema_group)
+src          = input.source(close, "Source")
+ema1_Color   = input.color(color.new(color.red, 50), "EMA 1 Color", group=ema_group)
+
+ce_group     = "Chandelier Exit (CE) Settings"
+useCEFilter  = input.bool(true, "Use CE Alignment for Entries?", group=ce_group, tooltip="Wait for both Lambda AND CE to agree before entering.")
+useCEExit    = input.bool(false, "Use CE for Trailing Stop?", group=ce_group, tooltip="If ON, CE acts as the SL. If OFF, uses the % SL below.")
+ce_length    = input.int(4, "CE ATR Period", group=ce_group)
+ce_mult      = input.float(2.6, "CE ATR Multiplier", step=0.1, group=ce_group)
+
+risk_group   = "Fixed Risk Management"
+tpPerc       = input.float(4, "Take Profit %", step=0.1, group=risk_group)
+slPerc       = input.float(1.2, "Stop Loss %", step=0.1, group=risk_group)
+
+appear_group = "Appearance & Debug"
+showsignals  = input.bool(true, "Show Final Signals?", group=appear_group)
+showCElines  = input.bool(false, "Show CE Lines?", group=appear_group)
+showCECloud  = input.bool(false, "Show CE Cloud Fill?", group=appear_group)
+//debug_mode   = input.bool(false, "Debug: Show Raw Lambda Pulses", group=appear_group, tooltip="Plots pink X's where the indicator fires before CE/EMA filters.")
+
+time_group = "Trading Shutdown Filters"
+
+useTimeFilter = input.bool(false, "Enable Trading Shutdowns", group=time_group)
+
+blockLondonOpen = input.bool(true, "Block London Open", group=time_group)
+blockNYOpen     = input.bool(true, "Block NY Open", group=time_group)
+blockLunch      = input.bool(true, "Block Lunch", group=time_group)
+blockNYClose    = input.bool(true, "Block NY Close", group=time_group)
+
+// ═════════════════════════════════════════════════════════════
+// 🔖 SEPARATE PULSE INPUTS FOR 1H & 4H
+// ═════════════════════════════════════════════════════════════
+sig_vis_group   = "Entry Colors"
+buyEntryColor   = input.color(color.new(color.lime, 50), "Buy Entry Color", group=sig_vis_group)
+sellEntryColor  = input.color(color.new(color.red, 50), "Sell Entry Color", group=sig_vis_group)
+buyTextColor    = input.color(color.white, "Buy Entry Text Color", group=sig_vis_group)
+sellTextColor   = input.color(color.white, "Sell Entry Text Color", group=sig_vis_group)
+
+pulse_group     = "Pulse Signal OB/OS"
+pulse_upper_in  = input.float(0.76, "Pulse Overbought Level", minval=0.51, maxval=1.0, step=0.01, group=pulse_group)
+pulse_lower_in  = input.float(0.30, "Pulse Oversold Level", minval=0.0, maxval=0.49, step=0.01, group=pulse_group)
+showPulseMTF    = input.bool(true, "Show 4H / 1H Pulse Signals", group=pulse_group)
+
+pulse4hBuyCol   = input.color(color.new(color.aqua, 60), "4H Buy Color", group=pulse_group)
+pulse4hSellCol  = input.color(color.new(color.fuchsia, 60), "4H Sell Color", group=pulse_group)
+pulse1hBuyCol   = input.color(color.new(color.blue, 60), "1H Buy Color", group=pulse_group)
+pulse1hSellCol  = input.color(color.new(color.orange, 60), "1H Sell Color", group=pulse_group)
+
+// ═════════════════════════════════════════════════════════════
+// MAIN GLOBAL CALCULATIONS (Called every bar)
+// ═════════════════════════════════════════════════════════════
+// Final Lambda Value
+ls_s_raw = ls_sigType == "RSI" ? ta.rsi(close, rsiperiod) : ta.mom(close, 10)
+ls_s     = ls_sigType == "RSI" ? ls_s_raw / 100 : ls_s_raw
+ls_b     = ls_bSource == "SMA" ? (ta.sma(close, 24) / close) : ls_bSource == "EMA" ? (ta.ema(close, 24) / close) : (volume / ta.sma(volume, 50))
+ls_mid   = 0.50 
+
+// THE ONLY LAMBDA CALCULATION
+ls_v_cur = 1.0 * (1.0 * ls_s) * ls_b 
+
+// Baseline Modulators
+ls_sma_mod  = ta.sma(close, 24) / close
+ls_ema_mod  = ta.ema(close, 24) / close
+ls_vol_mod  = volume / ta.sma(volume, 50)
+
+// 2. Trend & Volatility Indicators
+ce_atr      = ta.atr(ce_length) * ce_mult
+atr_short   = ta.atr(10)
+atr_ma_long = ta.sma(atr_short, 50)
+ny_open_sma = ta.sma(volume, 50) 
+
+// ═════════════════════════════════════════════════════════════
+// 🔖 PULSE LOGIC FOR 1H & 4H
+// ═════════════════════════════════════════════════════════════
+// PULSE OB/OS LEVEL CALCULATION 
+f_pulse(_upper, _lower) =>
+    s_raw = ls_sigType == "RSI" ? ta.rsi(close, rsiperiod) : ta.mom(close, 10)
+    s     = ls_sigType == "RSI" ? s_raw / 100.0 : s_raw
+    b     = ls_bSource == "SMA" ? ta.sma(close, 2) / close : ls_bSource == "EMA" ? ta.ema(close, 22) / close : volume / ta.sma(volume, 30)
+    v     = s * b
+
+    var bool armed_os = false
+    var bool armed_ob = false
+
+    if v <= _lower
+        armed_os := true
+        armed_ob := false
+
+    if v >= _upper
+        armed_ob := true
+        armed_os := false
+
+    buyPulse  = armed_os and ta.crossover(v, 0.50)
+    sellPulse = armed_ob and ta.crossunder(v, 0.50)
+
+    if buyPulse
+        armed_os := false
+
+    if sellPulse
+        armed_ob := false
+
+    [v, buyPulse, sellPulse]
+
+// PULSE SIGNALS 1H & 4H
+[pulse_v_4h, pulse_buy_4h, pulse_sell_4h] = request.security(
+     syminfo.tickerid,
+     "240",
+     f_pulse(pulse_upper_in, pulse_lower_in),
+     lookahead=barmerge.lookahead_off)
+
+[pulse_v_1h, pulse_buy_1h, pulse_sell_1h] = request.security(
+     syminfo.tickerid,
+     "60",
+     f_pulse(pulse_upper_in, pulse_lower_in),
+     lookahead=barmerge.lookahead_off)
+
+// PULSE EXECUTION 
+// Fire only once on the chart instead of repeating across bars
+pulse_buy_4h_fire  = pulse_buy_4h and not pulse_buy_4h[1]
+pulse_sell_4h_fire = pulse_sell_4h and not pulse_sell_4h[1]
+pulse_buy_1h_fire  = pulse_buy_1h and not pulse_buy_1h[1]
+pulse_sell_1h_fire = pulse_sell_1h and not pulse_sell_1h[1]
+
+// ═════════════════════════════════════════════════════════════
+// ⭐ MAIN SIGNAL EMA1
+// ═════════════════════════════════════════════════════════════
+// CURRENT my1_EMA DISPLAYED 
+my1_EMA     = ta.ema(close, ema1_length)[1]
+// 1H ONLY my1_EMA
+//my1_EMA = request.security(syminfo.tickerid, "60", ta.ema(close, ema1_length)[1], lookahead=barmerge.lookahead_off)
+
+// ═════════════════════════════════════════════════════════════
+// MAIN CHANDELIER EXIT (CE) CALCULATION
+// ═════════════════════════════════════════════════════════════
+longStop = ta.highest(close, ce_length) - ce_atr
+shortStop = ta.lowest(close, ce_length) + ce_atr
+
+var float longStopPrev = na
+var float shortStopPrev = na
+var int last_trade_bar = 0
+
+longStopPrev := nz(longStop[1], longStop)
+shortStopPrev := nz(shortStop[1], shortStop)
+
+longStop := close[1] > longStopPrev ? math.max(longStop, longStopPrev) : longStop
+shortStop := close[1] < shortStopPrev ? math.min(shortStop, shortStopPrev) : shortStop
+
+var int ce_dir = 1
+
+ce_dir := close > shortStopPrev ? 1 : close < longStopPrev ? -1 : ce_dir
+
+// ═════════════════════════════════════════════════════════════
+// MAIN STATE TRACKING & PULSE LOGIC
+// ═════════════════════════════════════════════════════════════
+var bool came_from_oversold   = false
+var bool came_from_overbought = false
+
+// 1. Arming Logic
+if ls_v_cur <= ls_lower_in
+    came_from_oversold   := true
+    came_from_overbought := false // Hard reset for clarity
+
+if ls_v_cur >= ls_upper_in
+    came_from_overbought := true
+    came_from_oversold   := false // Hard reset for clarity
+
+// 2. Pulse Logic (This resets the "Armed" state once the trade fires)
+strong_buy_fired  = came_from_oversold and ta.crossover(ls_v_cur, ls_mid)
+strong_sell_fired = came_from_overbought and ta.crossunder(ls_v_cur, ls_mid)
+
+if strong_buy_fired
+    came_from_oversold := false
+
+if strong_sell_fired
+    came_from_overbought := false
+
+// ===== SESSION WINDOWS =====
+
+// Using exchange time
+
+isLondonOpen =
+     not na(time(timeframe.period, "0300-0330:1234567"))
+
+isNYOpen     =
+     not na(time(timeframe.period, "0930-1000:1234567"))
+
+isLunch      =
+     not na(time(timeframe.period, "1130-1300:1234567"))
+
+isNYClose    =
+     not na(time(timeframe.period, "1530-1600:1234567"))
+
+// Trading resume window
+isAfterHours =
+     not na(time(timeframe.period, "1600-2000:1234567"))
+
+shutdownActive =
+     (blockLondonOpen and isLondonOpen) or
+     (blockNYOpen and isNYOpen) or
+     (blockLunch and isLunch) or
+     (blockNYClose and isNYClose) or
+     isAfterHours
+
+allowTrading = useTimeFilter ? not shutdownActive : true
+
+// ═════════════════════════════════════════════════════════════
+// MAIN STRATEGY EXECUTION (The "Ironclad" Gate)
+// ═════════════════════════════════════════════════════════════
+final_buy_trigger  = useCEFilter ? (strong_buy_fired and ce_dir == 1) : strong_buy_fired
+final_sell_trigger = useCEFilter ? (strong_sell_fired and ce_dir == -1) : strong_sell_fired
+
+// Check 1: Must be a new bar since last trade
+// Check 2: The current bar MUST be closed (confirmed)
+can_trade = (bar_index > last_trade_bar) and barstate.isconfirmed
+
+// ═════════════════════════════════════════════════════════════
+// 🔖 PULSE ENTRY EXECUTION FOR 1H & 4H
+// ═════════════════════════════════════════════════════════════
+buy_entry  = final_buy_trigger and close > my1_EMA and can_trade
+sell_entry = final_sell_trigger and close < my1_EMA and can_trade
+
+if buy_entry and allowTrading
+    strategy.entry("LONG", strategy.long, comment="BUY_ENTRY")
+    last_trade_bar := bar_index
+
+if sell_entry and allowTrading
+    strategy.entry("SHORT", strategy.short, comment="SELL_ENTRY")
+    last_trade_bar := bar_index
+
+bgcolor(shutdownActive ? color.new(color.gray, 90) : na)
+
+// ═════════════════════════════════════════════════════════════
+// MAIN EXIT MANAGEMENT (TP/SL) - $0.00 BUG FIXED
+// ═════════════════════════════════════════════════════════════
+// We use an inline 'if' ( ? : ) to only calculate prices when a position exists.
+// Otherwise, it returns 'na' to prevent instant $0.00 limit executions.
+float long_tp = strategy.position_size > 0 ? strategy.position_avg_price * (1 + tpPerc / 100) : na
+float long_sl = strategy.position_size > 0 ? (useCEExit ? longStop : strategy.position_avg_price * (1 - slPerc / 100)) : na
+
+float short_tp = strategy.position_size < 0 ? strategy.position_avg_price * (1 - tpPerc / 100) : na
+float short_sl = strategy.position_size < 0 ? (useCEExit ? shortStop : strategy.position_avg_price * (1 + slPerc / 100)) : na
+
+// Only fire the exit commands if we are actively in a trade
+if strategy.position_size > 0
+    strategy.exit("Long Exit", "LONG", limit=long_tp, stop=long_sl)
+
+if strategy.position_size < 0
+    strategy.exit("Short Exit", "SHORT", limit=short_tp, stop=short_sl)
+
+// ═════════════════════════════════════════════════════════════
+// MAIN PLOTS & VISUALS
+// ═════════════════════════════════════════════════════════════
+plot(my1_EMA, color=ema1_Color, title="EMA 1", linewidth=2, display = display.none)
+
+// CE Trailing Lines
+plot(showCElines and ce_dir == 1 ? longStop : na, "CE Long", color=color.new(color.lime, 40), style=plot.style_linebr, linewidth=2)
+plot(showCElines and ce_dir == -1 ? shortStop : na, "CE Short", color=color.new(color.red, 40), style=plot.style_linebr, linewidth=2)
+
+// CE Trailing Cloud
+p_upper = plot(showCECloud ? longStop : na, "CE Cloud Upper", color=color.new(color.gray, 100))
+p_lower = plot(showCECloud ? shortStop : na, "CE Cloud Lower", color=color.new(color.gray, 100))
+fill(p_upper, p_lower, color=showCECloud ? (ce_dir == 1 ? color.new(color.lime, 90) : color.new(color.red, 90)) : na)
+
+// Main Signals Plots
+plotshape(showsignals and final_buy_trigger, title="Buy Signal", location=location.belowbar, style=shape.labelup, size=size.tiny, color=color.new(color.green, 30), textcolor=color.white, text="B")
+plotshape(showsignals and final_sell_trigger, title="Sell Signal", location=location.abovebar, style=shape.labeldown, size=size.tiny, color=color.new(color.red, 30), textcolor=color.white, text="S")
+
+// 🔖 Pulse Buy/Sell Entry Plots For 1H & 4H
+plotshape(showsignals and buy_entry,  title="BUY_ENTRY",  location=location.belowbar, style=shape.labelup,   size=size.tiny, color=buyEntryColor,  textcolor=buyTextColor,  text="B")
+plotshape(showsignals and sell_entry, title="SELL_ENTRY", location=location.abovebar, style=shape.labeldown, size=size.tiny, color=sellEntryColor, textcolor=sellTextColor, text="S")
+
+// 🔖 Pulse Buy/Sell Labels For 4H
+plotshape(showPulseMTF and pulse_buy_4h_fire,  title="4H Pulse Buy",  location=location.belowbar, style=shape.labelup,   size=size.tiny, color=pulse4hBuyCol,  textcolor=color.white, text="4")
+plotshape(showPulseMTF and pulse_sell_4h_fire, title="4H Pulse Sell", location=location.abovebar, style=shape.labeldown, size=size.tiny, color=pulse4hSellCol, textcolor=color.white, text="4")
+
+// 🔖 Pulse Buy/Sell Labels For 1H
+plotshape(showPulseMTF and pulse_buy_1h_fire,  title="1H Pulse Buy",  location=location.belowbar, style=shape.labelup,   size=size.tiny, color=pulse1hBuyCol,  textcolor=color.white, text="1")
+plotshape(showPulseMTF and pulse_sell_1h_fire, title="1H Pulse Sell", location=location.abovebar, style=shape.labeldown, size=size.tiny, color=pulse1hSellCol, textcolor=color.white, text="1")
+
+// Main Debug Pulse Plots
+//plotshape(debug_mode and strong_buy_fired, title="Debug Buy Pulse", location=location.belowbar, style=shape.labelup, size=size.tiny, color=color.new(color.blue, 50))
+//plotshape(debug_mode and strong_sell_fired, title="Debug Sell Pulse", location=location.abovebar, style=shape.labeldown, size=size.tiny, color=color.new(color.orange, 50))
+
+plotchar(shutdownActive, title="Trading Disabled", char="X", location=location.top, color=color.red)
+
+// ═════════════════════════════════════════════════════════════
+// US30 5M TABLE "VISUAL EASE" HUD - REPAIRED
+// ═════════════════════════════════════════════════════════════
+var table easy_hud = table.new(position.top_right, 2, 6, bgcolor=#131722, frame_color=#313339, border_width=1)
+
+if barstate.islast
+    // 1. LAMBDA ARMING (Logic)
+    string arm_txt = "NEUTRAL" 
+    color arm_bg   = #313339      
+    color arm_tc   = color.white
+
+    if came_from_oversold
+        arm_txt := "BULLISH ⚡"
+        arm_bg  := color.lime
+        arm_tc  := color.black
+    else if came_from_overbought
+        arm_txt := "BEARISH ⚡"
+        arm_bg  := color.red
+        arm_tc  := color.white
+
+    // 2. TREND (Logic)
+    string ce_txt = ce_dir == 1 ? "LONG BIAS" : "SHORT BIAS"
+    color ce_bg   = ce_dir == 1 ? #2962ff : #ff9800
+
+    // 3.⭐ EMA 1 (Logic)
+    bool ema_ok = (ce_dir == 1 and close > my1_EMA) or (ce_dir == -1 and close < my1_EMA)
+    string ema_txt = ema_ok ? "CLEAR ✅" : "BLOCKED ❌"
+    color ema_bg   = ema_ok ? #4caf50 : #f44336
+
+    // 4. VOLATILITY (Logic)
+    bool vol_active = atr_short > atr_ma_long
+    string vol_txt  = vol_active ? "HIGH FLOW" : "LOW FLOW"
+    color vol_bg    = vol_active ? #9c27b0 : #313339
+
+    // 5. SESSION (Logic)
+    bool is_ny      = not na(time(timeframe.period, "1330-2000:23456")) 
+    string sess_txt = is_ny ? "NY OPEN" : "OFF-PEAK"
+    color sess_bg   = is_ny ? color.white : #313339
+    color sess_tc   = is_ny ? color.black : color.white
+
+    // --- RENDER ALL CELLS ONCE ---
+    // Row 0: Lambda
+    table.cell(easy_hud, 0, 0, "LAMBDA",   text_color=color.white, text_size=size.tiny, bgcolor=#2a2e39)
+    table.cell(easy_hud, 1, 0, arm_txt,    text_color=arm_tc,      text_size=size.tiny, bgcolor=arm_bg)
+
+    // Row 1: Trend
+    table.cell(easy_hud, 0, 1, "TREND",    text_color=color.white, text_size=size.tiny, bgcolor=#2a2e39)
+    table.cell(easy_hud, 1, 1, ce_txt,     text_color=color.white, text_size=size.tiny, bgcolor=ce_bg)
+
+    // Row 2: EMA Gate
+    table.cell(easy_hud, 0, 2, "EMA GATE", text_color=color.white, text_size=size.tiny, bgcolor=#2a2e39)
+    table.cell(easy_hud, 1, 2, ema_txt,    text_color=color.white, text_size=size.tiny, bgcolor=ema_bg)
+
+    // Row 3: Fuel (Vol)
+    table.cell(easy_hud, 0, 3, "FUEL",     text_color=color.white, text_size=size.tiny, bgcolor=#2a2e39)
+    table.cell(easy_hud, 1, 3, vol_txt,    text_color=color.white, text_size=size.tiny, bgcolor=vol_bg)
+
+    // Row 4: Session
+    table.cell(easy_hud, 0, 4, "SESSION",  text_color=color.white, text_size=size.tiny, bgcolor=#2a2e39)
+    table.cell(easy_hud, 1, 4, sess_txt,   text_color=sess_tc,     text_size=size.tiny, bgcolor=sess_bg)

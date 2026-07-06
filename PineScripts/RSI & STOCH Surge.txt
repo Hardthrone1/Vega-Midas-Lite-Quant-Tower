@@ -1,0 +1,313 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+
+//@version=5
+strategy("Lambda Surge Strategy (MTF)", shorttitle="SURGE STRAT", overlay=true, initial_capital=50000, process_orders_on_close = true)
+
+// ═════════════════════════════════════════════════════════════
+// INPUTS
+// ═════════════════════════════════════════════════════════════
+ls_group   = "Lambda Signal Settings"
+ls_sigType = input.string("RSI", "Lambda - Signal Source", options=["RSI", "Momentum"], group=ls_group)
+ls_bSource = input.string("SMA", "Lambda - Baseline Modulator", options=["SMA", "EMA", "Volume"], group=ls_group)
+rsiperiod  = input.int(19, "RSI Period", group=ls_group)
+
+ema_group   = "EMA Settings"
+ema1_length = input.int(100, "EMA 1 Length", minval=1, group=ema_group)
+ema2_length = input.int(50, "EMA 2 Length", minval=1, group=ema_group)
+ema3_length = input.int(2, "EMA 3 Length", minval=1, group=ema_group)
+src         = input.source(close, "Source")
+
+// Input for colors
+ema1_Color  = input.color(color.new(color.red, 75), "EMA Color")
+ema2_Color  = input.color(color.new(color.yellow, 75), "EMA Color")
+ema3_Color  = input.color(color.new(color.white, 65), "EMA Color")
+
+surge_group   = "Surge Spectrum"
+bull_strength = input.float(1.0, "Bullish Strength Multiplier", minval=0.1, maxval=2.0, step=0.1, group=surge_group)
+bear_strength = input.float(1.0, "Bearish Strength Multiplier", minval=0.1, maxval=2.0, step=0.1, group=surge_group)
+
+mtf_group = "Multi-Timeframe Settings"
+show_mtf  = input.bool(true, "Show MTF Rows", group=mtf_group)
+
+display_group = "Display Options"
+show_table    = input.bool(true, "Show Status Table", group=display_group)
+
+appear_group = "Appearance"
+showsignals  = input.bool(true, "Show Signals?", group=appear_group)
+
+// ⚠️Strategy inputs 
+tpPerc = input.float(3.5, "Take Profit %", step=0.1)
+slPerc = input.float(1.2, "Stop Loss %", step=0.1)
+
+// ═════════════════════════════════════════════════════════════
+// CONSTANTS (Lambda scale 0..1)
+// ═════════════════════════════════════════════════════════════
+ls_v0     = 1.0
+ls_lambda = 1.0
+ls_upper  = 0.76
+ls_lower  = 0.24
+ls_mid    = 0.50
+
+// ═════════════════════════════════════════════════════════════
+// CORE FUNCTIONS
+// ═════════════════════════════════════════════════════════════
+f_lambda(_close, _volume) =>
+    ls_s_raw = ls_sigType == "RSI" ? ta.rsi(_close, rsiperiod) : ta.mom(_close, 10)
+    ls_s = ls_sigType == "RSI" ? ls_s_raw / 100 : ls_s_raw
+    ls_b = ls_bSource == "SMA" ? ta.sma(_close, 23) / _close : ls_bSource == "EMA" ? ta.ema(_close, 23) / _close : _volume / ta.sma(_volume, 20) 
+    ls_v0 * (1 - ls_lambda + ls_lambda * ls_s) * ls_b
+
+// v5-friendly EMA trend helpers (single bool return each)
+f_ema_bull(_close) =>
+    e1 = ta.ema(_close, ema1_length)
+    e2 = ta.ema(_close, ema2_length)
+    e3 = ta.ema(_close, ema3_length)
+    e1 > e2 and e2 > e3
+
+f_ema_bear(_close) =>
+    e1 = ta.ema(_close, ema1_length)
+    e2 = ta.ema(_close, ema2_length)
+    e3 = ta.ema(_close, ema3_length)
+    e1 < e2 and e2 < e3
+
+// --- CALCULATIONS ---
+// Get 1H + 4H EMA
+my1_EMA = ta.ema(src, ema1_length)
+my2_EMA = request.security(syminfo.tickerid, "60", ta.ema(close, ema2_length))
+my3_EMA = request.security(syminfo.tickerid, "60", ta.ema(close, ema3_length))
+//my2_EMA = ta.ema(src, ema2_length)
+//my3_EMA = ta.ema(src, ema3_length)
+
+// ⚠️STRATEGY CALCULATIONS
+// ═════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS (KEEP AS-IS)
+// ═════════════════════════════════════════════════════════════
+get_rsi_bg(val) =>
+     val <= 0  ? color.new(color.fuchsia, 10) :
+     val <= 20 ? color.new(color.red, 0) :
+     val <= 25 ? color.new(color.red, 25) :
+     val <= 30 ? color.new(color.red, 40) :
+     val <= 35 ? color.new(color.red, 55) :
+     val <= 40 ? color.new(color.red, 70) :
+     val <= 45 ? color.new(color.red, 85) :
+     val <= 49 ? color.new(color.orange, 30) :
+     val <= 50 ? color.new(color.black, 80) :
+     val <= 51 ? color.new(color.blue, 30) :
+     val <= 55 ? color.new(color.green, 85) :
+     val <= 60 ? color.new(color.green, 70) :
+     val <= 65 ? color.new(color.green, 55) :
+     val <= 70 ? color.new(color.green, 40) :
+     val <= 75 ? color.new(color.green, 25) :
+     val <= 80 ? color.new(color.green, 0) :
+     color.new(color.aqua, 0)
+
+get_stoch_bg(val) =>
+     val <= 20 ? color.new(color.fuchsia, 0) :
+     val <= 25 ? color.new(color.red, 25) :
+     val <= 30 ? color.new(color.red, 40) :
+     val <= 35 ? color.new(color.red, 55) :
+     val <= 40 ? color.new(color.red, 70) :
+     val <= 45 ? color.new(color.red, 85) :
+     val <= 49 ? color.new(color.orange, 30) :
+     val <= 50 ? color.new(color.black, 50) :
+     val <= 51 ? color.new(color.blue, 30) :
+     val <= 55 ? color.new(color.green, 85) :
+     val <= 60 ? color.new(color.green, 70) :
+     val <= 65 ? color.new(color.green, 55) :
+     val <= 70 ? color.new(color.green, 40) :
+     val <= 75 ? color.new(color.green, 25) :
+     val <= 80 ? color.new(color.green, 0) :
+     color.new(color.aqua, 0)
+
+// ═════════════════════════════════════════════════════════════
+// SURGE: count → 0..100 score, then banded label
+// Bands: 0–20, 20–30, 30–40, 40–50, 50–60, 60–70, 70–80, 80–100
+// ═════════════════════════════════════════════════════════════
+f_pressureScore(count, totalTF, strength) =>
+    base = totalTF > 0 ? (count / totalTF) * 100.0 : 0.0
+    math.max(0.0, math.min(100.0, base * strength))
+
+f_pressureLabel(score, dirUp) =>
+     score < 20 ? (dirUp ? "FLAT ↑"   : "FLAT ↓") :
+     score < 30 ? (dirUp ? "BULL ↑"   : "BEAR ↓") :
+     score < 40 ? (dirUp ? "BULL+ ↑"  : "BEAR+ ↓") :
+     score < 50 ? (dirUp ? "PRESS ↑"  : "PRESS ↓") :
+     score < 60 ? (dirUp ? "PRESS+ ↑" : "PRESS+ ↓") :
+     score < 70 ? (dirUp ? "SURGE ↑"  : "SURGE ↓") :
+     score < 80 ? (dirUp ? "SURGE+ ↑" : "SURGE+ ↓") :
+     (dirUp ? "MAX ↑"    : "MAX ↓")
+
+f_statBg(dirUp, score) =>
+    t = int(90 - (score * 0.85))
+    tClamped = int(math.max(0, math.min(100, t)))
+    dirUp ? color.new(color.lime, tClamped) : color.new(color.red, tClamped)
+
+f_status(emaBull, emaBear, stochVal, obCount, osCount, totalTF, enablePressure) =>
+    isOB = stochVal >= 80
+    isOS = stochVal <= 20
+    txt = "FLAT"
+    bg  = color.new(color.gray, 85)
+
+    if emaBull
+        if enablePressure
+            score = f_pressureScore(isOB ? obCount : 0, totalTF, bull_strength)
+            txt := f_pressureLabel(score, true)
+            bg  := score < 20 ? color.new(color.green, 80) : f_statBg(true, score)
+        else
+            txt := "BULL"
+            bg  := color.new(color.green, 80)
+    else if emaBear
+        if enablePressure
+            score = f_pressureScore(isOS ? osCount : 0, totalTF, bear_strength)
+            txt := f_pressureLabel(score, false)
+            bg  := score < 20 ? color.new(color.red, 80) : f_statBg(false, score)
+        else
+            txt := "BEAR"
+            bg  := color.new(color.red, 80)
+
+    [txt, bg]
+
+// ═════════════════════════════════════════════════════════════
+// CURRENT TF SIGNALS (unchanged behavior)
+// ═════════════════════════════════════════════════════════════
+ls_v_cur = f_lambda(close, volume)
+
+lambda_from_oversold   = ls_v_cur <= ls_lower
+lambda_from_overbought = ls_v_cur >= ls_upper
+lambda_cross_mid_up    = ta.crossover(ls_v_cur, ls_mid)
+lambda_cross_mid_down  = ta.crossunder(ls_v_cur, ls_mid)
+
+var bool came_from_oversold   = false
+var bool came_from_overbought = false
+
+if lambda_from_oversold
+    came_from_oversold := true
+
+if lambda_from_overbought
+    came_from_overbought := true
+
+strong_buy_fired  = came_from_oversold and lambda_cross_mid_up
+strong_sell_fired = came_from_overbought and lambda_cross_mid_down
+
+if strong_buy_fired
+    came_from_oversold := false
+
+if strong_sell_fired
+    came_from_overbought := false
+
+// ═════════════════════════════════════════════════════════════
+// ⚠️STRATEGY EXECUTION (EMA3 FILTERED)
+// ═════════════════════════════════════════════════════════════
+// LONGS ONLY ABOVE EMA3
+if strong_buy_fired and close > my3_EMA
+    strategy.close("SHORT")
+    strategy.entry("LONG", strategy.long)
+
+// SHORTS ONLY BELOW EMA3
+if strong_sell_fired and close < my3_EMA
+    strategy.close("LONG")
+    strategy.entry("SHORT", strategy.short)
+
+long_tp = strategy.position_avg_price * (1 + tpPerc / 100)
+long_sl = strategy.position_avg_price * (1 - slPerc / 100)
+
+short_tp = strategy.position_avg_price * (1 - tpPerc / 100)
+short_sl = strategy.position_avg_price * (1 + slPerc / 100)
+
+// ⚠️STRATEGY EXIT
+strategy.exit("LONG TP/SL", from_entry="LONG", limit=long_tp, stop=long_sl)
+strategy.exit("SHORT TP/SL", from_entry="SHORT", limit=short_tp, stop=short_sl)
+
+rsi_cur   = ta.rsi(close, rsiperiod)
+stoch_cur = ta.stoch(close, high, low, 14)
+
+ema_bullish = f_ema_bull(close)
+ema_bearish = f_ema_bear(close)
+
+// ═════════════════════════════════════════════════════════════
+// MTF PACK: 5 TF surge + D row (D not counted in surge)
+// TFs for surge: 5,15,30,60,240 => totalTF = 5
+// Extra row: D
+// ═════════════════════════════════════════════════════════════
+f_pack(tf) =>
+    request.security(syminfo.tickerid, tf,[ ta.rsi(close, rsiperiod), ta.stoch(close, high, low, 14), f_ema_bull(close), f_ema_bear(close) ])
+
+[rsi_5m,  stoch_5m,  ema_bull_5m,  ema_bear_5m ] = f_pack("5")
+[rsi_15m, stoch_15m, ema_bull_15m, ema_bear_15m] = f_pack("15")
+[rsi_30m, stoch_30m, ema_bull_30m, ema_bear_30m] = f_pack("30")
+[rsi_1h,  stoch_1h,  ema_bull_1h,  ema_bear_1h ] = f_pack("60")
+[rsi_4h,  stoch_4h,  ema_bull_4h,  ema_bear_4h ] = f_pack("240")
+[rsi_1d,  stoch_1d,  ema_bull_1d,  ema_bear_1d ] = f_pack("D")
+
+totalTF = 5
+
+// Surge counts (ONLY 5m..4h)
+mtf_ob_count =
+     (stoch_5m  >= 80 ? 1 : 0) + (stoch_15m >= 80 ? 1 : 0) + (stoch_30m >= 80 ? 1 : 0) +
+     (stoch_1h  >= 80 ? 1 : 0) + (stoch_4h  >= 80 ? 1 : 0)
+
+mtf_os_count =
+     (stoch_5m  <= 20 ? 1 : 0) + (stoch_15m <= 20 ? 1 : 0) + (stoch_30m <= 20 ? 1 : 0) +
+     (stoch_1h  <= 20 ? 1 : 0) + (stoch_4h  <= 20 ? 1 : 0)
+
+// ═════════════════════════════════════════════════════════════
+// SIGNAL PLOTS
+// ═════════════════════════════════════════════════════════════
+plotshape(showsignals and strong_buy_fired, title="Strong Buy", location=location.belowbar, style=shape.labelup, size=size.tiny, color=color.new(color.blue, 70), textcolor=color.white, text="BUY")
+plotshape(showsignals and strong_sell_fired, title="Strong Sell", location=location.abovebar, style=shape.labeldown, size=size.tiny, color=color.new(color.orange, 70), textcolor=color.white, text="SELL")
+
+// ─────────────────────────────────────────────
+// EXPORT (for master strategy to read)
+// ─────────────────────────────────────────────
+plot(strong_buy_fired  ? 1 : 0, "KB_SURGE_EXPORT_BUY",  display=display.none)
+plot(strong_sell_fired ? 1 : 0, "KB_SURGE_EXPORT_SELL", display=display.none)
+
+plot(my1_EMA, color=ema1_Color, title="EMA", linewidth=2)
+plot(my2_EMA, color=ema2_Color, title="EMA", linewidth=2)
+plot(my3_EMA, color=ema3_Color, title="EMA", linewidth=2)
+
+//alertcondition(strong_buy_fired,  title="Lambda Strong Buy",  message="Lambda BUY on {{ticker}} at {{time}}")
+//alertcondition(strong_sell_fired, title="Lambda Strong Sell", message="Lambda SELL on {{ticker}} at {{time}}")
+
+// ═════════════════════════════════════════════════════════════
+// STATUS TABLE (5 TF surge + D row not counted)
+// ═════════════════════════════════════════════════════════════
+var table status_table = table.new(position.top_right, 5, 8, bgcolor=#000000, frame_color=#000000, border_width=1)
+
+if show_table and barstate.islast
+    table.cell(status_table, 0, 0, "TF",   text_color=color.white, bgcolor=color.new(#202020, 0), text_size=size.tiny)
+    table.cell(status_table, 1, 0, "RSI",  text_color=color.white, bgcolor=color.new(#202020, 0), text_size=size.tiny)
+    table.cell(status_table, 2, 0, "STO",  text_color=color.white, bgcolor=color.new(#202020, 0), text_size=size.tiny)
+    table.cell(status_table, 3, 0, "EMA",  text_color=color.white, bgcolor=color.new(#202020, 0), text_size=size.tiny)
+    table.cell(status_table, 4, 0, "STAT", text_color=color.white, bgcolor=color.new(#202020, 0), text_size=size.tiny)
+    table.cell(status_table, 0, 1, "CUR", text_color=color.white, bgcolor=#202020, text_size=size.tiny)
+    table.cell(status_table, 1, 1, str.tostring(rsi_cur, "#.##"),   text_color=color.white, bgcolor=get_rsi_bg(rsi_cur),     text_size=size.tiny)
+    table.cell(status_table, 2, 1, str.tostring(stoch_cur, "#.##"), text_color=color.white, bgcolor=get_stoch_bg(stoch_cur), text_size=size.tiny)
+    table.cell(status_table, 3, 1, ema_bullish ? "BULL" : ema_bearish ? "BEAR" : "NEUT", text_color=color.white, bgcolor=ema_bullish ? color.new(color.green, 60) : ema_bearish ? color.new(color.red, 60) : color.new(#202020, 0), text_size=size.tiny)
+    [cur_stat, cur_bg] = f_status(ema_bullish, ema_bearish, stoch_cur, mtf_ob_count, mtf_os_count, totalTF, true)
+    table.cell(status_table, 4, 1, cur_stat, text_color=color.white, bgcolor=cur_bg, text_size=size.tiny)
+
+if show_mtf
+    tfs      = array.from("5", "15", "30", "60", "240", "D")
+    rsis     = array.from(rsi_5m, rsi_15m, rsi_30m, rsi_1h, rsi_4h, rsi_1d)
+    stochs   = array.from(stoch_5m, stoch_15m, stoch_30m, stoch_1h, stoch_4h, stoch_1d)
+    emaBulls = array.from(ema_bull_5m, ema_bull_15m, ema_bull_30m, ema_bull_1h, ema_bull_4h, ema_bull_1d)
+    emaBears = array.from(ema_bear_5m, ema_bear_15m, ema_bear_30m, ema_bear_1h, ema_bear_4h, ema_bear_1d)
+    
+    for i = 0 to array.size(tfs) - 1
+        row     = i + 2
+        tf      = array.get(tfs, i)
+        rsi_v   = array.get(rsis, i)
+        sto_v   = array.get(stochs, i)
+        eBull   = array.get(emaBulls, i)
+        eBear   = array.get(emaBears, i)
+
+        enablePressure = tf != "D"  // D row not connected to surge
+
+        [stat, bg] = f_status(eBull, eBear, sto_v, mtf_ob_count, mtf_os_count, totalTF, enablePressure)
+        table.cell(status_table, 0, row, tf, text_color=color.white, bgcolor=#202020, text_size=size.tiny)
+        table.cell(status_table, 1, row, str.tostring(rsi_v, "#.##"), text_color=color.white, bgcolor=get_rsi_bg(rsi_v), text_size=size.tiny)
+        table.cell(status_table, 2, row, str.tostring(sto_v, "#.##"), text_color=color.white, bgcolor=get_stoch_bg(sto_v), text_size=size.tiny)
+        table.cell(status_table, 3, row, eBull ? "BULL" : eBear ? "BEAR" : "NEUT", text_color=color.white, bgcolor=eBull ? color.new(color.green, 60) : eBear ? color.new(color.red, 60) : color.new(#202020, 0), text_size=size.tiny)
+        table.cell(status_table, 4, row, stat, text_color=color.white, bgcolor=bg, text_size=size.tiny)

@@ -1,0 +1,110 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+
+//@version=5
+strategy("Liquidity Sweep Strategy", overlay=true, calc_on_every_tick=true, initial_capital=50000, default_qty_value=1)
+
+// =========================================================================
+// INPUTS
+// =========================================================================
+grp_entry   = "Entry Settings"
+pointsOff   = input.float(2.0, title="Entry Offset (Points)", group=grp_entry, tooltip="Added to High/Low for Buy/Sell Stops")
+pointMult   = input.float(1.0, title="Point Value Multiplier", group=grp_entry, tooltip="Use 1 for Stocks/Crypto/Indices, 0.0001 for standard Forex pairs.")
+
+grp_exit    = "Exit Settings (Points)"
+tpPoints    = input.float(20.0, title="Take Profit", group=grp_exit)
+slPoints    = input.float(10.0, title="Stop Loss", group=grp_exit)
+useTrail    = input.bool(true,  title="Enable Trailing Stop?", group=grp_exit)
+trailAct    = input.float(10.0, title="Trailing Activation Offset", group=grp_exit)
+trailOff    = input.float(2.0,  title="Trailing Step Offset", group=grp_exit)
+
+grp_table   = "Dashboard Timeframes"
+tf1 = input.timeframe("5",   title="Timeframe 1", group=grp_table)
+tf2 = input.timeframe("15",  title="Timeframe 2", group=grp_table)
+tf3 = input.timeframe("60",  title="Timeframe 3", group=grp_table)
+tf4 = input.timeframe("240", title="Timeframe 4", group=grp_table)
+
+// =========================================================================
+// LIQUIDITY CANDLE LOGIC & VISUALS
+// =========================================================================
+// A liquidity candle sweeps the high and low of the previous candle
+isLiqCandle = high > high[1] and low < low[1]
+
+// Color the liquidity candle white
+barcolor(isLiqCandle ? color.white : na)
+
+// Draw and extend high/low lines for the latest liquidity candle
+var line lineHigh = na
+var line lineLow  = na
+
+if isLiqCandle
+    lineHigh := line.new(bar_index, high, bar_index, high, color=color.green, width=2)
+    lineLow  := line.new(bar_index, low, bar_index, low, color=color.red, width=2)
+else
+    // Extend the lines forward until a new liquidity candle forms
+    if not na(lineHigh)
+        line.set_x2(lineHigh, bar_index)
+        line.set_x2(lineLow, bar_index)
+
+// =========================================================================
+// TRADING LOGIC (ENTRY & EXIT)
+// =========================================================================
+var float buyLevel  = na
+var float sellLevel = na
+
+// Update stop levels when a new liquidity candle forms AND we are not currently in a trade
+if isLiqCandle and strategy.position_size == 0
+    buyLevel  := high + (pointsOff * pointMult)
+    sellLevel := low  - (pointsOff * pointMult)
+
+// Place Stop Orders
+if strategy.position_size == 0
+    if not na(buyLevel)
+        strategy.entry("Long", strategy.long, stop=buyLevel)
+    if not na(sellLevel)
+        strategy.entry("Short", strategy.short, stop=sellLevel)
+else
+    // If a trade executes, cancel the opposing order and reset levels
+    strategy.cancel("Long")
+    strategy.cancel("Short")
+    buyLevel  := na
+    sellLevel := na
+
+// Convert "Points" inputs to "Ticks" for strategy.exit() compatibility
+ticksTP       = math.round((tpPoints * pointMult) / syminfo.mintick)
+ticksSL       = math.round((slPoints * pointMult) / syminfo.mintick)
+ticksTrailAct = math.round((trailAct * pointMult) / syminfo.mintick)
+ticksTrailOff = math.round((trailOff * pointMult) / syminfo.mintick)
+
+// Execute TP, SL, and Trailing Stops
+if strategy.position_size > 0
+    strategy.exit("Exit Long", "Long", profit=ticksTP, loss=ticksSL, trail_points=useTrail ? ticksTrailAct : na, trail_offset=useTrail ? ticksTrailOff : na)
+
+if strategy.position_size < 0
+    strategy.exit("Exit Short", "Short", profit=ticksTP, loss=ticksSL, trail_points=useTrail ? ticksTrailAct : na, trail_offset=useTrail ? ticksTrailOff : na)
+
+// =========================================================================
+// MULTI-TIMEFRAME DASHBOARD (TINY TABLE)
+// =========================================================================
+// Fetch liquidity condition from other timeframes safely
+tf1_liq = request.security(syminfo.tickerid, tf1, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf2_liq = request.security(syminfo.tickerid, tf2, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf3_liq = request.security(syminfo.tickerid, tf3, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf4_liq = request.security(syminfo.tickerid, tf4, high > high[1] and low < low[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+// Initialize Table
+var table liqTable = table.new(position.top_right, 4, 2, border_width=2, border_color=color.black)
+
+// Populate Table (only redraws on the last bar to save resources)
+if barstate.islast
+    // Header Row
+    table.cell(liqTable, 0, 0, tf1, text_color=color.white, bgcolor=color.new(color.blue, 20))
+    table.cell(liqTable, 1, 0, tf2, text_color=color.white, bgcolor=color.new(color.blue, 20))
+    table.cell(liqTable, 2, 0, tf3, text_color=color.white, bgcolor=color.new(color.blue, 20))
+    table.cell(liqTable, 3, 0, tf4, text_color=color.white, bgcolor=color.new(color.blue, 20))
+    
+    // Status Row
+    table.cell(liqTable, 0, 1, tf1_liq ? "Yes" : "No", text_color=color.white, bgcolor=tf1_liq ? color.green : color.red)
+    table.cell(liqTable, 1, 1, tf2_liq ? "Yes" : "No", text_color=color.white, bgcolor=tf2_liq ? color.green : color.red)
+    table.cell(liqTable, 2, 1, tf3_liq ? "Yes" : "No", text_color=color.white, bgcolor=tf3_liq ? color.green : color.red)
+    table.cell(liqTable, 3, 1, tf4_liq ? "Yes" : "No", text_color=color.white, bgcolor=tf4_liq ? color.green : color.red)

@@ -1,0 +1,137 @@
+//@version=5
+strategy("PDH/PDL Breakout Strategy (Clean)", overlay=true, pyramiding=0, initial_capital=300, default_qty_type=strategy.fixed, default_qty_value=1, currency=currency.USD, calc_on_order_fills=true, process_orders_on_close=false, max_bars_back=4000)
+
+// =====================================================================
+// INPUTS
+// =====================================================================
+grp1 = "Breakout Settings"
+usePDH_PDL   = input.bool(true,  "Use Previous Day High/Low Breakout", group=grp1)
+confirmClose = input.bool(false, "Only Trade On Candle Close",          group=grp1)
+
+useD  = input.bool(true,  "Enable Daily Filter", group=grp1)
+use4H = input.bool(false, "Enable 4H Filter",    group=grp1)
+use1H = input.bool(false, "Enable 1H Filter",    group=grp1)
+
+grp2 = "Trend Filter"
+useTrendFilter = input.bool(false, "Enable SMA Trend Filter", group=grp2)
+smaLength      = input.int(100,   "SMA Length",               group=grp2)
+
+grp3 = "Risk Management"
+takeProfitPts = input.float(200, "Take Profit (Price Points)", group=grp3)
+stopLossPts   = input.float(200, "Stop Loss (Price Points)",   group=grp3)
+useTrailing   = input.bool(false, "Use Trailing Stop",        group=grp3)
+trailStartPts = input.float(100, "Trail Start",                group=grp3)
+trailDistPts  = input.float(50, "Trail Distance",             group=grp3)
+
+// =====================================================================
+// PREVIOUS DAY LEVELS
+// =====================================================================
+pdh = request.security(syminfo.tickerid, "D", high[1], lookahead=barmerge.lookahead_on)
+pdl = request.security(syminfo.tickerid, "D", low[1],  lookahead=barmerge.lookahead_on)
+
+plot(usePDH_PDL ? pdh : na, title="PDH", color=color.green, linewidth=2, style=plot.style_linebr)
+plot(usePDH_PDL ? pdl : na, title="PDL", color=color.red,   linewidth=2, style=plot.style_linebr)
+
+// =====================================================================
+// TREND FILTER
+// =====================================================================
+sma = ta.sma(close, smaLength)
+trendLong  = not useTrendFilter or close > sma
+trendShort = not useTrendFilter or close < sma
+plot(useTrendFilter ? sma : na, "SMA", color=color.gray)
+
+// =====================================================================
+// TIMEFRAME FILTER
+// =====================================================================
+tfOK =
+     (not useD  or timeframe.isdaily or timeframe.multiplier < 1440) and
+     (not use4H or timeframe.multiplier <= 240) and
+     (not use1H or timeframe.multiplier <= 60)
+
+// =====================================================================
+// ONE-TRADE-PER-LEVEL GATE  ← core cluster fix
+// =====================================================================
+// Remember which PDH/PDL level has already produced an entry.
+// Once a level is "used", no new stop orders are placed until PDH/PDL
+// changes (i.e. a new day prints a new level).
+var float usedLongLevel  = na
+var float usedShortLevel = na
+
+// Detect when an entry just filled this bar
+justEnteredLong  = strategy.position_size > 0  and strategy.position_size[1] <= 0
+justEnteredShort = strategy.position_size < 0  and strategy.position_size[1] >= 0
+
+if justEnteredLong
+    usedLongLevel  := pdh          // mark this PDH as consumed
+if justEnteredShort
+    usedShortLevel := pdl          // mark this PDL as consumed
+
+// Allow a new entry only when the level itself has refreshed
+longLevelFresh  = na(usedLongLevel)  or pdh != usedLongLevel
+shortLevelFresh = na(usedShortLevel) or pdl != usedShortLevel
+
+// =====================================================================
+// ENTRY CONDITIONS
+// =====================================================================
+longCondition  = tfOK and trendLong  and usePDH_PDL and longLevelFresh
+shortCondition = tfOK and trendShort and usePDH_PDL and shortLevelFresh
+
+if not confirmClose
+    // Pending stop orders — placed only when the level is fresh
+    if longCondition and strategy.position_size <= 0
+        strategy.entry("Long",  strategy.long,  stop=pdh)
+    else
+        strategy.cancel("Long")
+
+    if shortCondition and strategy.position_size >= 0
+        strategy.entry("Short", strategy.short, stop=pdl)
+    else
+        strategy.cancel("Short")
+else
+    // Candle-close confirmation
+    longBreakClose  = close > pdh and close[1] <= pdh
+    shortBreakClose = close < pdl and close[1] >= pdl
+
+    if longCondition  and longBreakClose  and strategy.position_size <= 0
+        strategy.entry("Long",  strategy.long)
+    if shortCondition and shortBreakClose and strategy.position_size >= 0
+        strategy.entry("Short", strategy.short)
+
+// =====================================================================
+// EXITS
+// =====================================================================
+var float highSince = na
+var float lowSince  = na
+
+if strategy.position_size > 0
+    highSince := math.max(nz(highSince, high), high)
+else if strategy.position_size < 0
+    lowSince  := math.min(nz(lowSince,  low),  low)
+else
+    highSince := na
+    lowSince  := na
+
+longTP  = strategy.position_avg_price + takeProfitPts
+longSL  = strategy.position_avg_price - stopLossPts
+shortTP = strategy.position_avg_price - takeProfitPts
+shortSL = strategy.position_avg_price + stopLossPts
+
+longTrailActive  = useTrailing and (highSince - strategy.position_avg_price >= trailStartPts)
+shortTrailActive = useTrailing and (strategy.position_avg_price - lowSince   >= trailStartPts)
+
+finalLongSL  = longTrailActive  ? math.max(longSL,  highSince - trailDistPts) : longSL
+finalShortSL = shortTrailActive ? math.min(shortSL, lowSince  + trailDistPts) : shortSL
+
+if strategy.position_size > 0
+    strategy.exit("Long Exit",  "Long",  limit=longTP,  stop=finalLongSL)
+if strategy.position_size < 0
+    strategy.exit("Short Exit", "Short", limit=shortTP, stop=finalShortSL)
+
+// =====================================================================
+// VISUAL SIGNALS
+// =====================================================================
+longBreak  = usePDH_PDL and ta.crossover(high,  pdh)
+shortBreak = usePDH_PDL and ta.crossunder(low,   pdl)
+
+plot(longBreak  ? pdh : na, title="PDH Break", style=plot.style_circles, color=color.green, linewidth=3)
+plot(shortBreak ? pdl : na, title="PDL Break", style=plot.style_circles, color=color.red,   linewidth=3)

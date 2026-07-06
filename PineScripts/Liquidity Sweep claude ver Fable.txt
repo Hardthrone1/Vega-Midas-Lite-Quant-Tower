@@ -1,0 +1,204 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+//@version=5
+strategy("Liquidity Sweep — Lean Core + Leg Break Gate + Photon", overlay=true, currency=currency.USD,
+         initial_capital=50000, default_qty_value=1, calc_on_every_tick=false, process_orders_on_close=false)
+
+// =========================================================================
+// MASTER CONFIGURATION
+// =========================================================================
+grp_master = "Global Settings"
+strategyDirection = input.string("Long Only", "Testing Direction", options=["Both", "Long Only", "Short Only"], group=grp_master)
+useTrail          = input.bool(true, "Enable Trailing Stop?", group=grp_master)
+usePriceMode      = input.bool(true, "Use Price Units (Recommended)", group=grp_master)
+allowLongs  = strategyDirection == "Both" or strategyDirection == "Long Only"
+allowShorts = strategyDirection == "Both" or strategyDirection == "Short Only"
+
+// =========================================================================
+// LONG / SHORT ENGINE SETTINGS
+// =========================================================================
+grp_l = "Long Engine"
+offsetPrice_l     = input.float(3,   "Long Entry Offset (Price)",    group=grp_l)
+barWindow_l       = input.int(7,     "Long Execution Window (Bars)", group=grp_l)
+tp_l_input        = input.float(100, "Long Take Profit",             group=grp_l)
+sl_l_input        = input.float(14,  "Long Stop Loss",               group=grp_l)
+trailAct_l_input  = input.float(4,   "Long Trail Activation",        group=grp_l)
+trailStep_l_input = input.float(0,   "Long Trail Step",              group=grp_l)
+
+grp_s = "Short Engine"
+offsetPrice_s     = input.float(3,   "Short Entry Offset (Price)",    group=grp_s)
+barWindow_s       = input.int(2,     "Short Execution Window (Bars)", group=grp_s)
+tp_s_input        = input.float(60,  "Short Take Profit",             group=grp_s)
+sl_s_input        = input.float(30,  "Short Stop Loss",               group=grp_s)
+trailAct_s_input  = input.float(20,  "Short Trail Activation",        group=grp_s)
+trailStep_s_input = input.float(10,  "Short Trail Step",              group=grp_s)
+
+// =========================================================================
+// LEG BREAK GATE
+// =========================================================================
+grp_gate     = "Leg Break Gate"
+useGate      = input.bool(true,  "Enable Leg Break Gate",                           group=grp_gate)
+pivLen       = input.int(5,      "Structure Pivot Strength",             minval=1,  group=grp_gate)
+useWicks     = input.bool(false, "Count Wick Breaks (off = close)",                 group=grp_gate)
+minOppBreaks = input.int(2,      "Min Opposing-Leg Breaks (NQ:2 Gold:1)", minval=0, group=grp_gate)
+maxOppBreaks = input.int(6,      "Max Opposing-Leg Breaks (0 = no cap)",  minval=0, group=grp_gate)
+flipGate     = input.bool(false, "Flip Gate Direction (continuation mode)",         group=grp_gate)
+showBrkLbls  = input.bool(true,  "Show Break Count Labels",                         group=grp_gate)
+
+ph = ta.pivothigh(high, pivLen, pivLen)
+pl = ta.pivotlow(low,  pivLen, pivLen)
+var float swingHigh = na
+var float swingLow  = na
+var bool  highArmed = false
+var bool  lowArmed  = false
+if not na(ph)
+    swingHigh := ph
+    highArmed := true
+if not na(pl)
+    swingLow := pl
+    lowArmed  := true
+
+srcUp = useWicks ? high : close
+srcDn = useWicks ? low  : close
+bullBreak = highArmed and not na(swingHigh) and srcUp > swingHigh
+bearBreak = lowArmed  and not na(swingLow)  and srcDn < swingLow
+
+var int legDir     = 0
+var int breakCount = 0
+if bullBreak
+    breakCount := legDir == 1 ? breakCount + 1 : 1
+    legDir     := 1
+    highArmed  := false
+    if showBrkLbls
+        label.new(bar_index, high, str.tostring(breakCount), style=label.style_label_down, color=color.new(color.lime, 40), textcolor=color.black, size=size.tiny)
+if bearBreak
+    breakCount := legDir == -1 ? breakCount + 1 : 1
+    legDir     := -1
+    lowArmed   := false
+    if showBrkLbls
+        label.new(bar_index, low, str.tostring(breakCount), style=label.style_label_up, color=color.new(color.red, 40), textcolor=color.white, size=size.tiny)
+
+f_inWindow(cnt) => cnt >= minOppBreaks and (maxOppBreaks == 0 or cnt <= maxOppBreaks)
+rawLongOK   = legDir == -1 and f_inWindow(breakCount)
+rawShortOK  = legDir ==  1 and f_inWindow(breakCount)
+longGateOK  = not useGate or (flipGate ? rawShortOK : rawLongOK)
+shortGateOK = not useGate or (flipGate ? rawLongOK  : rawShortOK)
+
+// =========================================================================
+// PHOTON ENERGY RIBBON FILTER
+// =========================================================================
+grp_cma      = "Photon MA Filter"
+useCMA_l     = input.bool(false,  "Long: Enable Photon Filter",  group=grp_cma)
+useCMA_s     = input.bool(false,  "Short: Enable Photon Filter", group=grp_cma)
+cmaMode      = input.string("Price vs Band", "Filter Mode", options=["Price vs Band", "Ribbon Direction"], group=grp_cma)
+cmaBand      = input.string("Core", "Filter Band (Price vs Band mode)", options=["Fast", "Core", "Slow"], group=grp_cma)
+photonSrc    = input.source(close, "Photon Price Source",        group=grp_cma)
+energyPeriod = input.int(10,       "Energy Measurement Window",  group=grp_cma)
+constHC      = input.float(500.0,  "Planck-Light Constant",      group=grp_cma)
+showPhoton   = input.bool(true,    "Plot Photon Ribbon",         group=grp_cma)
+
+dynamic_ema(source, series_length) =>
+    len = math.max(1.0, series_length)
+    alpha = 2.0 / (len + 1.0)
+    var float ema_val = na
+    ema_val := na(ema_val) ? source : (alpha * source) + ((1.0 - alpha) * ema_val)
+    ema_val
+
+market_energy       = ta.sma(math.abs(photonSrc - ta.valuewhen(ta.change(photonSrc) != 0, photonSrc[1], 0)), energyPeriod)
+market_energy_clean = market_energy == 0 ? 0.001 : market_energy
+wave_len            = constHC / market_energy_clean
+
+// BUG FIX: enforce fast <= mid <= slow ordering at all times.
+// Original len_slow had a cap but no floor — during energy spikes it could
+// become SHORTER than len_fast, inverting the ribbon and causing flip noise.
+len_fast = math.max(5.0, wave_len * 0.5)
+len_mid  = math.max(len_fast, math.max(5.0, wave_len))
+len_slow = math.max(len_mid,  math.min(200.0, wave_len * 1.5))
+
+ema_fast = dynamic_ema(photonSrc, len_fast)
+ema_mid  = dynamic_ema(photonSrc, len_mid)
+ema_slow = dynamic_ema(photonSrc, len_slow)
+
+filterBand   = cmaBand == "Fast" ? ema_fast : cmaBand == "Slow" ? ema_slow : ema_mid
+photonBullOK = cmaMode == "Ribbon Direction" ? ema_fast > ema_slow : close > filterBand
+photonBearOK = cmaMode == "Ribbon Direction" ? ema_fast < ema_slow : close < filterBand
+
+ribbon_color = ema_fast > ema_slow ? color.new(color.green, 30) : color.new(color.red, 30)
+plot(showPhoton ? ema_fast : na, "Photon Fast Wave", color=ribbon_color)
+plot(showPhoton ? ema_mid  : na, "Photon Core Wave", color=color.new(color.white, 0))
+plot(showPhoton ? ema_slow : na, "Photon Slow Wave", color=ribbon_color)
+
+// =========================================================================
+// TICK CONVERSION
+// =========================================================================
+tickSize = syminfo.mintick > 0 ? syminfo.mintick : 0.01
+f_toTicks(val) => math.max(1, math.round(val / (usePriceMode ? tickSize : 1)))
+tp_l        = f_toTicks(tp_l_input)
+sl_l        = f_toTicks(sl_l_input)
+trailAct_l  = useTrail ? f_toTicks(trailAct_l_input)  : na
+trailStep_l = useTrail ? f_toTicks(trailStep_l_input) : na
+tp_s        = f_toTicks(tp_s_input)
+sl_s        = f_toTicks(sl_s_input)
+trailAct_s  = useTrail ? f_toTicks(trailAct_s_input)  : na
+trailStep_s = useTrail ? f_toTicks(trailStep_s_input) : na
+
+// =========================================================================
+// LIQUIDITY CANDLE LOGIC & VISUALS
+// =========================================================================
+isLiqCandle = high > high[1] and low < low[1]
+barcolor(isLiqCandle ? color.white : na)
+
+var line lineHigh = na
+var line lineLow  = na
+if isLiqCandle
+    lineHigh := line.new(bar_index, high, bar_index, high, color=color.green, width=1)
+    lineLow  := line.new(bar_index, low,  bar_index, low,  color=color.red,   width=1)
+else if not na(lineHigh)
+    line.set_x2(lineHigh, bar_index)
+    line.set_x2(lineLow,  bar_index)
+
+// =========================================================================
+// ENTRY LOGIC
+// =========================================================================
+var float buyLevel  = na
+var float sellLevel = na
+barsSinceLiq = ta.barssince(isLiqCandle)
+
+longCondition  = longGateOK  and (not useCMA_l or photonBullOK)
+shortCondition = shortGateOK and (not useCMA_s or photonBearOK)
+
+if strategy.position_size == 0
+    if isLiqCandle
+        buyLevel  := allowLongs  ? high + offsetPrice_l : na
+        sellLevel := allowShorts ? low  - offsetPrice_s : na
+    if barsSinceLiq > barWindow_l
+        buyLevel := na
+        strategy.cancel("Long")
+    if barsSinceLiq > barWindow_s
+        sellLevel := na
+        strategy.cancel("Short")
+
+if strategy.position_size == 0
+    if not na(buyLevel) and longCondition
+        strategy.entry("Long",  strategy.long,  stop=buyLevel,  comment="brk#" + str.tostring(breakCount))
+    if not na(sellLevel) and shortCondition
+        strategy.entry("Short", strategy.short, stop=sellLevel, comment="brk#" + str.tostring(breakCount))
+else
+    buyLevel  := na
+    sellLevel := na
+    strategy.cancel_all()
+
+// =========================================================================
+// EXITS
+// =========================================================================
+if strategy.position_size > 0
+    if useTrail
+        strategy.exit("Exit Long", "Long", profit=tp_l, loss=sl_l, trail_points=trailAct_l, trail_offset=trailStep_l)
+    else
+        strategy.exit("Exit Long", "Long", profit=tp_l, loss=sl_l)
+
+if strategy.position_size < 0
+    if useTrail
+        strategy.exit("Exit Short", "Short", profit=tp_s, loss=sl_s, trail_points=trailAct_s, trail_offset=trailStep_s)
+    else
+        strategy.exit("Exit Short", "Short", profit=tp_s, loss=sl_s)

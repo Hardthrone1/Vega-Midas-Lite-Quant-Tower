@@ -1,0 +1,154 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383 - Fixed & Enhanced by Grok
+
+//@version=6
+strategy('Liquidity Sweep Strategy - Asymmetric Pro + Hull', overlay = true, currency = currency.USD, initial_capital = 50000, default_qty_value = 1, calc_on_every_tick = true, process_orders_on_close = false)
+
+// =========================================================================
+// INPUTS
+// =========================================================================
+grp_entry = 'Entry Settings'
+offsetPrice = input.float(1, 'Entry Offset (Price)', group = grp_entry, tooltip = 'Distance above high / below low to place entry stop')
+barWindow = input.int(8, 'Execution Window (Bars)', group = grp_entry)
+
+// --- Mode Selection ---
+grp_mode = 'Exit Mode'
+usePriceMode = input.bool(true, 'Use Price Units (Recommended)', group = grp_mode, tooltip = 'Price = easy to understand (e.g. 5.50 means $5.50 move)\nTicks = traditional but requires huge numbers on small-tick symbols')
+
+// --- Trend Filter ---
+grp_hull = 'Trend Filter'
+useHull = input.bool(true, 'Enable Hull Trend Filter?', group = grp_hull)
+hullLen = input.int(23, 'Hull HMA Length', group = grp_hull)
+
+// --- Long Settings ---
+grp_l = 'Long Settings'
+tp_l_input = input.float(60, 'Long Take Profit', group = grp_l, tooltip = 'Take Profit for Long positions')
+sl_l_input = input.float(20, 'Long Stop Loss', group = grp_l, tooltip = 'Stop Loss for Long positions')
+
+trailAct_l_input = input.float(7, 'Long Trail Activation', group = grp_l)
+trailStep_l_input = input.float(6, 'Long Trail Step', group = grp_l)
+
+// --- Short Settings ---
+grp_s = 'Short Settings'
+tp_s_input = input.float(50, 'Short Take Profit', group = grp_s)
+sl_s_input = input.float(30, 'Short Stop Loss', group = grp_s)
+trailAct_s_input = input.float(6, 'Short Trail Activation', group = grp_s)
+trailStep_s_input = input.float(5, 'Short Trail Step', group = grp_s)
+
+// --- Global Controls ---
+grp_trail = 'Trailing Master Control'
+useTrail = input.bool(true, 'Enable Trailing Stop?', group = grp_trail)
+
+// =========================================================================
+// CONVERT TO TICKS
+// =========================================================================
+tickSize = syminfo.mintick > 0 ? syminfo.mintick : 0.01
+
+f_toTicks(val) =>
+    math.max(1, math.round(val / (usePriceMode ? tickSize : 1)))
+
+tp_l = f_toTicks(tp_l_input)
+sl_l = f_toTicks(sl_l_input)
+trailAct_l = f_toTicks(trailAct_l_input)
+trailStep_l = f_toTicks(trailStep_l_input)
+
+tp_s = f_toTicks(tp_s_input)
+sl_s = f_toTicks(sl_s_input)
+trailAct_s = f_toTicks(trailAct_s_input)
+trailStep_s = f_toTicks(trailStep_s_input)
+
+// =========================================================================
+// CALCULATIONS & VISUALS
+// =========================================================================
+hmaVal = ta.hma(close, hullLen)
+plot(hmaVal, color = useHull ? color.orange : color.new(color.gray, 50), title = 'Hull HMA', linewidth = 2)
+
+// Liquidity Candle
+isLiqCandle = high > high[1] and low < low[1]
+barcolor(isLiqCandle ? color.white : na)
+
+// Visual Lines
+var line lineHigh = na
+var line lineLow = na
+if isLiqCandle
+    lineHigh := line.new(bar_index, high, bar_index, high, color = color.green, width = 1)
+    lineLow := line.new(bar_index, low, bar_index, low, color = color.red, width = 1)
+    lineLow
+else if not na(lineHigh)
+    line.set_x2(lineHigh, bar_index)
+    line.set_x2(lineLow, bar_index)
+
+// =========================================================================
+// ENTRY LOGIC
+// =========================================================================
+var float buyLevel = na
+var float sellLevel = na
+barsSinceLiq = ta.barssince(isLiqCandle)
+
+longCondition = not useHull or close > hmaVal
+shortCondition = not useHull or close < hmaVal
+
+if strategy.position_size == 0
+    if isLiqCandle
+        buyLevel := longCondition ? high + offsetPrice : na
+        sellLevel := shortCondition ? low - offsetPrice : na
+        sellLevel
+    else if barsSinceLiq > barWindow
+        buyLevel := na
+        sellLevel := na
+        strategy.cancel_all()
+
+if strategy.position_size == 0
+    if not na(buyLevel)
+        strategy.entry('Long', strategy.long, stop = buyLevel)
+    if not na(sellLevel)
+        strategy.entry('Short', strategy.short, stop = sellLevel)
+else
+    buyLevel := na
+    sellLevel := na
+    strategy.cancel_all()
+
+// =========================================================================
+// EXITS (Asymmetric)
+// =========================================================================
+strategy.exit('Exit Long', 'Long', profit = strategy.position_size > 0 ? tp_l : na, loss = strategy.position_size > 0 ? sl_l : na, trail_points = useTrail and strategy.position_size > 0 ? trailAct_l : na, trail_offset = useTrail and strategy.position_size > 0 ? trailStep_l : na)
+
+strategy.exit('Exit Short', 'Short', profit = strategy.position_size < 0 ? tp_s : na, loss = strategy.position_size < 0 ? sl_s : na, trail_points = useTrail and strategy.position_size < 0 ? trailAct_s : na, trail_offset = useTrail and strategy.position_size < 0 ? trailStep_s : na)
+
+// =========================================================================
+// DASHBOARD (unchanged)
+// =========================================================================
+tf1 = input.timeframe('5', 'Timeframe 1', group = 'Dashboard Timeframes')
+tf2 = input.timeframe('15', 'Timeframe 2', group = 'Dashboard Timeframes')
+tf3 = input.timeframe('60', 'Timeframe 3', group = 'Dashboard Timeframes')
+tf4 = input.timeframe('240', 'Timeframe 4', group = 'Dashboard Timeframes')
+tf5 = input.timeframe('D', 'Timeframe 5', group = 'Dashboard Timeframes')
+tf6 = input.timeframe('W', 'Timeframe 6', group = 'Dashboard Timeframes')
+
+tf1_liq = request.security(syminfo.tickerid, tf1, high > high[1] and low < low[1], gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+tf2_liq = request.security(syminfo.tickerid, tf2, high > high[1] and low < low[1], gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+tf3_liq = request.security(syminfo.tickerid, tf3, high > high[1] and low < low[1], gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+tf4_liq = request.security(syminfo.tickerid, tf4, high > high[1] and low < low[1], gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+tf5_liq = request.security(syminfo.tickerid, tf5, high > high[1] and low < low[1], gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+tf6_liq = request.security(syminfo.tickerid, tf6, high > high[1] and low < low[1], gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+
+isBlink = second(timenow) % 2 == 0
+getBlinkColor(isActive) =>
+    isActive ? isBlink ? color.new(#66b3ff, 0) : color.new(#0066cc, 0) : color.new(#ff6666, 50)
+
+var table liqTable = table.new(position.top_right, 6, 2, border_width = 1, border_color = color.new(color.black, 100))
+
+if barstate.islast
+    table.cell(liqTable, 0, 0, tf1, text_color = color.white, text_size = size.tiny, bgcolor = color.new(#6096b2, 70))
+    table.cell(liqTable, 1, 0, tf2, text_color = color.white, text_size = size.tiny, bgcolor = color.new(#6096b2, 70))
+    table.cell(liqTable, 2, 0, tf3, text_color = color.white, text_size = size.tiny, bgcolor = color.new(#6096b2, 70))
+    table.cell(liqTable, 3, 0, tf4, text_color = color.white, text_size = size.tiny, bgcolor = color.new(#6096b2, 70))
+    table.cell(liqTable, 4, 0, tf5, text_color = color.white, text_size = size.tiny, bgcolor = color.new(#6096b2, 70))
+    table.cell(liqTable, 5, 0, tf6, text_color = color.white, text_size = size.tiny, bgcolor = color.new(#6096b2, 70))
+
+    table.cell(liqTable, 0, 1, tf1_liq ? 'Yes' : 'No', text_color = color.white, text_size = size.tiny, bgcolor = getBlinkColor(tf1_liq))
+    table.cell(liqTable, 1, 1, tf2_liq ? 'Yes' : 'No', text_color = color.white, text_size = size.tiny, bgcolor = getBlinkColor(tf2_liq))
+    table.cell(liqTable, 2, 1, tf3_liq ? 'Yes' : 'No', text_color = color.white, text_size = size.tiny, bgcolor = getBlinkColor(tf3_liq))
+    table.cell(liqTable, 3, 1, tf4_liq ? 'Yes' : 'No', text_color = color.white, text_size = size.tiny, bgcolor = getBlinkColor(tf4_liq))
+    table.cell(liqTable, 4, 1, tf5_liq ? 'Yes' : 'No', text_color = color.white, text_size = size.tiny, bgcolor = getBlinkColor(tf5_liq))
+    table.cell(liqTable, 5, 1, tf6_liq ? 'Yes' : 'No', text_color = color.white, text_size = size.tiny, bgcolor = getBlinkColor(tf6_liq))

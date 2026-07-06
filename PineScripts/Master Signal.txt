@@ -1,0 +1,575 @@
+
+// © kblue8383
+
+//@version=6
+strategy("MASTER: 5-Signal Voter (N-of-5 within window)", overlay=true, pyramiding=0, initial_capital=50000 , max_labels_count=500, max_lines_count=500)
+
+// ─────────────────────────────────────────────
+// Voting / Backtest inputs
+// ─────────────────────────────────────────────
+grpVote = "Voting"
+agreeWindowBars = input.int(5, "Agreement Window (bars)", minval=0, group=grpVote)
+minAgree        = input.int(3, "Min Agree (2..5)", minval=2, maxval=5, group=grpVote)
+cooldownBars    = input.int(0, "Cooldown Bars After Signal (0=off)", minval=0, group=grpVote)
+showDebug       = input.bool(false, "Debug: show vote counts", group=grpVote)
+
+grpAcc = "Accuracy (Reversal Confirm)"
+confirmMode = input.string("Close Confirm", "Confirm Mode", options=["Off","Close Confirm","2-Bar Confirm"], group=grpAcc)
+
+grpViz = "Visual"
+showSignalMarks = input.bool(true, "Show Signal Markers", group=grpViz)
+showTradeMarks  = input.bool(true, "Show Trade Markers (entry/exit)", group=grpViz)
+oneSignalPerSide = input.bool(true, "One signal per side until exit/flip", group=grpViz)
+
+grpSess = "Filters • Session"
+useSession = input.bool(false, "Enable Session Filter", group=grpSess)
+tradeSess  = input.session("0830-1500", "Trade Session (exchange time)", group=grpSess)
+inSession = not useSession or not na(time(timeframe.period, tradeSess))
+
+grpWin = "Voting • Windows"
+agreeWinLong  = input.int(5, "Agreement Window LONG (bars)",  minval=0, group=grpWin)
+agreeWinShort = input.int(5, "Agreement Window SHORT (bars)", minval=0, group=grpWin)
+
+grpReq   = "Voting • Required Source"
+reqLong  = input.string("None", "Require for LONG",  options=["None","S1","S2","S3","S4","S5"], group=grpReq)
+reqShort = input.string("None", "Require for SHORT", options=["None","S1","S2","S3","S4","S5"], group=grpReq)
+
+grpUse = "Enable Sources"
+use1 = input.bool(true, "Use #1 LAM", group=grpUse)
+use2 = input.bool(true, "Use #2 SURGE", group=grpUse)
+use3 = input.bool(true, "Use #3 M-O-8", group=grpUse)
+use4 = input.bool(true, "Use #4 RSI+STO+DIV", group=grpUse)
+use5 = input.bool(true, "Use #5 Osc5", group=grpUse)
+
+// ── Fixed points stop + RR TP (KEEP THIS)
+grpRisk = "Risk / Exits"
+useFixedRR = input.bool(true, "Use Fixed Stop + RR TP", group=grpRisk)
+riskPts    = input.float(20.0, "Stop Distance (points)", group=grpRisk)
+rr         = input.float(2.0,  "Risk Reward", step=0.1, group=grpRisk)
+
+if strategy.position_size > 0
+    longSL  = strategy.position_avg_price - riskPts
+    longTP  = strategy.position_avg_price + riskPts * rr
+    strategy.exit("LX", from_entry="LONG",  stop=useFixedRR ? longSL  : na, limit=useFixedRR ? longTP  : na)
+
+if strategy.position_size < 0
+    shortSL = strategy.position_avg_price + riskPts
+    shortTP = strategy.position_avg_price - riskPts * rr
+    strategy.exit("SX", from_entry="SHORT", stop=useFixedRR ? shortSL : na, limit=useFixedRR ? shortTP : na)
+
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+f_seenWithin_bs(barsSinceSig, win) =>
+// true if signal happened this bar (barsSince==0) or within last win bars
+    barsSinceSig == 0 or (win > 0 and barsSinceSig > 0 and barsSinceSig <= win)
+
+f_i(b) => b ? 1 : 0
+
+// ============================================================================
+// SOURCE #1 (Script 1: LAM+ATF current TF signal core)
+// ============================================================================
+grp1 = "Source #1 LAM (core)"
+s1_sigType = input.string("RSI", "Lambda Source", options=["RSI","Momentum"], group=grp1)
+s1_bSource = input.string("SMA", "Baseline", options=["SMA","EMA","Volume"], group=grp1)
+s1_rsiper  = input.int(7, "RSI Period", group=grp1)
+s1_atfLen  = input.int(10, "ATF Length", minval=2, group=grp1)
+s1_atfSm   = input.int(14, "ATF Smoothing", minval=2, group=grp1)
+s1_atfSens = input.float(2.0, "ATF Sensitivity", step=0.1, group=grp1)
+s1_upper   = input.float(0.70, "Upper", group=grp1)
+s1_lower   = input.float(0.30, "Lower", group=grp1)
+s1_mid     = input.float(0.50, "Mid", group=grp1)
+
+f_lam_atf(_typical, _close, _volume) =>
+    fast      = ta.ema(_typical, s1_atfLen)
+    slow      = ta.ema(_typical, s1_atfLen * 2)
+    basis     = (fast + slow) / 2.0
+    vol       = ta.stdev(_typical, s1_atfLen)
+    smoothVol = ta.ema(vol, s1_atfSm)
+    upper_tf  = basis + smoothVol * s1_atfSens
+    lower_tf  = basis - smoothVol * s1_atfSens
+    trend_tf  = _close > basis ? 1 : -1
+
+    s_rsi = ta.rsi(_close, s1_rsiper) / 100.0
+    s_mom = ta.mom(_close, 10)
+    s_mom_norm = ta.rsi(s_mom, s1_rsiper) / 100.0
+    ls_s = s1_sigType == "RSI" ? s_rsi : s_mom_norm
+
+    ls_b =
+         s1_bSource == "SMA" ? ta.sma(_close, 23) / _close :
+         s1_bSource == "EMA" ? ta.ema(_close, 23) / _close :
+         _volume / ta.sma(_volume, 20)
+
+    ls_v = 1.0 * (1 - 1.0 + 1.0 * ls_s) * ls_b
+    [ls_v, trend_tf, upper_tf, lower_tf]
+
+typical = hlc3
+[lam_v, lam_tr0, lam_u, lam_l] = f_lam_atf(typical, close, volume)
+var int lam_tr = na
+lam_tr := na(lam_tr[1]) ? lam_tr0 : lam_tr[1]
+lam_tr := lam_tr == 1 and close < lam_l ? -1 : lam_tr == -1 and close > lam_u ? 1 : lam_tr
+
+lam_from_os = lam_v <= s1_lower
+lam_from_ob = lam_v >= s1_upper
+lam_cross_up = ta.crossover(lam_v, s1_mid)
+lam_cross_dn = ta.crossunder(lam_v, s1_mid)
+
+var bool lam_came_os = false
+var bool lam_came_ob = false
+if lam_from_os
+    lam_came_os := true
+if lam_from_ob
+    lam_came_ob := true
+
+b1_raw = lam_came_os and lam_cross_up and lam_tr == 1
+s1_raw = lam_came_ob and lam_cross_dn and lam_tr == -1
+
+if b1_raw
+    lam_came_os := false
+if s1_raw
+    lam_came_ob := false
+
+// ============================================================================
+// SOURCE #2 (Script 2: SURGE current TF signal core)
+// ============================================================================
+grp2 = "Source #2 SURGE (core)"
+s2_sigType = input.string("RSI", "Lambda Source", options=["RSI","Momentum"], group=grp2)
+s2_bSource = input.string("SMA", "Baseline", options=["SMA","EMA","Volume"], group=grp2)
+s2_rsiper  = input.int(7, "RSI Period", group=grp2)
+s2_upper   = input.float(0.76, "Upper", group=grp2)
+s2_lower   = input.float(0.24, "Lower", group=grp2)
+s2_mid     = input.float(0.50, "Mid", group=grp2)
+
+f_lambda2(_close, _volume) =>
+    ls_s_raw = s2_sigType == "RSI" ? ta.rsi(_close, s2_rsiper) : ta.mom(_close, 10)
+    ls_s = s2_sigType == "RSI" ? ls_s_raw / 100.0 : ls_s_raw
+    ls_b =
+         s2_bSource == "SMA" ? ta.sma(_close, 23) / _close :
+         s2_bSource == "EMA" ? ta.ema(_close, 23) / _close :
+         _volume / ta.sma(_volume, 20)
+    1.0 * (1 - 1.0 + 1.0 * ls_s) * ls_b
+
+sur_v = f_lambda2(close, volume)
+sur_from_os = sur_v <= s2_lower
+sur_from_ob = sur_v >= s2_upper
+sur_cross_up = ta.crossover(sur_v, s2_mid)
+sur_cross_dn = ta.crossunder(sur_v, s2_mid)
+
+var bool sur_came_os = false
+var bool sur_came_ob = false
+if sur_from_os
+    sur_came_os := true
+if sur_from_ob
+    sur_came_ob := true
+
+b2_raw = sur_came_os and sur_cross_up
+s2_raw = sur_came_ob and sur_cross_dn
+
+if b2_raw
+    sur_came_os := false
+if s2_raw
+    sur_came_ob := false
+
+// ============================================================================
+// SOURCE #3 (Script 3: M-O-8 core signal)
+// ============================================================================
+grp3 = "Source #3 M-O-8 (core)"
+s3_rsiLen = input.int(7, "RSI Len", group=grp3)
+s3_stoLen = input.int(7, "Stoch Len", group=grp3)
+s3_demLen = input.int(14, "DeMarker Len", group=grp3)
+s3_wrLen  = input.int(80, "WPR Len", group=grp3)
+s3_cciLen = input.int(35, "CCI Len", group=grp3)
+s3_rviLen = input.int(20, "RVI Len", group=grp3)
+s3_fiLen  = input.int(50, "Force Len", group=grp3)
+s3_stdLen = input.int(30, "Std Len", group=grp3)
+s3_os     = input.int(27, "OS", group=grp3)
+s3_ob     = input.int(73, "OB", group=grp3)
+s3_useLookback = input.bool(true, "Use Lookback Gate", group=grp3)
+s3_lookbackBars = input.int(50, "Lookback Bars", minval=1, group=grp3)
+s3_useV = input.bool(true, "Use V-Shape", group=grp3)
+s3_pivotLR = input.int(2, "Pivot L/R", minval=1, maxval=10, group=grp3)
+s3_reqDepth = input.float(0.0, "Min Depth past OS/OB", step=0.1, group=grp3)
+s3_pvtNormLen = input.int(100, "PVT Norm Len", minval=1, group=grp3)
+
+norm100(src, length) =>
+    hi = ta.highest(src, length)
+    lo = ta.lowest(src, length)
+    hi != lo ? (src - lo) / (hi - lo) * 100.0 : 50.0
+
+pvt = ta.cum(ta.change(close) / close[1] * volume)
+
+rsiVal3 = ta.rsi(close, s3_rsiLen)
+stoBase3 = ta.stoch(close, high, low, s3_stoLen)
+stoVal3  = norm100(stoBase3, s3_stoLen * 3)
+
+up3 = math.max(high - high[1], 0)
+dn3 = math.max(low[1] - low, 0)
+demVal3 = math.sum(up3, s3_demLen) / (math.sum(up3, s3_demLen) + math.sum(dn3, s3_demLen)) * 100.0
+
+wrVal3  = ta.wpr(s3_wrLen) + 100.0
+cciVal3 = norm100(ta.cci(close, s3_cciLen), s3_cciLen * 3)
+
+rviRaw3 = ta.sma(close - open, s3_rviLen) / ta.sma(high - low, s3_rviLen)
+rviVal3 = norm100(rviRaw3, s3_rviLen * 3)
+
+fiRaw3 = ta.ema((close - close[1]) * volume, s3_fiLen)
+fiVal3 = norm100(fiRaw3, s3_fiLen * 5)
+
+sdRaw3 = ta.stdev(close, s3_stdLen)
+sdVal3 = norm100(sdRaw3, s3_stdLen * 5)
+
+pvtNorm3 = norm100(pvt, s3_pvtNormLen)
+
+comp3 = (rsiVal3 + stoVal3 + demVal3 + wrVal3 + cciVal3 + rviVal3 + fiVal3 + sdVal3 + pvtNorm3) / 9.0
+
+var bool allowLong3 = true
+var bool allowShort3 = true
+if comp3 < s3_os
+    allowLong3 := true
+if comp3 > s3_ob
+    allowShort3 := true
+
+everInOS3 = ta.barssince(comp3 < s3_os) < s3_lookbackBars
+everInOB3 = ta.barssince(comp3 > s3_ob) < s3_lookbackBars
+
+vLow3  = ta.pivotlow(comp3,  s3_pivotLR, s3_pivotLR)
+vHigh3 = ta.pivothigh(comp3, s3_pivotLR, s3_pivotLR)
+
+vLowVal3  = comp3[s3_pivotLR]
+vHighVal3 = comp3[s3_pivotLR]
+
+vBuyOK3  = not na(vLow3)  and (vLowVal3  < (s3_os - s3_reqDepth))
+vSellOK3 = not na(vHigh3) and (vHighVal3 > (s3_ob + s3_reqDepth))
+
+exitOS3 = ta.crossover(comp3, s3_os)
+exitOB3 = ta.crossunder(comp3, s3_ob)
+
+rawBuy3  = s3_useV ? (vBuyOK3  and exitOS3) : exitOS3
+rawSell3 = s3_useV ? (vSellOK3 and exitOB3) : exitOB3
+
+buy3  = (s3_useLookback ? (rawBuy3  and everInOS3) : rawBuy3)  and allowLong3
+sell3 = (s3_useLookback ? (rawSell3 and everInOB3) : rawSell3) and allowShort3
+
+if buy3
+    allowLong3 := false
+if sell3
+    allowShort3 := false
+
+b3_raw = buy3
+s3_raw = sell3
+
+// ============================================================================
+// SOURCE #4 (Script 4: RSI+STO+DIV core)  — LOCAL TF ONLY (NO MTF)
+// ============================================================================
+grp4 = "Source #4 RSI+STO+DIV (core)"
+s4_ob       = input.float(75, "OB", group=grp4)
+s4_os       = input.float(25, "OS", group=grp4)
+s4_pivotLB  = input.int(3, "Pivot Lookback", minval=1, group=grp4)
+s4_maxDist  = input.int(100, "Max Bar Distance", minval=1, group=grp4)
+s4_entryMode = input.string("A: OS/OB Exit", "Entry Mode", options=["A: OS/OB Exit","B: Divergence","A+B: Both","A|B: Either"], group=grp4) 
+s4_divWindow = input.int(3, "Div valid N bars", minval=1, group=grp4)
+
+// --- Composite
+rsi4   = ta.rsi(close, 14)
+stoch4 = ta.sma(ta.stoch(close, high, low, 14), 3)
+comp4  = (rsi4 + stoch4) / 2.0
+
+// --- Divergence pivots
+oscPH4 = ta.pivothigh(comp4, s4_pivotLB, s4_pivotLB)
+oscPL4 = ta.pivotlow(comp4,  s4_pivotLB, s4_pivotLB)
+
+var float lastLowOsc4   = na
+var float lastLowPrice4 = na
+var int   lastLowBar4   = na
+
+var float lastHighOsc4   = na
+var float lastHighPrice4 = na
+var int   lastHighBar4   = na
+
+bullDiv4 = false
+bearDiv4 = false
+
+if not na(oscPL4)
+    newBar   = bar_index - s4_pivotLB
+    newOsc   = comp4[s4_pivotLB]
+    newPrice = low[s4_pivotLB]
+    if not na(lastLowOsc4)
+        within = (newBar - lastLowBar4) > 0 and (newBar - lastLowBar4) <= s4_maxDist
+        if within and (newPrice < lastLowPrice4) and (newOsc > lastLowOsc4)
+            bullDiv4 := true
+    lastLowBar4   := newBar
+    lastLowOsc4   := newOsc
+    lastLowPrice4 := newPrice
+
+if not na(oscPH4)
+    newBar   = bar_index - s4_pivotLB
+    newOsc   = comp4[s4_pivotLB]
+    newPrice = high[s4_pivotLB]
+    if not na(lastHighOsc4)
+        within = (newBar - lastHighBar4) > 0 and (newBar - lastHighBar4) <= s4_maxDist
+        if within and (newPrice > lastHighPrice4) and (newOsc < lastHighOsc4)
+            bearDiv4 := true
+    lastHighBar4   := newBar
+    lastHighOsc4   := newOsc
+    lastHighPrice4 := newPrice
+
+// barssince must be global vars (no warnings)
+bsBullDiv4 = ta.barssince(bullDiv4)
+bsBearDiv4 = ta.barssince(bearDiv4)
+
+bullRecent4 = bsBullDiv4 >= 0 and bsBullDiv4 <= s4_divWindow
+bearRecent4 = bsBearDiv4 >= 0 and bsBearDiv4 <= s4_divWindow
+
+// --- A: OS/OB exit latch
+var bool wasOS4 = false
+var bool wasOB4 = false
+if comp4 < s4_os
+    wasOS4 := true
+if comp4 > s4_ob
+    wasOB4 := true
+
+crossUpA4 = ta.crossover(comp4, s4_os)
+crossDnA4 = ta.crossunder(comp4, s4_ob)
+
+sigA_long4  = wasOS4 and crossUpA4
+sigA_short4 = wasOB4 and crossDnA4
+
+if sigA_long4
+    wasOS4 := false
+if sigA_short4
+    wasOB4 := false
+
+// --- B: divergence (recent)
+sigB_long4  = bullRecent4
+sigB_short4 = bearRecent4
+
+rawLong4 =
+     s4_entryMode == "A: OS/OB Exit" ? sigA_long4 :
+     s4_entryMode == "B: Divergence" ? sigB_long4 :
+     s4_entryMode == "A+B: Both"     ? (sigA_long4 and sigB_long4) :
+     (sigA_long4 or sigB_long4)
+
+rawShort4 =
+     s4_entryMode == "A: OS/OB Exit" ? sigA_short4 :
+     s4_entryMode == "B: Divergence" ? sigB_short4 :
+     s4_entryMode == "A+B: Both"     ? (sigA_short4 and sigB_short4) :
+     (sigA_short4 or sigB_short4)
+
+// NO snowball filtering now
+b4_raw = rawLong4
+s4_raw = rawShort4
+
+// ============================================================================
+// SOURCE #5 (Script 5: Osc5 core buySig/sellSig)
+// ============================================================================
+grp5 = "Source #5 Osc5 (core)"
+s5_ob = input.float(75.0, "OB", group=grp5)
+s5_os = input.float(25.0, "OS", group=grp5)
+s5_lookback = input.int(3, "OS/OB Lookback Bars", minval=1, maxval=20, group=grp5)
+s5_rsiLen = input.int(7, "RSI Len", group=grp5)
+s5_stochLen = input.int(6, "Stoch Len", group=grp5)
+s5_demLen = input.int(14, "DeMarker Len", group=grp5)
+s5_momLen = input.int(9, "Mom Len", group=grp5)
+s5_wprLen = input.int(80, "WPR Len", group=grp5)
+s5_momNormLB = input.int(7, "Mom Norm Lookback", minval=5, group=grp5)
+s5_dynLen = input.int(7, "Dynamic Scale Len", minval=1, group=grp5)
+
+rsi5 = ta.rsi(close, s5_rsiLen)
+k5   = ta.stoch(close, high, low, s5_stochLen)
+hD5  = high > high[1] ? high - high[1] : 0.0
+lD5  = low  < low[1]  ? low[1] - low   : 0.0
+dem5 = ta.sma(hD5, s5_demLen) / (ta.sma(hD5, s5_demLen) + ta.sma(lD5, s5_demLen)) * 100.0
+
+mom5 = close - close[s5_momLen]
+momMin5 = ta.lowest(mom5, s5_momNormLB)
+momMax5 = ta.highest(mom5, s5_momNormLB)
+momNorm5 = momMax5 != momMin5 ? 100.0 * (mom5 - momMin5) / (momMax5 - momMin5) : 50.0
+
+// dynamic rescale on momentum
+stretchFactor5 = input.float(1.25, "Stretch Factor", minval=0.1, group=grp5)
+momCentered5 = (momNorm5 - 50.0)
+momScaled5 = momCentered5 * stretchFactor5 + 50.0
+lowM5 = ta.lowest(momScaled5, s5_dynLen)
+highM5 = ta.highest(momScaled5, s5_dynLen)
+momDyn5 = (momScaled5 - lowM5) * 100.0 / nz(highM5 - lowM5, 1e-10)
+
+wpr5 = ta.wpr(s5_wprLen) + 100.0
+
+var bool allInOS5 = false
+var bool allInOB5 = false
+allInOS5 := false
+allInOB5 := false
+for i = 1 to s5_lookback
+    allInOS5 := allInOS5 or (rsi5[i] < s5_os and k5[i] < s5_os and dem5[i] < s5_os and momNorm5[i] < s5_os and wpr5[i] < s5_os and momDyn5[i] < s5_os)
+    allInOB5 := allInOB5 or (rsi5[i] > s5_ob and k5[i] > s5_ob and dem5[i] > s5_ob and momNorm5[i] > s5_ob and wpr5[i] > s5_ob and momDyn5[i] > s5_ob)
+
+crossUp5   = ta.crossover(rsi5, s5_os)
+crossDown5 = ta.crossunder(rsi5, s5_ob)
+b5_raw = crossUp5 and allInOS5
+s5_raw = crossDown5 and allInOB5
+
+// ============================================================================
+// Apply enable toggles
+// ============================================================================
+b1 = use1 and b1_raw
+s1 = use1 and s1_raw
+b2 = use2 and b2_raw
+s2 = use2 and s2_raw
+b3 = use3 and b3_raw
+s3 = use3 and s3_raw
+b4 = use4 and b4_raw
+s4 = use4 and s4_raw
+b5 = use5 and b5_raw
+s5 = use5 and s5_raw
+
+bs_b1 = ta.barssince(b1)
+bs_b2 = ta.barssince(b2)
+bs_b3 = ta.barssince(b3)
+bs_b4 = ta.barssince(b4)
+bs_b5 = ta.barssince(b5)
+
+bs_s1 = ta.barssince(s1)
+bs_s2 = ta.barssince(s2)
+bs_s3 = ta.barssince(s3)
+bs_s4 = ta.barssince(s4)
+bs_s5 = ta.barssince(s5)
+
+b1w = use1 and (bs_b1 >= 0) and f_seenWithin_bs(bs_b1, agreeWinLong)
+b2w = use2 and (bs_b2 >= 0) and f_seenWithin_bs(bs_b2, agreeWinLong)
+b3w = use3 and (bs_b3 >= 0) and f_seenWithin_bs(bs_b3, agreeWinLong)
+b4w = use4 and (bs_b4 >= 0) and f_seenWithin_bs(bs_b4, agreeWinLong)
+b5w = use5 and (bs_b5 >= 0) and f_seenWithin_bs(bs_b5, agreeWinLong)
+
+s1w = use1 and (bs_s1 >= 0) and f_seenWithin_bs(bs_s1, agreeWinShort)
+s2w = use2 and (bs_s2 >= 0) and f_seenWithin_bs(bs_s2, agreeWinShort)
+s3w = use3 and (bs_s3 >= 0) and f_seenWithin_bs(bs_s3, agreeWinShort)
+s4w = use4 and (bs_s4 >= 0) and f_seenWithin_bs(bs_s4, agreeWinShort)
+s5w = use5 and (bs_s5 >= 0) and f_seenWithin_bs(bs_s5, agreeWinShort)
+
+reqLongOK =
+     reqLong == "None" ? true :
+     reqLong == "S1" ? b1w :
+     reqLong == "S2" ? b2w :
+     reqLong == "S3" ? b3w :
+     reqLong == "S4" ? b4w :
+     b5w
+
+reqShortOK =
+     reqShort == "None" ? true :
+     reqShort == "S1" ? s1w :
+     reqShort == "S2" ? s2w :
+     reqShort == "S3" ? s3w :
+     reqShort == "S4" ? s4w :
+     s5w
+
+buyVotes  = f_i(b1w) + f_i(b2w) + f_i(b3w) + f_i(b4w) + f_i(b5w)
+sellVotes = f_i(s1w) + f_i(s2w) + f_i(s3w) + f_i(s4w) + f_i(s5w)
+
+buyOk  = buyVotes  >= minAgree
+sellOk = sellVotes >= minAgree
+
+// prevent simultaneous long+short
+buyOkFinal  = buyOk  and not sellOk and reqLongOK
+sellOkFinal = sellOk and not buyOk  and reqShortOK
+
+// cooldown
+var int lastSigBar = na
+coolOk = cooldownBars <= 0 or na(lastSigBar) or (bar_index - lastSigBar >= cooldownBars)
+
+buyConfirm  = confirmMode == "Off" ? true : confirmMode == "Close Confirm" ? close > close[1] : (close > close[1] and close[1] > close[2])
+sellConfirm = confirmMode == "Off" ? true : confirmMode == "Close Confirm" ? close < close[1] : (close < close[1] and close[1] < close[2])
+
+// ============================================================================
+// Entries (clean + correct locking)
+//========================================================================─────────────────────────────────────────TRATEGY OR───────────────────────────────────────────
+buyFire  = coolOk and buyOkFinal  and inSession and buyConfirm
+sellFire = coolOk and sellOkFinal and inSession and sellConfirm
+
+var int lockDir = 0  // 1=locked long, -1=locked short, 0=free
+
+// Detect position close -> release lock
+justClosed = strategy.position_size == 0 and strategy.position_size[1] != 0
+if justClosed
+    lockDir := 0
+
+buyAllowed  = not oneSignalPerSide or lockDir != 1
+sellAllowed = not oneSignalPerSide or lockDir != -1
+
+buyFireClean  = buyFire  and buyAllowed
+sellFireClean = sellFire and sellAllowed
+
+// Place ONE entry only
+if buyFireClean
+    strategy.entry("LONG", strategy.long)
+    lockDir := 1
+
+if sellFireClean
+    strategy.entry("SHORT", strategy.short)
+    lockDir := -1
+
+// Plot ONLY the clean markers
+plotshape(showSignalMarks and buyFireClean,  title="Signal BUY",  style=shape.triangleup,   location=location.belowbar, size=size.small, color=color.lime, text="B", force_overlay=true)
+plotshape(showSignalMarks and sellFireClean, title="Signal SELL", style=shape.triangledown, location=location.abovebar, size=size.small, color=color.red,  text="S", force_overlay=true)
+
+// Optional: show raw fire markers only in debug
+plotshape(showDebug and buyFire,  title="DBG BUY raw",  style=shape.circle, location=location.belowbar, size=size.tiny, color=color.new(color.lime, 70))
+plotshape(showDebug and sellFire, title="DBG SELL raw", style=shape.circle, location=location.abovebar, size=size.tiny, color=color.new(color.red, 70))
+
+// ============================================================================
+// Debug (no local-scope plotting)
+// ============================================================================
+plotshape(showDebug and buyFire,  title="DBG MASTER BUY raw",  style=shape.circle, location=location.belowbar, size=size.tiny, color=color.new(color.lime, 70))
+plotshape(showDebug and sellFire, title="DBG MASTER SELL raw", style=shape.circle, location=location.abovebar, size=size.tiny, color=color.new(color.red, 70))
+
+//plotchar(showDebug and buyOkFinal,  "DBG BuyOk",  "B", location=location.bottom)
+//plotchar(showDebug and sellOkFinal, "DBG SellOk", "S", location=location.top)
+
+// vote counts as plots (so you can see them in Data Window)
+plot(showDebug ? buyVotes : na,  "DBG buyVotes",  display=display.data_window)
+plot(showDebug ? sellVotes : na, "DBG sellVotes", display=display.data_window)
+
+plot(buyVotes,  title="Buy Votes",  display=display.none)
+plot(sellVotes, title="Sell Votes", display=display.none)
+
+grpStats = "Stats"
+showStats = input.bool(true, "Show Stats Table", group=grpStats)
+freqBars  = input.int(500, "Trade Freq Window (bars)", minval=50, group=grpStats)
+
+var table tStats = table.new(position.top_left, 2, 6, frame_color=color.new(color.black, 0), border_width=1)
+
+closed = strategy.closedtrades
+wins   = strategy.wintrades
+losses = strategy.losstrades
+
+winRate = closed > 0 ? (wins / closed) * 100.0 : na
+
+// Approx trade frequency: trades per N bars (rolling-ish)
+tradesNow   = closed
+tradesPrev  = nz(tradesNow[freqBars])
+tradesInWin = tradesNow - tradesPrev
+freq = tradesInWin  // trades per freqBars
+
+// Max drawdown (available in v6)
+maxDD = strategy.max_drawdown  // currency
+
+isLast = barstate.islastconfirmedhistory or barstate.isrealtime
+
+if showStats and isLast
+// update table
+    table.cell(tStats, 0, 0, "Closed Trades", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(tStats, 1, 0, str.tostring(closed), text_color=color.white, bgcolor=color.new(color.black, 0))
+
+    table.cell(tStats, 0, 1, "Win Rate", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(tStats, 1, 1, na(winRate) ? "n/a" : str.tostring(winRate, "#.0") + "%", text_color=color.white, bgcolor=color.new(color.black, 0))
+
+    table.cell(tStats, 0, 2, "Wins / Losses", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(tStats, 1, 2, str.tostring(wins) + " / " + str.tostring(losses), text_color=color.white, bgcolor=color.new(color.black, 0))
+
+    table.cell(tStats, 0, 3, "Max Drawdown", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(tStats, 1, 3, str.tostring(maxDD, "#.##"), text_color=color.white, bgcolor=color.new(color.black, 0))
+
+    table.cell(tStats, 0, 4, "Trades / " + str.tostring(freqBars) + " bars", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(tStats, 1, 4, str.tostring(freq), text_color=color.white, bgcolor=color.new(color.black, 0))
+
+    table.cell(tStats, 0, 5, "Votes (B/S)", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(tStats, 1, 5, str.tostring(buyVotes) + " / " + str.tostring(sellVotes), text_color=color.white, bgcolor=color.new(color.black, 0))

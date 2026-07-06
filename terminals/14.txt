@@ -1,0 +1,24 @@
+---
+pid: 9072
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "Set-Location \"C:\\Users\\Softthrone\\Claude\\TradingView-Suite\\midas_code\"; npm install @fontsource/inter @fontsource/space-grotesk @fontsource/jetbrains-mono"
+started_at: 2026-07-04T18:50:03.767Z
+running_for_ms: 11834999 
+---
+
+added 3 packages, and audited 281 packages in 14s
+
+47 packages are looking for funding
+  run `npm fund` for details
+
+12 vulnerabilities (4 moderate, 8 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn allow-scripts 2 packages have install scripts not yet covered by allowScripts:
+npm warn allow-scripts   electron@23.3.13 (install: (install scripts present))
+npm warn allow-scripts   esbuild@0.21.5 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.

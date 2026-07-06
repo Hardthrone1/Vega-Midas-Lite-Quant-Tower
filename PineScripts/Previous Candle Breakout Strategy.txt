@@ -1,0 +1,188 @@
+//@version=5
+strategy("Previous Candle Breakout Strategy", overlay=true, process_orders_on_close=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// =========================================================================
+// INPUTS
+// =========================================================================
+grp_signal = "Signal Source"
+triggerMode      = input.string("High/Low", "Trigger Source", options=["High/Low", "Body (Open/Close)", "All (Strict)"], group=grp_signal)
+confirmOnClose   = input.bool(true, "Only Trigger On Bar Close", group=grp_signal)
+allowBothSides   = input.bool(true, "Allow One Long + One Short Per Bar", group=grp_signal)
+
+// ═════════════════════════════════════════════════════════════
+// TIME WINDOW FILTERS
+// ═════════════════════════════════════════════════════════════
+grpTimes = "Trigger Candle Times"
+
+use7pm = input.bool(true,  "Use 7 PM Candle", group=grpTimes)
+use8pm = input.bool(true,  "Use 8 PM Candle", group=grpTimes)
+use9pm = input.bool(true,  "Use 9 PM Candle", group=grpTimes)
+
+use7am = input.bool(true,  "Use 7 AM Candle", group=grpTimes)
+use8am = input.bool(true,  "Use 8 AM Candle", group=grpTimes)
+use9am = input.bool(true,  "Use 9 AM Candle", group=grpTimes)
+
+
+grp_risk = "Risk & Exits"
+takeProfitPts = input.float(30.0, "Take Profit (Points)", minval=0.0, group=grp_risk)
+stopLossPts   = input.float(10.0, "Stop Loss (Points)", minval=0.0, group=grp_risk)
+
+useTrailing   = input.bool(false, "Enable Trailing Stop", group=grp_risk)
+trailStartPts = input.float(10.0, "Trail Starts After Profit (Points)", minval=0.0, group=grp_risk)
+trailDistPts  = input.float(5.0, "Trail Distance (Points)", minval=0.0, group=grp_risk)
+
+grp_vis = "Visuals"
+showPrevLevels = input.bool(true, "Show Previous Levels", group=grp_vis)
+showSignals    = input.bool(true, "Show Signals", group=grp_vis)
+
+// =========================================================================
+// PREVIOUS BAR LEVELS
+// =========================================================================
+prevHigh  = high[1]
+prevLow   = low[1]
+prevOpen  = open[1]
+prevClose = close[1]
+
+bodyHigh = math.max(prevOpen, prevClose)
+bodyLow  = math.min(prevOpen, prevClose)
+
+longRef =
+     triggerMode == "High/Low" ? prevHigh :
+     triggerMode == "Body (Open/Close)" ? bodyHigh :
+     math.max(prevHigh, bodyHigh)
+
+shortRef =
+     triggerMode == "High/Low" ? prevLow :
+     triggerMode == "Body (Open/Close)" ? bodyLow :
+     math.min(prevLow, bodyLow)
+
+// =========================================================================
+// SESSION FILTER
+// =========================================================================
+// Current chart hour
+curHour = hour
+
+// Allowed trigger candles
+validTriggerBar =
+     (use7pm and curHour == 21) or
+     (use8pm and curHour == 22) or
+     (use9pm and curHour == 23) or
+     (use7am and curHour == 9)  or
+     (use8am and curHour == 10)  or
+     (use9am and curHour == 11)
+
+// =========================================================================
+// SIGNAL LOGIC
+// =========================================================================
+barOK = confirmOnClose ? barstate.isconfirmed : true
+
+longSignal =
+     barOK and
+     not na(longRef) and
+     close > longRef and
+     close[1] <= longRef
+
+shortSignal =
+     barOK and
+     not na(shortRef) and
+     close < shortRef and
+     close[1] >= shortRef
+
+// =========================================================================
+// ONE LONG + ONE SHORT MAX PER BAR
+// =========================================================================
+var bool longTakenThisBar  = false
+var bool shortTakenThisBar = false
+
+if barstate.isnew
+    longTakenThisBar  := false
+    shortTakenThisBar := false
+
+// =========================================================================
+// ENTRIES
+// =========================================================================
+if allowBothSides
+    if longSignal and validTriggerBar and not longTakenThisBar
+        strategy.entry("Long", strategy.long)
+        longTakenThisBar := true
+
+    if shortSignal and validTriggerBar and not shortTakenThisBar
+        strategy.entry("Short", strategy.short)
+        shortTakenThisBar := true
+else
+    if longSignal and validTriggerBar and not longTakenThisBar and not shortTakenThisBar
+        strategy.entry("Long", strategy.long)
+        longTakenThisBar := true
+    else if shortSignal and validTriggerBar and not shortTakenThisBar and not longTakenThisBar
+        strategy.entry("Short", strategy.short)
+        shortTakenThisBar := true
+
+// =========================================================================
+// TRAILING STOP TRACKING
+// =========================================================================
+var float highSinceEntry = na
+var float lowSinceEntry  = na
+
+newLong  = strategy.position_size > 0 and strategy.position_size[1] <= 0
+newShort = strategy.position_size < 0 and strategy.position_size[1] >= 0
+
+if newLong
+    highSinceEntry := high
+else if strategy.position_size > 0
+    highSinceEntry := math.max(nz(highSinceEntry[1], high), high)
+else
+    highSinceEntry := na
+
+if newShort
+    lowSinceEntry := low
+else if strategy.position_size < 0
+    lowSinceEntry := math.min(nz(lowSinceEntry[1], low), low)
+else
+    lowSinceEntry := na
+
+// =========================================================================
+// EXITS
+// =========================================================================
+longTP = strategy.position_size > 0 ? strategy.position_avg_price + takeProfitPts : na
+longSL = strategy.position_size > 0 ? strategy.position_avg_price - stopLossPts : na
+
+shortTP = strategy.position_size < 0 ? strategy.position_avg_price - takeProfitPts : na
+shortSL = strategy.position_size < 0 ? strategy.position_avg_price + stopLossPts : na
+
+longTrailActive =
+     useTrailing and
+     strategy.position_size > 0 and
+     not na(highSinceEntry) and
+     (highSinceEntry - strategy.position_avg_price >= trailStartPts)
+
+shortTrailActive =
+     useTrailing and
+     strategy.position_size < 0 and
+     not na(lowSinceEntry) and
+     (strategy.position_avg_price - lowSinceEntry >= trailStartPts)
+
+longTrailSL  = longTrailActive  ? highSinceEntry - trailDistPts : na
+shortTrailSL = shortTrailActive ? lowSinceEntry + trailDistPts  : na
+
+finalLongSL =
+     strategy.position_size > 0 ? (useTrailing and longTrailActive ? math.max(longSL, longTrailSL) : longSL) : na
+
+finalShortSL =
+     strategy.position_size < 0 ? (useTrailing and shortTrailActive ? math.min(shortSL, shortTrailSL) : shortSL) : na
+
+if strategy.position_size > 0
+    strategy.exit("Long Exit", "Long", limit=longTP, stop=finalLongSL)
+
+if strategy.position_size < 0
+    strategy.exit("Short Exit", "Short", limit=shortTP, stop=finalShortSL)
+
+// =========================================================================
+// VISUALS
+// =========================================================================
+plot(showPrevLevels ? prevHigh : na, title="Previous High", color=color.new(color.green, 0), linewidth=1, style=plot.style_linebr)
+plot(showPrevLevels ? prevLow : na, title="Previous Low", color=color.new(color.red, 0), linewidth=1, style=plot.style_linebr)
+plot(showPrevLevels ? bodyHigh : na, title="Previous Body High", color=color.new(color.blue, 30), linewidth=1, style=plot.style_linebr)
+plot(showPrevLevels ? bodyLow : na, title="Previous Body Low", color=color.new(color.orange, 30), linewidth=1, style=plot.style_linebr)
+
+plotshape(showSignals and longSignal and validTriggerBar, title="Buy Signal", style=shape.labelup, location=location.belowbar, color=color.new(color.green, 0), text="BUY", textcolor=color.white, size=size.tiny)
+plotshape(showSignals and shortSignal and validTriggerBar, title="Sell Signal", style=shape.labeldown, location=location.abovebar, color=color.new(color.red, 0), text="SELL", textcolor=color.white, size=size.tiny)

@@ -1,0 +1,383 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+
+//@version=5
+strategy("Liquidity Sweep Strategy - Asymmetric Pro", overlay=true, currency=currency.USD, 
+         initial_capital=50000, default_qty_value=1, calc_on_every_tick=true)
+
+// =========================================================================
+// INPUTS
+// =========================================================================
+// --- Table Confluence Settings ---
+grp_conf = "Confluence Settings"
+anchorTF = input.timeframe("240", "Anchor Timeframe", group=grp_conf,
+     tooltip="The higher TF whose range defines compression and confluence zones.")
+
+// --- SESSION & EOD CLOSE ---
+grp_session = "Session Filter"
+useSession  = input.bool(true,  "Trade Session Only?",      group=grp_session)
+// Active gold windows: London open + US session
+sessionStr = input.session("0200-1700", "Trade Window (ET)", group=grp_session,
+     tooltip="London open through US close. Blocks thin overnight chop.")
+
+// --- Entry Settings --- 
+grp_entry = "Entry Settings"
+offsetPrice = input.float(0.00, "Entry Offset (Price)", group=grp_entry, tooltip="Distance above high / below low to place entry stop")
+barWindow   = input.int(1, "Execution Window (Bars)", group=grp_entry)
+
+// --- Exit Mode ---
+grp_mode = "Exit Mode"
+usePriceMode = input.bool(false, "Use Price Units (Recommended)", group=grp_mode,
+     tooltip="Price = easy to understand (e.g. 5.50 means $5.50 move)\nTicks = traditional but requires huge numbers on small-tick symbols")
+
+// --- Current Timeframe Trend Filter ---
+grp_tf = "Trend Filter — Current Timeframe"
+useTF   = input.bool(false,    "Enable MA Filter?",                       group=grp_tf)
+maType  = input.string("Hull", "MA Type", options=["EMA", "SMA", "Hull"], group=grp_tf)
+maLen   = input.int(20,        "MA Length",                               group=grp_tf)
+
+// --- 1H Higher Timeframe Trend Filter ---
+grp_htf = "Trend Filter — 1H Higher Timeframe"
+useHTF  = input.bool(true,   "Enable 1H MA Filter?",                     group=grp_htf,
+     tooltip="Stacks with current TF filter — both must agree to allow entry.")
+htfType = input.string("EMA", "1H MA Type", options=["EMA", "SMA", "Hull"], group=grp_htf)
+htfLen  = input.int(10,        "1H MA Length",                             group=grp_htf)
+
+// --- Long Settings ---
+grp_l = "Long Settings"
+tp_l_input        = input.float(60, "Long Take Profit",      group=grp_l)
+sl_l_input        = input.float(30, "Long Stop Loss",        group=grp_l)
+trailAct_l_input  = input.float(20, "Long Trail Activation", group=grp_l)
+trailStep_l_input = input.float(1, "Long Trail Step",       group=grp_l)
+
+// --- Short Settings ---
+grp_s = "Short Settings"
+tp_s_input        = input.float(60, "Short Take Profit",      group=grp_s)
+sl_s_input        = input.float(30, "Short Stop Loss",        group=grp_s)
+trailAct_s_input  = input.float(20, "Short Trail Activation", group=grp_s)
+trailStep_s_input = input.float(1, "Short Trail Step",       group=grp_s)
+
+// --- Trailing Master Control ---
+grp_trail = "Trailing Master Control"
+useTrail = input.bool(true, "Enable Trailing Stop?", group=grp_trail)
+
+// =========================================================================
+// CONVERT TO TICKS
+// =========================================================================
+tickSize = syminfo.mintick > 0 ? syminfo.mintick : 0.1
+f_toTicks(val) => math.max(1, math.round(val / (usePriceMode ? tickSize : 1)))
+
+tp_l        = f_toTicks(tp_l_input)
+sl_l        = f_toTicks(sl_l_input)
+trailAct_l  = useTrail ? f_toTicks(trailAct_l_input)  : na
+trailStep_l = useTrail ? f_toTicks(trailStep_l_input) : na
+
+tp_s        = f_toTicks(tp_s_input)
+sl_s        = f_toTicks(sl_s_input)
+trailAct_s  = useTrail ? f_toTicks(trailAct_s_input)  : na
+trailStep_s = useTrail ? f_toTicks(trailStep_s_input) : na
+
+// =========================================================================
+// MA CALCULATIONS
+// =========================================================================
+f_hullMA(src, len) =>
+    ta.wma(2 * ta.wma(src, math.round(len / 2)) - ta.wma(src, len), math.round(math.sqrt(len)))
+
+// Current TF MA
+maVal = switch maType
+    "EMA"  => ta.ema(close, maLen)
+    "SMA"  => ta.sma(close, maLen)
+    "Hull" => f_hullMA(close, maLen)
+    =>        ta.ema(close, maLen)
+
+// 1H HTF MA — pulled from 1H closes, lookahead off to prevent repainting
+htfClose = request.security(syminfo.tickerid, "60", close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+htfMA = switch htfType
+    "EMA"  => ta.ema(htfClose, htfLen)
+    "SMA"  => ta.sma(htfClose, htfLen)
+    "Hull" => f_hullMA(htfClose, htfLen)
+    =>        ta.ema(htfClose, htfLen)
+
+// Plots — only visible when filter is enabled, color flips with trend direction
+plot(useTF  ? maVal : na, title="Current TF MA",
+     color=close > maVal ? color.new(color.orange, 0) : color.new(color.red,    20), linewidth=2)
+plot(useHTF ? htfMA : na, title="1H HTF MA",
+     color=close > htfMA ? color.new(color.aqua,  0) : color.new(color.purple,  20), linewidth=2)
+
+// =========================================================================
+// LIQUIDITY CANDLE LOGIC & VISUALS
+// =========================================================================
+isLiqCandle = high > high[1] and low < low[1]
+barcolor(isLiqCandle ? color.white : na)
+
+var line lineHigh = na
+var line lineLow  = na
+if isLiqCandle
+    lineHigh := line.new(bar_index, high, bar_index, high, color=color.green, width=1)
+    lineLow  := line.new(bar_index, low,  bar_index, low,  color=color.red,   width=1)
+else if not na(lineHigh)
+    line.set_x2(lineHigh, bar_index)
+    line.set_x2(lineLow,  bar_index)
+
+// =========================================================================
+// ENTRY LOGIC
+// =========================================================================
+var float buyLevel  = na
+var float sellLevel = na
+barsSinceLiq = ta.barssince(isLiqCandle)
+
+// Force close any open position at 3:45 PM ET
+eodClose = useSession and (hour == 15 and minute >= 45) and not (hour == 15 and minute >= 46)
+if eodClose and strategy.position_size != 0
+    strategy.close_all(comment="EOD Close")
+
+inSession = not useSession or not na(time(timeframe.period, sessionStr))
+
+// All enabled filters must agree — stack as many as you want
+longCondition  = (not useTF or close > maVal) and (not useHTF or close > htfMA)
+shortCondition = (not useTF or close < maVal) and (not useHTF or close < htfMA)
+
+if strategy.position_size == 0
+    if isLiqCandle and inSession
+        buyLevel  := longCondition  ? high + offsetPrice : na
+        sellLevel := shortCondition ? low  - offsetPrice : na
+    else if barsSinceLiq > barWindow or not inSession
+        buyLevel  := na
+        sellLevel := na
+        strategy.cancel_all()
+
+if strategy.position_size == 0
+    if not na(buyLevel)
+        strategy.entry("Long",  strategy.long,  stop=buyLevel)
+    if not na(sellLevel)
+        strategy.entry("Short", strategy.short, stop=sellLevel)
+else
+    buyLevel  := na
+    sellLevel := na
+    strategy.cancel_all()
+
+// =========================================================================
+// EXITS (Asymmetric, trailing fully isolated)
+// =========================================================================
+if strategy.position_size > 0
+    if useTrail
+        strategy.exit("Exit Long", "Long",
+             profit       = tp_l,
+             loss         = sl_l,
+             trail_points = trailAct_l,
+             trail_offset = trailStep_l)
+    else
+        strategy.exit("Exit Long", "Long",
+             profit = tp_l,
+             loss   = sl_l)
+
+if strategy.position_size < 0
+    if useTrail
+        strategy.exit("Exit Short", "Short",
+             profit       = tp_s,
+             loss         = sl_s,
+             trail_points = trailAct_s,
+             trail_offset = trailStep_s)
+    else
+        strategy.exit("Exit Short", "Short",
+             profit = tp_s,
+             loss   = sl_s)
+
+// =========================================================================
+// MULTI-TIMEFRAME DASHBOARD
+// =========================================================================
+tf1 = input.timeframe("1",   "Timeframe 1", group="Dashboard Timeframes")
+tf2 = input.timeframe("5",  "Timeframe 2", group="Dashboard Timeframes")
+tf3 = input.timeframe("15",  "Timeframe 3", group="Dashboard Timeframes")
+tf4 = input.timeframe("30", "Timeframe 4", group="Dashboard Timeframes")
+tf5 = input.timeframe("60",   "Timeframe 5", group="Dashboard Timeframes")
+tf6 = input.timeframe("240",   "Timeframe 6", group="Dashboard Timeframes")
+tf7 = input.timeframe("D",   "Timeframe 7", group="Dashboard Timeframes")
+
+// --- Existing liq candle row ---
+// Stays lit for 2 bars after firing instead of just 1
+tf1_liq = request.security(syminfo.tickerid, tf1, 
+     ta.barssince(high > high[1] and low < low[1]) <= 1,
+     gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+tf2_liq = request.security(syminfo.tickerid, tf2, 
+     ta.barssince(high > high[1] and low < low[1]) <= 1,
+     gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+tf3_liq = request.security(syminfo.tickerid, tf3, 
+     ta.barssince(high > high[1] and low < low[1]) <= 1,
+     gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+tf4_liq = request.security(syminfo.tickerid, tf4, 
+     ta.barssince(high > high[1] and low < low[1]) <= 1,
+     gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+tf5_liq = request.security(syminfo.tickerid, tf5, 
+     ta.barssince(high > high[1] and low < low[1]) <= 1,
+     gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+tf6_liq = request.security(syminfo.tickerid, tf6, 
+     ta.barssince(high > high[1] and low < low[1]) <= 1,
+     gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+tf7_liq = request.security(syminfo.tickerid, tf7, 
+     ta.barssince(high > high[1] and low < low[1]) <= 1,
+     gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+// Cache all signals — persists across bar transitions
+var bool c_tf1_liq  = false
+var bool c_tf2_liq  = false
+var bool c_tf3_liq  = false
+var bool c_tf4_liq  = false
+var bool c_tf5_liq  = false
+var bool c_tf6_liq  = false
+var bool c_tf7_liq  = false
+
+var bool c_tf1_comp = false
+var bool c_tf2_comp = false
+var bool c_tf3_comp = false
+var bool c_tf4_comp = false
+var bool c_tf5_comp = false
+var bool c_tf6_comp = false
+var bool c_tf7_comp = false
+
+var bool c_tf1_conf = false
+var bool c_tf2_conf = false
+var bool c_tf3_conf = false
+var bool c_tf4_conf = false
+var bool c_tf5_conf = false
+var bool c_tf6_conf = false
+var bool c_tf7_conf = false
+
+var int  c_compScore = 0
+var int  c_confScore = 0
+var bool c_anchorIsLiq = false
+
+// --- Anchor range ---
+anchorHigh = request.security(syminfo.tickerid, anchorTF, high[1], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+anchorLow  = request.security(syminfo.tickerid, anchorTF, low[1],  gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+anchorIsLiq = request.security(syminfo.tickerid, anchorTF, high[1] > high[2] and low[1] < low[2], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+// --- TF closes for compression ---
+tf1_close = request.security(syminfo.tickerid, tf1, close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf2_close = request.security(syminfo.tickerid, tf2, close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf3_close = request.security(syminfo.tickerid, tf3, close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf4_close = request.security(syminfo.tickerid, tf4, close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf5_close = request.security(syminfo.tickerid, tf5, close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf6_close = request.security(syminfo.tickerid, tf6, close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+tf7_close = request.security(syminfo.tickerid, tf7, close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+// --- Compression: close sitting inside anchor range ---
+tf1_comp = tf1_close > anchorLow and tf1_close < anchorHigh
+tf2_comp = tf2_close > anchorLow and tf2_close < anchorHigh
+tf3_comp = tf3_close > anchorLow and tf3_close < anchorHigh
+tf4_comp = tf4_close > anchorLow and tf4_close < anchorHigh
+tf5_comp = tf5_close > anchorLow and tf5_close < anchorHigh
+tf6_comp = tf6_close > anchorLow and tf6_close < anchorHigh
+tf7_comp = tf7_close > anchorLow and tf7_close < anchorHigh
+
+// --- Confluence: liq candle fired AND inside anchor range ---
+tf1_conf = tf1_liq and tf1_comp
+tf2_conf = tf2_liq and tf2_comp
+tf3_conf = tf3_liq and tf3_comp
+tf4_conf = tf4_liq and tf4_comp
+tf5_conf = tf5_liq and tf5_comp
+tf6_conf = tf6_liq and tf6_comp
+tf7_conf = tf7_liq and tf7_comp
+
+// --- Scores ---
+compScore = (tf1_comp ? 1 : 0) + (tf2_comp ? 1 : 0) + (tf3_comp ? 1 : 0) + (tf4_comp ? 1 : 0) + (tf5_comp ? 1 : 0) + (tf6_comp ? 1 : 0) + (tf7_comp ? 1 : 0)
+confScore = (tf1_conf ? 1 : 0) + (tf2_conf ? 1 : 0) + (tf3_conf ? 1 : 0) + (tf4_conf ? 1 : 0) + (tf5_conf ? 1 : 0) + (tf6_conf ? 1 : 0) + (tf7_conf ? 1 : 0)
+
+// Update cache only when data is valid
+if not na(tf1_liq)
+    c_tf1_liq  := tf1_liq
+    c_tf2_liq  := tf2_liq
+    c_tf3_liq  := tf3_liq
+    c_tf4_liq  := tf4_liq
+    c_tf5_liq  := tf5_liq
+    c_tf6_liq  := tf6_liq
+    c_tf7_liq  := tf7_liq
+    c_tf1_comp := tf1_comp
+    c_tf2_comp := tf2_comp
+    c_tf3_comp := tf3_comp
+    c_tf4_comp := tf4_comp
+    c_tf5_comp := tf5_comp
+    c_tf6_comp := tf6_comp
+    c_tf7_comp := tf7_comp
+    c_tf1_conf := tf1_conf
+    c_tf2_conf := tf2_conf
+    c_tf3_conf := tf3_conf
+    c_tf4_conf := tf4_conf
+    c_tf5_conf := tf5_conf
+    c_tf6_conf := tf6_conf
+    c_tf7_conf := tf7_conf
+    c_compScore    := compScore
+    c_confScore    := confScore
+    c_anchorIsLiq  := anchorIsLiq
+
+// --- Color helpers ---
+liqColor(on) =>
+    on ? color.new(#0066cc, 0) : color.new(color.gray, 50)
+
+compColor(on) =>
+    on ? color.new(color.green, 15) : color.new(color.gray, 45)
+
+confColor(on) =>
+    on ? color.new(color.aqua, 15) : color.new(color.gray, 45)
+
+scoreColor(n) =>
+    n == 0 ? color.new(color.gray,   45)  : n <= 2  ? color.new(color.yellow, 20) : n  <= 4  ? color.new(color.orange, 20) : color.new(color.red,    20)
+ 
+// --- Table: 7 columns, 5 rows ---
+// FIX 1: Changed border transparency from 100 (invisible) to 0 (solid)
+var table dash = table.new(position.top_right, columns=7, rows=5, border_width=1, border_color=color.new(color.black, 0))
+
+// FIX 2 & 3: Create a static Header Row (Row 0) on the very first bar.
+// This locks in your column widths using your timeframe inputs, preventing the table from jittering.
+if barstate.isfirst
+    table.cell(dash, 0, 0, tf1, text_color=color.white, text_size=size.small, bgcolor=color.new(#000000, 0))
+    table.cell(dash, 1, 0, tf2, text_color=color.white, text_size=size.small, bgcolor=color.new(#000000, 0))
+    table.cell(dash, 2, 0, tf3, text_color=color.white, text_size=size.small, bgcolor=color.new(#000000, 0))
+    table.cell(dash, 3, 0, tf4, text_color=color.white, text_size=size.small, bgcolor=color.new(#000000, 0))
+    table.cell(dash, 4, 0, tf5, text_color=color.white, text_size=size.small, bgcolor=color.new(#000000, 0))
+    table.cell(dash, 5, 0, tf6, text_color=color.white, text_size=size.small, bgcolor=color.new(#000000, 0))
+    table.cell(dash, 6, 0, tf7, text_color=color.white, text_size=size.small, bgcolor=color.new(#000000, 0))
+
+// Update dynamic data only on the last/live bars
+if barstate.islast
+    // Row 1
+    table.cell(dash, 0, 1, c_tf1_liq ? "Liq" : "—", text_color=color.white, text_size=size.tiny, bgcolor=liqColor(c_tf1_liq))
+    table.cell(dash, 1, 1, c_tf2_liq ? "Liq" : "—", text_color=color.white, text_size=size.tiny, bgcolor=liqColor(c_tf2_liq))
+    table.cell(dash, 2, 1, c_tf3_liq ? "Liq" : "—", text_color=color.white, text_size=size.tiny, bgcolor=liqColor(c_tf3_liq))
+    table.cell(dash, 3, 1, c_tf4_liq ? "Liq" : "—", text_color=color.white, text_size=size.tiny, bgcolor=liqColor(c_tf4_liq))
+    table.cell(dash, 4, 1, c_tf5_liq ? "Liq" : "—", text_color=color.white, text_size=size.tiny, bgcolor=liqColor(c_tf5_liq))
+    table.cell(dash, 5, 1, c_tf6_liq ? "Liq" : "—", text_color=color.white, text_size=size.tiny, bgcolor=liqColor(c_tf6_liq))
+    table.cell(dash, 6, 1, c_tf7_liq ? "Liq" : "—", text_color=color.white, text_size=size.tiny, bgcolor=liqColor(c_tf7_liq))
+
+    // Row 2
+    table.cell(dash, 0, 2, c_tf1_comp ? "Cmp" : "—", text_color=color.white, text_size=size.tiny, bgcolor=compColor(c_tf1_comp))
+    table.cell(dash, 1, 2, c_tf2_comp ? "Cmp" : "—", text_color=color.white, text_size=size.tiny, bgcolor=compColor(c_tf2_comp))
+    table.cell(dash, 2, 2, c_tf3_comp ? "Cmp" : "—", text_color=color.white, text_size=size.tiny, bgcolor=compColor(c_tf3_comp))
+    table.cell(dash, 3, 2, c_tf4_comp ? "Cmp" : "—", text_color=color.white, text_size=size.tiny, bgcolor=compColor(c_tf4_comp))
+    table.cell(dash, 4, 2, c_tf5_comp ? "Cmp" : "—", text_color=color.white, text_size=size.tiny, bgcolor=compColor(c_tf5_comp))
+    table.cell(dash, 5, 2, c_tf6_comp ? "Cmp" : "—", text_color=color.white, text_size=size.tiny, bgcolor=compColor(c_tf6_comp))
+    table.cell(dash, 6, 2, c_tf7_comp ? "Cmp" : "—", text_color=color.white, text_size=size.tiny, bgcolor=compColor(c_tf7_comp))
+
+    // Row 3
+    table.cell(dash, 0, 3, c_tf1_conf ? "Cnf" : "—", text_color=color.white, text_size=size.tiny, bgcolor=confColor(c_tf1_conf))
+    table.cell(dash, 1, 3, c_tf2_conf ? "Cnf" : "—", text_color=color.white, text_size=size.tiny, bgcolor=confColor(c_tf2_conf))
+    table.cell(dash, 2, 3, c_tf3_conf ? "Cnf" : "—", text_color=color.white, text_size=size.tiny, bgcolor=confColor(c_tf3_conf))
+    table.cell(dash, 3, 3, c_tf4_conf ? "Cnf" : "—", text_color=color.white, text_size=size.tiny, bgcolor=confColor(c_tf4_conf))
+    table.cell(dash, 4, 3, c_tf5_conf ? "Cnf" : "—", text_color=color.white, text_size=size.tiny, bgcolor=confColor(c_tf5_conf))
+    table.cell(dash, 5, 3, c_tf6_conf ? "Cnf" : "—", text_color=color.white, text_size=size.tiny, bgcolor=confColor(c_tf6_conf))
+    table.cell(dash, 6, 3, c_tf7_conf ? "Cnf" : "—", text_color=color.white, text_size=size.tiny, bgcolor=confColor(c_tf7_conf))
+
+    // Row 4
+    table.cell(dash, 0, 4, "C:" + str.tostring(c_compScore),                     text_color=color.white, text_size=size.tiny, bgcolor=scoreColor(c_compScore))
+    table.cell(dash, 1, 4, "K:" + str.tostring(c_confScore),                     text_color=color.white, text_size=size.tiny, bgcolor=scoreColor(c_confScore))
+    table.cell(dash, 2, 4, "T:" + str.tostring(c_compScore + c_confScore),       text_color=color.white, text_size=size.tiny, bgcolor=scoreColor(c_compScore + c_confScore))
+    table.cell(dash, 3, 4, "Anc",                                                text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6096b2, 50))
+    table.cell(dash, 4, 4, anchorTF,                                             text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6096b2, 50))
+    table.cell(dash, 5, 4, c_anchorIsLiq ? "Liq" : "Rng",                        text_color=color.white, text_size=size.tiny, bgcolor=c_anchorIsLiq ? color.new(color.orange, 20) : color.new(color.gray, 65))
+    table.cell(dash, 6, 4, "",                                                   text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.gray, 75))

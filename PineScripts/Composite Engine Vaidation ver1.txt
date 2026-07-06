@@ -1,0 +1,192 @@
+//@version=5
+strategy("Composite Engine Validation v3",
+     overlay=true,
+     pyramiding=0,
+     initial_capital=50000,
+     default_qty_value=1)
+
+// =========================================================================
+// INPUTS — DUAL COMPOSITE MA (LONG SIDE)
+// =========================================================================
+grp_la         = "Long Composite ENGINE A (Primary)"
+use_la         = input.bool(true,    "Show Long Engine A?",    group=grp_la)
+useBullOnly_la = input.bool(true,    "Use Bullish Candles Only?", group=grp_la)
+maSrc_la       = input.source(close, "Engine A Base Source",      group=grp_la)
+maLen_la       = input.int(20,       "Engine A Length",           group=grp_la)
+maOff_la       = input.int(0,        "Engine A LSMA Offset",      group=grp_la)
+
+grp_lw    = "Long Matrix (MAs to include in Long Engine)"
+w_ema_l   = input.bool(true, "Include EMA",   group=grp_lw)
+w_sma_l   = input.bool(true, "Include SMA",   group=grp_lw)
+w_lsma_l  = input.bool(true, "Include LSMA",  group=grp_lw)
+w_hma_l   = input.bool(true, "Include HMA",   group=grp_lw)
+w_vwma_l  = input.bool(true, "Include VWMA",  group=grp_lw)
+w_vwap_l  = input.bool(true, "Include VWAP",  group=grp_lw)
+w_zlema_l = input.bool(true, "Include ZLEMA", group=grp_lw)
+w_smma_l  = input.bool(true, "Include SMMA",  group=grp_lw)
+
+// =========================================================================
+// INPUTS — DUAL COMPOSITE MA (SHORT SIDE)
+// =========================================================================
+grp_sa         = "Short Composite ENGINE A (Primary)"
+use_sa         = input.bool(true,    "Show Short Engine A?",      group=grp_sa)
+useBearOnly_sa = input.bool(true,    "Use Bearish Candles Only?", group=grp_sa)
+maSrc_sa       = input.source(close, "Engine A Base Source",      group=grp_sa)
+maLen_sa       = input.int(20,       "Engine A Length",           group=grp_sa)
+maOff_sa       = input.int(0,        "Engine A LSMA Offset",      group=grp_sa)
+
+grp_sw    = "Short Matrix (MAs to include in Short Engine)"
+w_ema_s   = input.bool(true, "Include EMA",   group=grp_sw)
+w_sma_s   = input.bool(true, "Include SMA",   group=grp_sw)
+w_lsma_s  = input.bool(true, "Include LSMA",  group=grp_sw)
+w_hma_s   = input.bool(true, "Include HMA",   group=grp_sw)
+w_vwma_s  = input.bool(true, "Include VWMA",  group=grp_sw)
+w_vwap_s  = input.bool(true, "Include VWAP",  group=grp_sw)
+w_zlema_s = input.bool(true, "Include ZLEMA", group=grp_sw)
+w_smma_s  = input.bool(true, "Include SMMA",  group=grp_sw)
+
+// =========================================================================
+// INPUTS — COMPOSITE TREND GATE & RISK
+// =========================================================================
+grp_ctg       = "Composite Trend Gate"
+useCompFilter = input.bool(false, "Enable Composite MA Filter?", group=grp_ctg, tooltip="When enabled, price must be on the correct side of the engine before an entry is allowed.")
+useEngine1    = input.bool(true,  "Engine 1 · Trend Long (Above Fast MA)", group=grp_ctg)
+useEngine3    = input.bool(true,  "Engine 3 · Trend Short (Below Fast MA)", group=grp_ctg)
+
+tp = input.float(35.0, "Take Profit (pts)", group="◆ Risk")
+sl = input.float(10.0, "Stop Loss (pts)",   group="◆ Risk")
+
+// =========================================================================
+// INTERNAL SEPARATED VWAP ENGINE
+// =========================================================================
+isNewSession = ta.change(time("D")) != 0
+
+var float sumVolHighPrice = 0.0
+var float sumVolHigh      = 0.0
+var float sumVolLowPrice  = 0.0
+var float sumVolLow       = 0.0
+
+if isNewSession
+    sumVolHighPrice := 0.0
+    sumVolHigh      := 0.0
+    sumVolLowPrice  := 0.0
+    sumVolLow       := 0.0
+
+if volume > 0
+    sumVolHighPrice += high * volume
+    sumVolHigh      += volume
+    sumVolLowPrice  += low  * volume
+    sumVolLow       += volume
+
+vwapHigh = sumVolHighPrice / sumVolHigh
+vwapLow  = sumVolLowPrice  / sumVolLow
+
+// =========================================================================
+// PURE CANDLE ENGINE STREAM EXTRACTION
+// =========================================================================
+bullSrc_la = ta.valuewhen(close > open, maSrc_la, 0)
+bearSrc_sa = ta.valuewhen(close < open, maSrc_sa, 0)
+
+src_la = useBullOnly_la ? bullSrc_la : maSrc_la
+src_sa = useBearOnly_sa ? bearSrc_sa : maSrc_sa
+
+// =========================================================================
+// COMPOSITE MA CALCULATIONS
+// =========================================================================
+
+// --- Long Engine A ---
+ema_la   = ta.ema(src_la, maLen_la)
+sma_la   = ta.sma(src_la, maLen_la)
+lsma_la  = ta.linreg(src_la, maLen_la, maOff_la)
+hma_la   = ta.hma(src_la, maLen_la)
+vwma_la  = ta.vwma(src_la, maLen_la)
+vwap_la  = vwapHigh
+lag_la   = math.round((maLen_la - 1) / 2)
+zlema_la = ta.ema(src_la + (src_la - src_la[lag_la]), maLen_la)
+var float smma_la = na
+smma_la := na(smma_la[1]) ? sma_la : (smma_la[1] * (maLen_la - 1) + src_la) / maLen_la
+
+longSum_A   = (w_ema_l ? ema_la : 0) + (w_sma_l ? sma_la : 0) + (w_lsma_l ? lsma_la : 0) + (w_hma_l ? hma_la : 0) + (w_vwma_l ? vwma_la : 0) + (w_vwap_l ? vwap_la : 0) + (w_zlema_l ? zlema_la : 0) + (w_smma_l ? smma_la : 0)
+longCount_A = (w_ema_l ? 1 : 0) + (w_sma_l ? 1 : 0) + (w_lsma_l ? 1 : 0) + (w_hma_l ? 1 : 0) + (w_vwma_l ? 1 : 0) + (w_vwap_l ? 1 : 0) + (w_zlema_l ? 1 : 0) + (w_smma_l ? 1 : 0)
+comp_la     = longCount_A > 0 ? longSum_A / longCount_A : na
+
+// --- Short Engine A ---
+ema_sa   = ta.ema(src_sa, maLen_sa)
+sma_sa   = ta.sma(src_sa, maLen_sa)
+lsma_sa  = ta.linreg(src_sa, maLen_sa, maOff_sa)
+hma_sa   = ta.hma(src_sa, maLen_sa)
+vwma_sa  = ta.vwma(src_sa, maLen_sa)
+vwap_sa  = vwapLow
+lag_sa   = math.round((maLen_sa - 1) / 2)
+zlema_sa = ta.ema(src_sa + (src_sa - src_sa[lag_sa]), maLen_sa)
+var float smma_sa = na
+smma_sa := na(smma_sa[1]) ? sma_sa : (smma_sa[1] * (maLen_sa - 1) + src_sa) / maLen_sa
+
+shortSum_A   = (w_ema_s ? ema_sa : 0) + (w_sma_s ? sma_sa : 0) + (w_lsma_s ? lsma_sa : 0) + (w_hma_s ? hma_sa : 0) + (w_vwma_s ? vwma_sa : 0) + (w_vwap_s ? vwap_sa : 0) + (w_zlema_s ? zlema_sa : 0) + (w_smma_s ? smma_sa : 0)
+shortCount_A = (w_ema_s ? 1 : 0) + (w_sma_s ? 1 : 0) + (w_lsma_s ? 1 : 0) + (w_hma_s ? 1 : 0) + (w_vwma_s ? 1 : 0) + (w_vwap_s ? 1 : 0) + (w_zlema_s ? 1 : 0) + (w_smma_s ? 1 : 0)
+comp_sa      = shortCount_A > 0 ? shortSum_A / shortCount_A : na
+
+// ══════════════════════════════════════════════════════
+// CANDLE HELPERS
+// ══════════════════════════════════════════════════════
+bullCdl() => (close > open)
+bearCdl() => (close < open)
+
+// ══════════════════════════════════════════════════════
+// TRADING ENGINES LOGIC
+// ══════════════════════════════════════════════════════
+engine1Long  = close > comp_la and bullCdl()
+engine3Short = close < comp_sa and bearCdl()
+
+// Gate Filter Override Logic
+gateLongPass  = not useCompFilter or (close > comp_la)
+gateShortPass = not useCompFilter or (close < comp_sa)
+
+longCondition  = useEngine1 and gateLongPass and engine1Long
+shortCondition = useEngine3 and gateShortPass and engine3Short
+
+// ══════════════════════════════════════════════════════
+// ENTRIES & EXITS
+// ══════════════════════════════════════════════════════
+if strategy.position_size == 0 and longCondition
+    strategy.entry("Long", strategy.long)
+
+if strategy.position_size == 0 and shortCondition
+    strategy.entry("Short", strategy.short)
+
+if strategy.position_size > 0
+    strategy.exit("Long Exit", "Long", limit = strategy.position_avg_price + tp, stop = strategy.position_avg_price - sl)
+
+if strategy.position_size < 0
+    strategy.exit("Short Exit", "Short", limit = strategy.position_avg_price - tp, stop = strategy.position_avg_price + sl)
+
+// ══════════════════════════════════════════════════════
+// VISUALS
+// ══════════════════════════════════════════════════════
+plot(use_la ? comp_la : na, "Long Fast MA",  color=color.lime,  linewidth=2)
+plot(use_sa ? comp_sa : na, "Short Fast MA", color=color.red,   linewidth=2)
+
+bgcolor(longCondition  ? color.new(color.green, 91) : na)
+bgcolor(shortCondition ? color.new(color.red,   91) : na)
+
+plotshape(longCondition,  title="Long Signal",  style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny)
+plotshape(shortCondition, title="Short Signal", style=shape.triangledown, location=location.abovebar, color=color.red,  size=size.tiny)
+
+// ══════════════════════════════════════════════════════
+// DEBUG DASHBOARD TABLE
+// ══════════════════════════════════════════════════════
+if barstate.islast
+    var table t = table.new(position.top_right, 2, 3, bgcolor=color.new(color.black, 60), border_color=color.new(color.gray, 40), border_width=1)
+
+    e1s = useEngine1 ? (engine1Long  ? "✓ PASS" : "✗ FAIL") : "— off"
+    e3s = useEngine3 ? (engine3Short ? "✓ PASS" : "✗ FAIL") : "— off"
+    e1c = useEngine1 ? (engine1Long  ? color.lime : color.red) : color.gray
+    e3c = useEngine3 ? (engine3Short ? color.lime : color.red) : color.gray
+
+    table.cell(t, 0, 0, "ENGINE STATUS", text_color=color.white, text_size=size.small, text_halign=text.align_left, bgcolor=color.new(color.black, 80))
+    table.cell(t, 1, 0, "", bgcolor=color.new(color.black, 80))
+
+    table.cell(t, 0, 1, "E1 · Trend Long",    text_color=color.white, text_size=size.small, text_halign=text.align_left)
+    table.cell(t, 1, 1, e1s, text_color=e1c, text_size=size.small)
+    table.cell(t, 0, 2, "E3 · Trend Short",   text_color=color.white, text_size=size.small, text_halign=text.align_left)
+    table.cell(t, 1, 2, e3s, text_color=e3c, text_size=size.small)

@@ -1,0 +1,28 @@
+---
+pid: 10096
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "cd C:\\Users\\Softthrone\\Claude\\TradingView-Suite; node -e \"require('dotenv').config(); fetch('https://integrate.api.nvidia.com/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+process.env.NVIDIA_KEY_INTAKE,'Content-Type':'application/json'},body:JSON.stringify({model:'meta/llama-3.3-70b-instruct',messages:[{role:'user',content:'hi'}],max_tokens:10})}).then(r=>r.json().then(d=>console.log(JSON.stringify(d))))\""
+started_at: 2026-07-04T17:58:43.721Z
+running_for_ms: 1099907  
+---
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+node:internal/process/promises:324
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+TypeError: fetch failed
+    at Object.processResponse (node:internal/deps/undici/undici:13284:20)
+    at node:internal/deps/undici/undici:13672:23
+    at node:internal/deps/undici/undici:18110:7 {
+  [cause]: InformationalError: HTTP/2: "stream timeout after 300000"
+      at ClientHttp2Stream.onTimeout (node:internal/deps/undici/undici:9013:19)
+      at ClientHttp2Stream.emit (node:events:509:20)
+      at callTimeout (node:internal/http2/core:2577:8)
+      at ClientHttp2Stream._onTimeout (node:internal/http2/core:2212:5)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7) {
+    code: 'UND_ERR_INFO'
+  }
+}
+
+Node.js v26.3.0

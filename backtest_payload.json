@@ -1,0 +1,47 @@
+{
+  "instrument": "MGC",
+  "contract": {
+    "instrument": "MGC",
+    "tick_size": 0.1,
+    "tick_value": 10.0,
+    "point_value": 10.0,
+    "margin_req": 2000.0
+  },
+  "config": {
+    "offset_price_l": 3.0,
+    "bar_window_l": 7,
+    "tp_l": 100.0,
+    "sl_l": 14.0,
+    "trail_act_l": 4.0,
+    "trail_step_l": 0.1,
+    "pivot_len": 5,
+    "min_opp_breaks": 2,
+    "max_opp_breaks": 6
+  },
+  "initial_capital": 50000.0,
+  "bars_csv_path": "mgc1_13m_backtest_data.csv",
+  "trades": [
+    {
+      "trade_num": 1,
+      "entry_dt": "2026-06-22T17:17:00+00:00",
+      "entry_price": 4213.2,
+      "entry_signal": "brk#3",
+      "exit_dt": "2026-06-22T17:30:00+00:00",
+      "exit_price": 4199.2,
+      "exit_reason": "SL",
+      "pnl_usd": -140.0
+    },
+    {
+      "trade_num": 2,
+      "entry_dt": "2026-06-22T22:00:00+00:00",
+      "entry_price": 4215.8,
+      "entry_signal": "brk#3",
+      "exit_dt": "2026-06-22T23:44:00+00:00",
+      "exit_price": 4201.8,
+      "exit_reason": "SL_WINDOW",
+      "pnl_usd": -140.0
+    }
+  ],
+  "backtest_timestamp": "2026-06-25T07:46:34.527461",
+  "notes": "Liquidity Sweep \u2014 Leg Break Gate | 2 closed trades"
+}

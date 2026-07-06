@@ -38,3 +38,6 @@ Thumbs.db
 *.dat
 /ObsidianVault/
 /DataArchives/
+.chrome-cdp-profile/
+
+.chrome-cdp-profile/

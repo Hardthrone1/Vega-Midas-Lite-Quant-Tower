@@ -1,0 +1,179 @@
+//@version=6
+strategy("RSI + STOCH + DIV — HARDENED ENGINE", overlay=false, calc_on_every_tick=true, initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1)
+
+// =====================
+// 🤖 STRATEGY SETTINGS
+// =====================
+grpStrat = "🤖 Strategy Engine"
+
+stratMode    = input.string("ANY (Either hit)", "Mode",
+    options=["OB/OS ONLY", "DIV ONLY", "ANY (Either hit)", "BOTH (Confluence)"],
+    group=grpStrat)
+
+minObosScore = input.int(1, "Min OB/OS Score", minval=1, maxval=3, group=grpStrat)
+minDivScore  = input.int(1, "Min DIV Score", minval=1, maxval=3, group=grpStrat)
+stratWindow  = input.int(3, "BOTH Mode Window", minval=1, group=grpStrat)
+divWindow    = input.int(2, "Div Signal Persistence", group=grpStrat)
+
+// =====================
+// 🛡️ RISK & SESSION FILTER
+// =====================
+grpRisk = "🛡️ Risk & Filters"
+
+useTimeFilter = input.bool(true, "Enable Session Filter", group=grpRisk)
+tradeSession  = input.session("0930-1545", "Allowed Hours", group=grpRisk)
+
+// =====================
+// 🛡️ MTF FILTER
+// =====================
+grpFilter = "🛡️ MTF Filters"
+
+useMTF      = input.bool(true, "Use MTF Filter", group=grpFilter)
+minMtfScore = input.int(3, "Min MTF Score", group=grpFilter)
+
+tf1_on = input.bool(true, "Use 5m", group=grpFilter)
+tf2_on = input.bool(true, "Use 15m", group=grpFilter)
+tf3_on = input.bool(true, "Use 1h", group=grpFilter)
+tf4_on = input.bool(true, "Use 4h", group=grpFilter)
+tf5_on = input.bool(true, "Use Daily", group=grpFilter)
+
+// =====================
+// 🎯 CORE LEVELS
+// =====================
+OB = input.float(80, "Overbought")
+MID = input.float(50, "Mid Point")
+OS = input.float(20, "Oversold")
+
+// =====================
+// ⚙️ INDICATORS
+// =====================
+rsi   = ta.rsi(close, 14)
+stoch = ta.sma(ta.stoch(close, high, low, 14), 3)
+comp  = (rsi + stoch) / 2
+
+// =====================
+// 🔷 OB/OS ENGINE
+// =====================
+rawCL = ta.crossover(comp, OS)
+rawCS = ta.crossunder(comp, OB)
+rawRL = ta.crossover(rsi, OS)
+rawRS = ta.crossunder(rsi, OB)
+rawSL = ta.crossover(stoch, OS)
+rawSS = ta.crossunder(stoch, OB)
+
+obosLongScore  = (rawCL ? 1 : 0) + (rawRL ? 1 : 0) + (rawSL ? 1 : 0)
+obosShortScore = (rawCS ? 1 : 0) + (rawRS ? 1 : 0) + (rawSS ? 1 : 0)
+
+obosLongState  = obosLongScore >= minObosScore
+obosShortState = obosShortScore >= minObosScore
+
+validObosLong  = obosLongState  and not obosLongState[1]
+validObosShort = obosShortState and not obosShortState[1]
+
+// =====================
+// 🔷 DIVERGENCE ENGINE
+// =====================
+pl = ta.pivotlow(comp, 3, 3)
+ph = ta.pivothigh(comp, 3, 3)
+
+var float prevLowPrice  = na
+var float prevLowOsc    = na
+var float prevHighPrice = na
+var float prevHighOsc   = na
+
+bullDivPulse = false
+bearDivPulse = false
+
+if not na(pl)
+    price = low[3]
+    osc   = pl
+    bullDivPulse := not na(prevLowPrice) and price < prevLowPrice and osc > prevLowOsc
+    prevLowPrice := price
+    prevLowOsc   := osc
+
+if not na(ph)
+    price = high[3]
+    osc   = ph
+    bearDivPulse := not na(prevHighPrice) and price > prevHighPrice and osc < prevHighOsc
+    prevHighPrice := price
+    prevHighOsc   := osc
+
+validDivLong  = bullDivPulse
+validDivShort = bearDivPulse
+
+// =====================
+// 🔷 MTF ENGINE (CLEAN + NON-REPAINT)
+// =====================
+comp_tf1 = request.security(syminfo.tickerid, "5",   comp[1], lookahead=barmerge.lookahead_off)
+comp_tf2 = request.security(syminfo.tickerid, "15",  comp[1], lookahead=barmerge.lookahead_off)
+comp_tf3 = request.security(syminfo.tickerid, "60",  comp[1], lookahead=barmerge.lookahead_off)
+comp_tf4 = request.security(syminfo.tickerid, "240", comp[1], lookahead=barmerge.lookahead_off)
+comp_tf5 = request.security(syminfo.tickerid, "D",   comp[1], lookahead=barmerge.lookahead_off)
+
+bullCount =
+     (tf1_on and comp_tf1 > 50 ? 1 : 0) +
+     (tf2_on and comp_tf2 > 50 ? 1 : 0) +
+     (tf3_on and comp_tf3 > 50 ? 1 : 0) +
+     (tf4_on and comp_tf4 > 50 ? 1 : 0) +
+     (tf5_on and comp_tf5 > 50 ? 1 : 0)
+
+totalTF =
+     (tf1_on ? 1 : 0) +
+     (tf2_on ? 1 : 0) +
+     (tf3_on ? 1 : 0) +
+     (tf4_on ? 1 : 0) +
+     (tf5_on ? 1 : 0)
+
+bearCount = totalTF - bullCount
+
+mtfLongOK  = not useMTF or minMtfScore >= minMtfScore
+mtfShortOK = not useMTF or minMtfScore <= (totalTF - minMtfScore)
+
+// =====================
+// 🚀 FINAL LOGIC
+// =====================
+distDivL  = nz(ta.barssince(bullDivPulse), 999)
+distDivS  = nz(ta.barssince(bearDivPulse), 999)
+distObosL = nz(ta.barssince(validObosLong), 999)
+distObosS = nz(ta.barssince(validObosShort), 999)
+
+longCond = switch stratMode
+    "OB/OS ONLY"      => validObosLong
+    "DIV ONLY"        => validDivLong
+    "ANY (Either hit)" => validObosLong or validDivLong
+    => (validObosLong and distDivL <= stratWindow) or (validDivLong and distObosL <= stratWindow)
+
+shortCond = switch stratMode
+    "OB/OS ONLY"      => validObosShort
+    "DIV ONLY"        => validDivShort
+    "ANY (Either hit)" => validObosShort or validDivShort
+    => (validObosShort and distDivS <= stratWindow) or (validDivShort and distObosS <= stratWindow)
+
+inSession = not useTimeFilter or (time(timeframe.period, tradeSession) != 0)
+
+// =====================
+// 🎯 EXECUTION
+// =====================
+finalLong  = longCond  and mtfLongOK  and inSession
+finalShort = shortCond and mtfShortOK and inSession
+
+// prevent repeat spam safely (NO nz)
+if finalLong and not finalLong[1]
+    strategy.entry("LONG", strategy.long)
+
+if finalShort and not finalShort[1]
+    strategy.entry("SHORT", strategy.short)
+
+// =====================
+// 📊 VISUALS
+// =====================
+plot(comp, color=color.white)
+hline(OB, color=color.red)
+hline(MID, color=color.rgb(66, 98, 100))
+hline(OS, color=color.lime)
+
+plotshape(validDivLong, "Bull Div", shape.triangleup, location.bottom, color.lime)
+plotshape(validDivShort, "Bear Div", shape.triangledown, location.top, color.red)
+
+bgcolor(finalLong ? color.new(color.lime, 85) : na)
+bgcolor(finalShort ? color.new(color.red, 85) : na)

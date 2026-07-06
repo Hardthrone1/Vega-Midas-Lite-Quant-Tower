@@ -1,0 +1,93 @@
+//@version=5
+strategy("Asian Session Sweep Strategy", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// =========================================================================
+// INPUTS
+// =========================================================================
+grp_time = "Time Settings (Chart Timezone)"
+asianOpenHour  = input.int(17, title="Asian Session Open Hour (e.g., 17 for 5 PM)", group=grp_time)
+tradeStartHour = input.int(18, title="Trade Start Hour (e.g., 18 for 6 PM)", group=grp_time)
+
+grp_risk = "Risk & Triggers"
+triggerPoints  = input.float(10.0, title="Sweep Trigger (Absolute Price / Points)", group=grp_risk)
+takeProfitPts  = input.float(30.0, title="Take Profit (Points)", group=grp_risk)
+stopLossPts    = input.float(10.0, title="Stop Loss (Points)", group=grp_risk)
+
+grp_toggles = "Strategy Toggles"
+fireContinuous = input.bool(false, title="Fire Continuous (Take multiple trades per session)", group=grp_toggles)
+
+// =========================================================================
+// STATE VARIABLES
+// =========================================================================
+var float asianOpen = na
+var line asianLine = na
+var bool setupLong = false
+var bool setupShort = false
+var bool tradeTaken = false
+
+// =========================================================================
+// SESSION LOGIC & PLOTTING
+// =========================================================================
+isAsianOpen = timeframe.isintraday and hour == asianOpenHour
+
+if isAsianOpen
+    asianOpen := open
+    setupLong := false
+    setupShort := false
+    tradeTaken := false
+
+    asianLine := line.new(bar_index, asianOpen, bar_index + 1, asianOpen, color=color.blue, width=2, style=line.style_solid)
+else
+    if not na(asianLine)
+        line.set_x2(asianLine, bar_index)
+
+// =========================================================================
+// TRIGGER 1: THE SWEEP
+// =========================================================================
+if not na(asianOpen)
+    if low <= asianOpen - triggerPoints
+        setupLong := true
+    if high >= asianOpen + triggerPoints
+        setupShort := true
+
+// CAPTURE DEBUGGER STATE (Before resets hide it)
+// =========================================================================
+plotLongSetup = setupLong
+plotShortSetup = setupShort
+
+// =========================================================================
+// TRIGGER 2 & EXECUTION
+// =========================================================================
+// Uses the chart's hours to avoid Exchange vs Chart timezone conflicts
+canTrade = hour >= tradeStartHour or hour < asianOpenHour 
+
+longCondition = setupLong and close > asianOpen and canTrade and (not tradeTaken or fireContinuous)
+shortCondition = setupShort and close < asianOpen and canTrade and (not tradeTaken or fireContinuous)
+
+if longCondition
+    strategy.entry("Long", strategy.long)
+    tradeTaken := true
+    setupLong := false // Reset for the next potential continuous trade
+
+if shortCondition
+    strategy.entry("Short", strategy.short)
+    tradeTaken := true
+    setupShort := false
+
+// =========================================================================
+// TAKE PROFIT & STOP LOSS
+// =========================================================================
+tpTicks = takeProfitPts / syminfo.mintick
+slTicks = stopLossPts / syminfo.mintick
+
+strategy.exit("Exit Long", "Long", profit=tpTicks, loss=slTicks)
+strategy.exit("Exit Short", "Short", profit=tpTicks, loss=slTicks)
+
+// =========================================================================
+// VISUALS
+// =========================================================================
+plot(asianOpen, color=color.yellow, linewidth=2, title="Asian Open Price")
+
+// Debugger plots using the captured states
+plotshape(plotLongSetup, style=shape.circle, color=color.green, location=location.belowbar, title="Long Sweep Triggered")
+plotshape(plotShortSetup, style=shape.circle, color=color.red, location=location.abovebar, title="Short Sweep Triggered")

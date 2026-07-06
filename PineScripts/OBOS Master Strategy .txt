@@ -1,0 +1,531 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+
+//@version=6
+strategy("OB/OS MASTER [Strategy]", overlay = true, pyramiding = 0, process_orders_on_close = true, initial_capital = 50000)
+
+// ============================================================================
+// MASTER TOGGLES
+// ============================================================================
+grpMaster = "Master Toggles"
+showRSIEngine          = input.bool(true,  "Show RSI Engine", group = grpMaster)
+showStochEngine        = input.bool(true,  "Show Stoch Engine", group = grpMaster)
+showRSIBg              = input.bool(true,  "Show RSI Background", group = grpMaster)
+showStochBg            = input.bool(true,  "Show Stoch Background", group = grpMaster)
+showRSISignalsMaster   = input.bool(true,  "Show RSI Signals", group = grpMaster)
+showStochSignalsMaster = input.bool(true,  "Show Stoch Signals", group = grpMaster)
+
+// ============================================================================
+// 50 EMA + 100 EMA INPUTS
+// ============================================================================
+showEma50  = input.bool(false, title = "Show 50 EMA", group = "Moving Averages")
+showEma100 = input.bool(false, title = "Show 100 EMA", group = "Moving Averages")
+
+// ============================================================================
+// RSI INPUT SETTINGS
+// ============================================================================
+grpRsi = "RSI Settings"
+rsiLength     = input.int(1,  "RSI Length", minval = 1, group = grpRsi)
+rsiOverbought = input.int(51, "RSI Overbought", minval = 50, maxval = 100, group = grpRsi)
+rsiOversold   = input.int(49, "RSI Oversold", minval = 0, maxval = 50, group = grpRsi)
+rsiMidline    = input.int(50, "RSI Midline", minval = 1, maxval = 99, group = grpRsi)
+
+// ============================================================================
+// RSI INDIVIDUAL TIMEFRAME PLOTS
+// ============================================================================
+grpTfSignals = "Individual Timeframe Plot Toggles"
+show_sig_tf1 = input.bool(false, "Show 5m Signals", group = grpTfSignals)
+show_sig_tf2 = input.bool(false, "Show 15m Signals", group = grpTfSignals)
+show_sig_tf3 = input.bool(false, "Show 30m Signals", group = grpTfSignals)
+show_sig_tf4 = input.bool(false, "Show 1H Signals", group = grpTfSignals)
+show_sig_tf5 = input.bool(false, "Show 2H Signals", group = grpTfSignals)
+
+// ============================================================================
+// RSI MAIN ENTRY TIMEFRAMES
+// ============================================================================
+grpTf = "RSI Main Entry Timeframes"
+rsi_tf1     = input.timeframe("5",   "Timeframe 1", group = grpTf)
+rsi_use_tf1 = input.bool(true,      "Use TF 1?", group = grpTf)
+rsi_tf2     = input.timeframe("15",  "Timeframe 2", group = grpTf)
+rsi_use_tf2 = input.bool(true,      "Use TF 2?", group = grpTf)
+rsi_tf3     = input.timeframe("30",  "Timeframe 3", group = grpTf)
+rsi_use_tf3 = input.bool(true,      "Use TF 3?", group = grpTf)
+rsi_tf4     = input.timeframe("60",  "Timeframe 4", group = grpTf)
+rsi_use_tf4 = input.bool(true,       "Use TF 4?", group = grpTf)
+rsi_tf5     = input.timeframe("120", "Timeframe 5", group = grpTf)
+rsi_use_tf5 = input.bool(true,       "Use TF 5?", group = grpTf)
+
+// ============================================================================
+// RISK MANAGEMENT INPUTS
+// ============================================================================
+grpRisk = "Risk Management"
+// Changed defaults to true and reduced percentages to more realistic trading levels
+useSL     = input.bool(true,   "Use Stop Loss?", group = grpRisk)
+slPercent = input.float(1.0,   "Stop Loss %", minval = 0.0, step = 0.1, group = grpRisk)
+
+useTP     = input.bool(true,   "Use Take Profit?", group = grpRisk)
+tpPercent = input.float(2.0,   "Take Profit %", minval = 0.0, step = 0.1, group = grpRisk)
+
+// ============================================================================
+// TREND FILTER INPUTS
+// ============================================================================
+grpTrend       = "Trend Filter"
+useTrendFilter = input.bool(true, "Use HTF Trend Filter?", group = grpTrend)
+trendTf        = input.timeframe("60", "Trend Timeframe", group = grpTrend)
+trendSmaLen    = input.int(100, "Trend SMA Length", group = grpTrend)
+showTrendSma   = input.bool(true, "Show Trend SMA on Chart?", group = grpTrend)
+
+// ============================================================================
+// RSI WARNING BASKET
+// ============================================================================
+grpWarn = "RSI Warning / Rearm Basket"
+rsi_warn_use_tf1 = input.bool(false, "Warning basket uses TF 1", group = grpWarn)
+rsi_warn_use_tf2 = input.bool(false,  "Warning basket uses TF 2", group = grpWarn)
+rsi_warn_use_tf3 = input.bool(false,  "Warning basket uses TF 3", group = grpWarn)
+rsi_warn_use_tf4 = input.bool(false,  "Warning basket uses TF 4", group = grpWarn)
+rsi_warn_use_tf5 = input.bool(false,  "Warning basket uses TF 5", group = grpWarn)
+
+// ============================================================================
+// RSI SIGNAL LOGIC
+// ============================================================================
+grpSig = "RSI Signal Logic"
+rsi_showWarningSignals    = input.bool(false, "Show Warning Signals", group = grpSig) and showRSISignalsMaster
+rsi_showPressureEndSignal = input.bool(false, "Show Pressure End Signals", group = grpSig) and showRSISignalsMaster
+rsi_useRearmLogic         = input.bool(false, "Use Re-arm Lock?", group = grpSig)
+rsi_rearmMode             = input.string("Warning Basket Reset", "Re-arm Mode", options = ["Warning Basket Reset", "Main Basket Reset"], group = grpSig)
+
+// ============================================================================
+// RSI LIVE BEHAVIOR
+// ============================================================================
+grpHtf = "RSI HTF Behavior"
+rsi_live_tf1 = input.bool(false, "TF 1 live RSI?", group = grpHtf)
+rsi_live_tf2 = input.bool(false, "TF 2 live RSI?", group = grpHtf)
+rsi_live_tf3 = input.bool(false, "TF 3 live RSI?", group = grpHtf)
+rsi_live_tf4 = input.bool(false, "TF 4 live RSI?", group = grpHtf)
+rsi_live_tf5 = input.bool(false, "TF 5 live RSI?", group = grpHtf)
+
+// ============================================================================
+// RSI CHART BACKGROUND VISUALS
+// ============================================================================
+grpVis = "RSI Visuals"
+rsi_bullishColor      = input.color(color.blue, "Bullish / OB Color", group = grpVis)
+rsi_bearishColor      = input.color(color.red,  "Bearish / OS Color", group = grpVis)
+rsi_neutralColor      = input.color(color.black, "Neutral Color", group = grpVis)
+rsi_bgTransparency    = input.int(92, "Background Transparency", minval = 0, maxval = 100, group = grpVis)
+rsi_bgEndTransparency = input.int(92, "End-State Transparency", minval = 0, maxval = 100, group = grpVis)
+
+// ============================================================================
+// STOCHASTIC INPUT SETTINGS
+// ============================================================================
+grpStoch = "Stochastic Settings"
+stochLength     = input.int(1,  "Stochastic Length", minval = 1, group = grpStoch)
+kSmoothing      = input.int(1,  "K Smoothing", minval = 1, group = grpStoch)
+dSmoothing      = input.int(1,  "D Smoothing", minval = 1, group = grpStoch)
+stochOverbought = input.int(51, "Stochastic Overbought", minval = 50, maxval = 100, group = grpStoch)
+stochOversold   = input.int(49, "Stochastic Oversold", minval = 0, maxval = 50, group = grpStoch)
+stochMidline    = input.int(50, "Stochastic Midline", minval = 1, maxval = 99, group = grpStoch)
+
+// ============================================================================
+// STOCHASTIC MAIN ENTRY TIMEFRAMES
+// ============================================================================
+grpSTf = "Stoch Timeframes"
+st_tf1 = input.timeframe("5",   "Timeframe 1", group = grpSTf)
+st_use_tf1 = input.bool(true,  "Use TF 1?", group = grpSTf)
+st_tf2 = input.timeframe("15",  "Timeframe 2", group = grpSTf)
+st_use_tf2 = input.bool(true,  "Use TF 2?", group = grpSTf)
+st_tf3 = input.timeframe("30",  "Timeframe 3", group = grpSTf)
+st_use_tf3 = input.bool(true,  "Use TF 3?", group = grpSTf)
+st_tf4 = input.timeframe("60",  "Timeframe 4", group = grpSTf)
+st_use_tf4 = input.bool(true,   "Use TF 4?", group = grpSTf)
+st_tf5 = input.timeframe("120", "Timeframe 5", group = grpSTf)
+st_use_tf5 = input.bool(true,   "Use TF 5?", group = grpSTf)
+
+// ============================================================================
+// STOCHASTIC WARNING BASKET
+// ============================================================================
+grpSWarn = "Stoch Warning / Rearm Basket"
+st_warn_use_tf1 = input.bool(false,  "Warning basket uses TF 1", group = grpSWarn)
+st_warn_use_tf2 = input.bool(false,  "Warning basket uses TF 2", group = grpSWarn)
+st_warn_use_tf3 = input.bool(false,  "Warning basket uses TF 3", group = grpSWarn)
+st_warn_use_tf4 = input.bool(false,  "Warning basket uses TF 4", group = grpSWarn)
+st_warn_use_tf5 = input.bool(false,  "Warning basket uses TF 5", group = grpSWarn)
+
+// ============================================================================
+// STOCHASTIC SIGNAL LOGIC
+// ============================================================================
+grpSSig = "Stoch Signal Logic"
+st_showEntrySignals      = input.bool(false, "Show Entry Signals", group = grpSSig) and showStochSignalsMaster
+st_showPressureEndSignal = input.bool(false, "Show Pressure End Signals", group = grpSSig) and showStochSignalsMaster
+
+// ============================================================================
+// STOCHASTIC LIVE BEHAVIOR
+// ============================================================================
+grpSHtf = "Stoch HTF Behavior"
+st_live_tf1 = input.bool(false,  "TF 1 can use live value", group = grpSHtf)
+st_live_tf2 = input.bool(false,  "TF 2 can use live value", group = grpSHtf)
+st_live_tf3 = input.bool(false,  "TF 3 can use live value", group = grpSHtf)
+st_live_tf4 = input.bool(false,  "TF 4 can use live value", group = grpSHtf)
+st_live_tf5 = input.bool(false,  "TF 5 can use live value", group = grpSHtf)
+
+// ============================================================================
+// STOCHASTIC CHART BACKGROUND VISUALS
+// ============================================================================
+grpSVis = "Stoch Visuals"
+st_bullishColor      = input.color(color.blue, "Bullish / OB Color", group = grpSVis)
+st_bearishColor      = input.color(color.red,  "Bearish / OS Color", group = grpSVis)
+st_neutralColor      = input.color(color.black, "Neutral Color", group = grpSVis)
+st_bgTransparency    = input.int(92, "Background Transparency", minval = 0, maxval = 100, group = grpSVis)
+st_bgEndTransparency = input.int(92, "End-State Transparency", minval = 0, maxval = 100, group = grpSVis)
+
+// ============================================================================
+// 50 EMA + 100 EMA CALCULATIONS
+// ============================================================================
+ema50  = ta.ema(close, 50)
+ema100 = ta.ema(close, 100)
+
+// ============================================================================
+// TREND FILTER CALCULATION
+// ============================================================================
+// Fetching the SMA from the HTF (1H by default)
+smaTrend = request.security(syminfo.tickerid, trendTf, ta.sma(close, trendSmaLen))
+
+// Logical checks for entry filtering
+// If the filter is OFF, these will always return TRUE (allowing all trades)
+canLong = not useTrendFilter or (close > smaTrend)
+canShort = not useTrendFilter or (close < smaTrend)
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+getRSI(tf, len, useLive) =>
+    request.security(syminfo.tickerid, tf, ta.rsi(close, len), lookahead = useLive ? barmerge.lookahead_on : barmerge.lookahead_off)
+
+getStochK(tf, len, smoothK, useLive) =>
+    request.security(syminfo.tickerid, tf, ta.sma(ta.stoch(close, high, low, len), smoothK), lookahead = useLive ? barmerge.lookahead_on : barmerge.lookahead_off)
+
+isExtremeRSI(val)      => val >= 80 or val <= 20
+isExtremeStoch(val)    => val >= 75 or val <= 25
+isExtremeOBRSI(val)    => val >= 80
+isExtremeOSRSI(val)    => val <= 20
+isExtremeOBStoch(val)  => val >= 80
+isExtremeOSStoch(val)  => val <= 20
+
+// ============================================================================
+// CALCULATIONS
+// ============================================================================
+rsi1 = getRSI(rsi_tf1, rsiLength, rsi_live_tf1)
+rsi2 = getRSI(rsi_tf2, rsiLength, rsi_live_tf2)
+rsi3 = getRSI(rsi_tf3, rsiLength, rsi_live_tf3)
+rsi4 = getRSI(rsi_tf4, rsiLength, rsi_live_tf4)
+rsi5 = getRSI(rsi_tf5, rsiLength, rsi_live_tf5)
+
+rsi_noneWarningSelected = not rsi_warn_use_tf1 and not rsi_warn_use_tf2 and not rsi_warn_use_tf3 and not rsi_warn_use_tf4 and not rsi_warn_use_tf5
+
+rsi_ob1 = not rsi_use_tf1 or rsi1 >= rsiOverbought
+rsi_ob2 = not rsi_use_tf2 or rsi2 >= rsiOverbought
+rsi_ob3 = not rsi_use_tf3 or rsi3 >= rsiOverbought
+rsi_ob4 = not rsi_use_tf4 or rsi4 >= rsiOverbought
+rsi_ob5 = not rsi_use_tf5 or rsi5 >= rsiOverbought
+
+rsi_os1 = not rsi_use_tf1 or rsi1 <= rsiOversold
+rsi_os2 = not rsi_use_tf2 or rsi2 <= rsiOversold
+rsi_os3 = not rsi_use_tf3 or rsi3 <= rsiOversold
+rsi_os4 = not rsi_use_tf4 or rsi4 <= rsiOversold
+rsi_os5 = not rsi_use_tf5 or rsi5 <= rsiOversold
+
+rsi_below501 = not rsi_use_tf1 or rsi1 < rsiMidline
+rsi_below502 = not rsi_use_tf2 or rsi2 < rsiMidline
+rsi_below503 = not rsi_use_tf3 or rsi3 < rsiMidline
+rsi_below504 = not rsi_use_tf4 or rsi4 < rsiMidline
+rsi_below505 = not rsi_use_tf5 or rsi5 < rsiMidline
+
+rsi_above501 = not rsi_use_tf1 or rsi1 > rsiMidline
+rsi_above502 = not rsi_use_tf2 or rsi2 > rsiMidline
+rsi_above503 = not rsi_use_tf3 or rsi3 > rsiMidline
+rsi_above504 = not rsi_use_tf4 or rsi4 > rsiMidline
+rsi_above505 = not rsi_use_tf5 or rsi5 > rsiMidline
+
+rsi_allOverbought = rsi_ob1 and rsi_ob2 and rsi_ob3 and rsi_ob4 and rsi_ob5
+rsi_allOversold   = rsi_os1 and rsi_os2 and rsi_os3 and rsi_os4 and rsi_os5
+rsi_allBelow50    = rsi_below501 and rsi_below502 and rsi_below503 and rsi_below504 and rsi_below505
+rsi_allAbove50    = rsi_above501 and rsi_above502 and rsi_above503 and rsi_above504 and rsi_above505
+
+rsi_warn_ob1 = not rsi_warn_use_tf1 or isExtremeOBRSI(rsi1)
+rsi_warn_ob2 = not rsi_warn_use_tf2 or isExtremeOBRSI(rsi2)
+rsi_warn_ob3 = not rsi_warn_use_tf3 or isExtremeOBRSI(rsi3)
+rsi_warn_ob4 = not rsi_warn_use_tf4 or isExtremeOBRSI(rsi4)
+rsi_warn_ob5 = not rsi_warn_use_tf5 or isExtremeOBRSI(rsi5)
+
+rsi_warn_os1 = not rsi_warn_use_tf1 or isExtremeOSRSI(rsi1)
+rsi_warn_os2 = not rsi_warn_use_tf2 or isExtremeOSRSI(rsi2)
+rsi_warn_os3 = not rsi_warn_use_tf3 or isExtremeOSRSI(rsi3)
+rsi_warn_os4 = not rsi_warn_use_tf4 or isExtremeOSRSI(rsi4)
+rsi_warn_os5 = not rsi_warn_use_tf5 or isExtremeOSRSI(rsi5)
+
+rsi_warn_below501 = not rsi_warn_use_tf1 or rsi1 < rsiMidline
+rsi_warn_below502 = not rsi_warn_use_tf2 or rsi2 < rsiMidline
+rsi_warn_below503 = not rsi_warn_use_tf3 or rsi3 < rsiMidline
+rsi_warn_below504 = not rsi_warn_use_tf4 or rsi4 < rsiMidline
+rsi_warn_below505 = not rsi_warn_use_tf5 or rsi5 < rsiMidline
+
+rsi_warn_above501 = not rsi_warn_use_tf1 or rsi1 > rsiMidline
+rsi_warn_above502 = not rsi_warn_use_tf2 or rsi2 > rsiMidline
+rsi_warn_above503 = not rsi_warn_use_tf3 or rsi3 > rsiMidline
+rsi_warn_above504 = not rsi_warn_use_tf4 or rsi4 > rsiMidline
+rsi_warn_above505 = not rsi_warn_use_tf5 or rsi5 > rsiMidline
+
+rsi_warnAllOverbought = not rsi_noneWarningSelected and rsi_warn_ob1 and rsi_warn_ob2 and rsi_warn_ob3 and rsi_warn_ob4 and rsi_warn_ob5
+rsi_warnAllOversold   = not rsi_noneWarningSelected and rsi_warn_os1 and rsi_warn_os2 and rsi_warn_os3 and rsi_warn_os4 and rsi_warn_os5
+rsi_warnAllBelow50    = not rsi_noneWarningSelected and rsi_warn_below501 and rsi_warn_below502 and rsi_warn_below503 and rsi_warn_below504 and rsi_warn_below505
+rsi_warnAllAbove50    = not rsi_noneWarningSelected and rsi_warn_above501 and rsi_warn_above502 and rsi_warn_above503 and rsi_warn_above504 and rsi_warn_above505
+
+rsi_obResetCondition = rsi_rearmMode == "Warning Basket Reset" ? rsi_warnAllBelow50 : rsi_allBelow50
+rsi_osResetCondition = rsi_rearmMode == "Warning Basket Reset" ? rsi_warnAllAbove50 : rsi_allAbove50
+
+var bool rsi_obArmed = true
+var bool rsi_osArmed = true
+
+if rsi_useRearmLogic
+    if rsi_obResetCondition
+        rsi_obArmed := true
+    if rsi_osResetCondition
+        rsi_osArmed := true
+else
+    rsi_obArmed := true
+    rsi_osArmed := true
+
+rsi_plot_allowed = (not rsi_use_tf1 or show_sig_tf1) and
+                   (not rsi_use_tf2 or show_sig_tf2) and
+                   (not rsi_use_tf3 or show_sig_tf3) and
+                   (not rsi_use_tf4 or show_sig_tf4) and
+                   (not rsi_use_tf5 or show_sig_tf5)
+
+rsi_entryLongEvent  = rsi_allOverbought and not rsi_allOverbought[1] and rsi_obArmed
+rsi_entryShortEvent = rsi_allOversold and not rsi_allOversold[1] and rsi_osArmed
+
+if rsi_useRearmLogic
+    if rsi_entryLongEvent
+        rsi_obArmed := false
+    if rsi_entryShortEvent
+        rsi_osArmed := false
+
+var bool rsi_obPressureActive = false
+var bool rsi_osPressureActive = false
+var int  rsi_lastExtremeSide  = 0
+
+if rsi_entryLongEvent
+    rsi_lastExtremeSide := 1
+    rsi_obPressureActive := true
+    rsi_osPressureActive := false
+
+if rsi_entryShortEvent
+    rsi_lastExtremeSide := -1
+    rsi_osPressureActive := true
+    rsi_obPressureActive := false
+
+rsi_obWarningEvent = rsi_lastExtremeSide == 1 and rsi_warnAllOverbought[1] and not rsi_warnAllOverbought
+rsi_osWarningEvent = rsi_lastExtremeSide == -1 and rsi_warnAllOversold[1] and not rsi_warnAllOversold
+
+rsi_obPressureEnd = rsi_lastExtremeSide == 1 and rsi_allBelow50 and not rsi_allBelow50[1]
+rsi_osPressureEnd = rsi_lastExtremeSide == -1 and rsi_allAbove50 and not rsi_allAbove50[1]
+
+if rsi_obPressureEnd
+    rsi_obPressureActive := false
+if rsi_osPressureEnd
+    rsi_osPressureActive := false
+if rsi_obPressureEnd or rsi_osPressureEnd
+    rsi_lastExtremeSide := 0
+
+rsi_bgState = rsi_obPressureActive ? color.new(rsi_bullishColor, rsi_bgTransparency) : rsi_osPressureActive ? color.new(rsi_bearishColor, rsi_bgTransparency) : na
+
+// ============================================================================
+// STOCH CALCULATIONS
+// ============================================================================
+stoch1 = getStochK(st_tf1, stochLength, kSmoothing, st_live_tf1)
+stoch2 = getStochK(st_tf2, stochLength, kSmoothing, st_live_tf2)
+stoch3 = getStochK(st_tf3, stochLength, kSmoothing, st_live_tf3)
+stoch4 = getStochK(st_tf4, stochLength, kSmoothing, st_live_tf4)
+stoch5 = getStochK(st_tf5, stochLength, kSmoothing, st_live_tf5)
+
+st_noneWarningSelected = not st_warn_use_tf1 and not st_warn_use_tf2 and not st_warn_use_tf3 and not st_warn_use_tf4 and not st_warn_use_tf5
+
+st_ob1 = not st_use_tf1 or stoch1 >= stochOverbought
+st_ob2 = not st_use_tf2 or stoch2 >= stochOverbought
+st_ob3 = not st_use_tf3 or stoch3 >= stochOverbought
+st_ob4 = not st_use_tf4 or stoch4 >= stochOverbought
+st_ob5 = not st_use_tf5 or stoch5 >= stochOverbought
+
+st_os1 = not st_use_tf1 or stoch1 <= stochOversold
+st_os2 = not st_use_tf2 or stoch2 <= stochOversold
+st_os3 = not st_use_tf3 or stoch3 <= stochOversold
+st_os4 = not st_use_tf4 or stoch4 <= stochOversold
+st_os5 = not st_use_tf5 or stoch5 <= stochOversold
+
+st_allOverbought = st_ob1 and st_ob2 and st_ob3 and st_ob4 and st_ob5
+st_allOversold   = st_os1 and st_os2 and st_os3 and st_os4 and st_os5
+
+st_warn_ob1 = not st_warn_use_tf1 or isExtremeOBStoch(stoch1)
+st_warn_ob2 = not st_warn_use_tf2 or isExtremeOBStoch(stoch2)
+st_warn_ob3 = not st_warn_use_tf3 or isExtremeOBStoch(stoch3)
+st_warn_ob4 = not st_warn_use_tf4 or isExtremeOBStoch(stoch4)
+st_warn_ob5 = not st_warn_use_tf5 or isExtremeOBStoch(stoch5)
+
+st_warn_os1 = not st_warn_use_tf1 or isExtremeOSStoch(stoch1)
+st_warn_os2 = not st_warn_use_tf2 or isExtremeOSStoch(stoch2)
+st_warn_os3 = not st_warn_use_tf3 or isExtremeOSStoch(stoch3)
+st_warn_os4 = not st_warn_use_tf4 or isExtremeOSStoch(stoch4)
+st_warn_os5 = not st_warn_use_tf5 or isExtremeOSStoch(stoch5)
+
+st_warnAllOverbought = not st_noneWarningSelected and st_warn_ob1 and st_warn_ob2 and st_warn_ob3 and st_warn_ob4 and st_warn_ob5
+st_warnAllOversold   = not st_noneWarningSelected and st_warn_os1 and st_warn_os2 and st_warn_os3 and st_warn_os4 and st_warn_os5
+
+st_obWarningEvent = st_warnAllOverbought[1] and not st_warnAllOverbought
+st_osWarningEvent = st_warnAllOversold[1] and not st_warnAllOversold
+
+stoch_plot_allowed = (not st_use_tf1 or show_sig_tf1) and
+                     (not st_use_tf2 or show_sig_tf2) and
+                     (not st_use_tf3 or show_sig_tf3) and
+                     (not st_use_tf4 or show_sig_tf4) and
+                     (not st_use_tf5 or show_sig_tf5)
+
+st_entryLongEvent  = st_allOverbought and not st_allOverbought[1]
+st_entryShortEvent = st_allOversold and not st_allOversold[1]
+
+var bool st_obPressureActive = false
+var bool st_osPressureActive = false
+
+if st_entryLongEvent
+    st_obPressureActive := true
+
+if st_entryShortEvent
+    st_osPressureActive := true
+
+st_obPressureEnd = st_obPressureActive and st_allOversold and not st_allOversold[1]
+st_osPressureEnd = st_osPressureActive and st_allOverbought and not st_allOverbought[1]
+
+if st_obPressureEnd
+    st_obPressureActive := false
+
+if st_osPressureEnd
+    st_osPressureActive := false
+
+st_bgState = st_obPressureActive ? color.new(st_bullishColor, st_bgTransparency) : st_osPressureActive ? color.new(st_bearishColor, st_bgTransparency) : st_obPressureEnd ? color.new(st_bearishColor, st_bgEndTransparency) : st_osPressureEnd ? color.new(st_bullishColor, st_bgEndTransparency) : na
+
+// ============================================================================
+// SIGNAL STRENGTH LOGIC
+// ============================================================================
+// Weak = only one engine active
+weakLong =
+     (rsi_obPressureActive and not st_obPressureActive) or
+     (st_obPressureActive and not rsi_obPressureActive)
+
+weakShort =
+     (rsi_osPressureActive and not st_osPressureActive) or
+     (st_osPressureActive and not rsi_osPressureActive)
+
+// Strong = both engines aligned
+strongLong =
+     rsi_obPressureActive and st_obPressureActive
+
+strongShort =
+     rsi_osPressureActive and st_osPressureActive
+
+// --- UPDATED: TRIGGER LOGIC ---
+// This prevents "Weak" signals from firing if we are transitioning DOWN from a "Strong" state.
+// It also ensures shapes only fire once when the state begins.
+
+// Only trigger a Weak signal if we were Neutral before (not Strong and not Weak)
+triggerWeakLong    = weakLong and not (weakLong[1] or strongLong[1])
+triggerWeakShort   = weakShort and not (weakShort[1] or strongShort[1])
+
+// Strong signals stay the same (fire when moving from Weak or Neutral to Strong)
+triggerStrongLong  = strongLong and not strongLong[1]
+triggerStrongShort = strongShort and not strongShort[1]
+
+// ============================================================================
+// PLOTS
+// ============================================================================
+// Moving Average Plots
+plot(showEma50 ? ema50 : na, color = color.blue, title = "50 EMA")
+plot(showEma100 ? ema100 : na, color = color.orange, title = "100 EMA")
+
+// Weak Signals (using the trigger variables)
+plotshape(triggerWeakLong, title = "Weak Buy", style = shape.circle, location = location.belowbar, color = color.new(color.blue, 70), size = size.tiny, text = "Weak B")
+plotshape(triggerWeakShort, title = "Weak Sell", style = shape.circle, location = location.abovebar, color = color.new(color.red, 70), size = size.tiny, text = "Weak S")
+
+// Strong Signals (using the trigger variables)
+plotshape(triggerStrongLong, title = "Strong Buy", style = shape.triangleup, location = location.belowbar, color = color.new(color.blue, 35), size = size.small, text = "Strong B")
+plotshape(triggerStrongShort, title = "Strong Sell", style = shape.triangledown, location = location.abovebar, color = color.new(color.red, 35), size = size.small, text = "Strong S")
+
+// Background Colors
+bgcolor(showRSIBg ? rsi_bgState : na, title = "RSI Background")
+bgcolor(showStochBg ? st_bgState : na, title = "Stoch Background")
+
+// ============================================================================
+// STRATEGY EXECUTION
+// ============================================================================
+// Entries
+if triggerStrongLong and not strongShort
+    strategy.entry("Long", strategy.long)
+
+if triggerStrongShort and not strongLong
+    strategy.entry("Short", strategy.short)
+
+// --- DYNAMIC EXIT CALCULATIONS ---
+// We use 'var' to lock in the price when the trade opens so it doesn't drift
+var float slPrice = na
+var float tpPrice = na
+
+// When a new position is opened, calculate the SL/TP levels
+if strategy.position_size != strategy.position_size[1]
+    if strategy.position_size > 0
+        slPrice := strategy.position_avg_price * (1 - slPercent / 100)
+        tpPrice := strategy.position_avg_price * (1 + tpPercent / 100)
+    else if strategy.position_size < 0
+        slPrice := strategy.position_avg_price * (1 + slPercent / 100)
+        tpPrice := strategy.position_avg_price * (1 - tpPercent / 100)
+    else
+        slPrice := na
+        tpPrice := na
+
+// ============================================================================
+// 1H SMA EXECUTION
+// ============================================================================
+// Strong entries with Trend Filter applied
+if triggerStrongLong and not strongShort and canLong
+    strategy.entry("Long", strategy.long)
+
+if triggerStrongShort and not strongLong and canShort
+    strategy.entry("Short", strategy.short)
+
+// --- APPLY EXITS ---
+// strategy.exit must be outside 'if' blocks to be constantly monitored
+strategy.exit("Exit Long", from_entry = "Long", 
+    stop  = useSL ? slPrice : na, 
+    limit = useTP ? tpPrice : na,
+    comment_loss = "SL", comment_profit = "TP")
+
+strategy.exit("Exit Short", from_entry = "Short", 
+    stop  = useSL ? slPrice : na, 
+    limit = useTP ? tpPrice : na,
+    comment_loss = "SL", comment_profit = "TP")
+
+// Manual Indicator Exits (Your original logic)
+if strategy.position_size > 0 and rsi_osPressureEnd
+    strategy.close("Long", comment = "RSI Exit")
+
+if strategy.position_size < 0 and rsi_obPressureEnd
+    strategy.close("Short", comment = "RSI Exit")
+
+// ============================================================================
+// DEBUG / VISUALS
+// ============================================================================
+// Only plot when we have an active position and the prices are valid
+plot(strategy.position_size > 0 and useTP ? tpPrice : na, color=color.green, style=plot.style_linebr, linewidth=2, title="Long TP")
+plot(strategy.position_size > 0 and useSL ? slPrice : na, color=color.red,   style=plot.style_linebr, linewidth=2, title="Long SL")
+
+plot(strategy.position_size < 0 and useTP ? tpPrice : na, color=color.green, style=plot.style_linebr, linewidth=2, title="Short TP")
+plot(strategy.position_size < 0 and useSL ? slPrice : na, color=color.red,   style=plot.style_linebr, linewidth=2, title="Short SL")
+
+// Trend Filter Plot
+plot(showTrendSma ? smaTrend : na, color = color.new(color.gray, 0), linewidth = 2, title = "HTF Trend SMA")

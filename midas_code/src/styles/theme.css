@@ -1,0 +1,122 @@
+/* src/styles/theme.css
+   VEGA — strategy control tower.
+   Design thesis: an instrument panel, not a webpage. Quiet near-black field,
+   data in monospace, meaning carried by status color (the deploy-state machine
+   is the spine of the product, so its states get the palette). One accent —
+   "gold" — nodding to the MGC contract, used with restraint. */
+
+:root {
+  /* ---- field & surfaces ---- */
+  --bg: #0b0e13;
+  --surface-1: #11151c;
+  --surface-2: #161b24;
+  --surface-3: #1c222d;
+  --line: #232a36;
+  --line-strong: #313a49;
+
+  /* ---- ink ---- */
+  --ink-1: #e7ecf3; /* primary text */
+  --ink-2: #aab4c4; /* secondary */
+  --ink-3: #6b7689; /* muted / captions */
+  --ink-inv: #0b0e13;
+
+  /* ---- the one accent: MGC gold ---- */
+  --gold: #e7b75f;
+  --gold-dim: #b98f3f;
+  --gold-glow: rgba(231, 183, 95, 0.16);
+
+  /* ---- status palette (drives deploy state + diagnostics) ---- */
+  --ok: #46c08a;
+  --ok-dim: #2f8a62;
+  --warn: #e0a64b;
+  --warn-dim: #a87a31;
+  --err: #e0604f;
+  --err-dim: #a8443a;
+  --info: #5aa6e0;
+  --info-dim: #3d76a8;
+  --idle: #6b7689;
+
+  /* ---- type ---- */
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-base: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 28px;
+
+  /* ---- geometry ---- */
+  --r-sm: 4px;
+  --r-md: 7px;
+  --r-lg: 10px;
+  --gap: 14px;
+  --pad: 16px;
+
+  /* ---- motion ---- */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --fast: 120ms;
+  --med: 220ms;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(231, 183, 95, 0.05), transparent 60%),
+    var(--bg);
+  color: var(--ink-1);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Data and code always monospace. */
+.mono, code, pre, .tabular { font-family: var(--font-mono); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+/* Eyebrow label — a recurring structural device for panel headers. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 99px;
+  border: 2px solid var(--bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

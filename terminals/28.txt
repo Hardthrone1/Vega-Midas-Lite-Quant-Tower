@@ -1,0 +1,12 @@
+---
+pid: 4692
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "Set-Location \"C:\\Users\\Softthrone\\Claude\\TradingView-Suite\\midas_code\"; npm run build 2>&1"
+started_at: 2026-07-05T10:37:07.202Z
+running_for_ms: 34024994 
+---
+
+> midas-dashboard@0.1.0 build
+> tsc -b && vite build
+
+src/shared/validation/strategySchema.ts(345,59): error TS6133: 'index' is declared but its value is never read.

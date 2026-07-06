@@ -1,0 +1,15 @@
+---
+pid: 19440
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "cd C:\\Users\\Softthrone\\Claude\\TradingView-Suite; node MIDAS_Gateway_Server.js"
+started_at: 2026-07-03T00:02:00.441Z
+running_for_ms: 709990   
+---
+◇ injected env (18) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+=== MIDAS Gateway Server v1.4 ===
+Default Provider : nvidia_intake
+http://127.0.0.1:8001
+Rate limiting + Retry + Circuit Breaker + Tracing + Prometheus enabled
+
+{"timestamp":"2026-07-03T00:02:09.237Z","requestId":"ac2f576e-3438-4ac2-872c-647c7f6e8d20","method":"GET","path":"/api/providers","status":200,"durationMs":12,"provider":"nvidia_intake"}

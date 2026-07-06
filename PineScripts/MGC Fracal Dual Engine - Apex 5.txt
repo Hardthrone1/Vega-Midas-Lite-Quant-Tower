@@ -1,0 +1,113 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kblue8383
+
+//@version=6
+strategy('MGC Fractal Dual-Engine - Apex 50', overlay = true, initial_capital = 50000, default_qty_value = 1, pyramiding = 1, close_entries_rule = 'FIFO', calc_on_every_tick = true)
+
+// =====================================================================
+// 🛠️ FRACTAL APEX INPUTS (FROM OPTIMIZATION)
+// =====================================================================
+var GRP_APEX = 'Fractal Apex Settings'
+lookbackBars = input.int(5, 'Structural Lookback', minval = 1, group = GRP_APEX)
+retracePct = input.float(49, 'Fractal Apex Retrace %', minval = 0.1, maxval = 100.0, step = 0.1, group = GRP_APEX) / 100
+entryOffset = input.float(-0.1, 'Sniper Offset (Points)', step = 0.1, group = GRP_APEX)
+
+var GRP_SESSION = 'Time & Session'
+useSession = input.bool(true, 'Use Session Filter', group = GRP_SESSION)
+sessionInput = input.session('0800-1700', 'Session Hours', group = GRP_SESSION)
+sessionTz = input.string('UTC-5', 'Timezone', group = GRP_SESSION)
+
+var GRP_ENTRY = 'Dual-Entry Toggles'
+enableImmediate = input.bool(true, 'Enable Sniper Limit Entry', group = GRP_ENTRY)
+enableConfirm = input.bool(true, 'Enable Fractal Confirmation (Stop)', group = GRP_ENTRY)
+
+var GRP_RISK = 'Risk Management'
+tpPoints = input.float(50.0, 'Take Profit (Points)', group = GRP_RISK)
+slPoints = input.float(8.0, 'Stop Loss (Points)', group = GRP_RISK)
+useTrailing = input.bool(true, 'Use Trailing Stop', group = GRP_RISK)
+trailStart = input.float(1.0, 'Trail Start (Points)', group = GRP_RISK)
+trailOffset = input.float(1.0, 'Trail Offset (Points)', group = GRP_RISK)
+
+// =====================================================================
+// CALCULATIONS
+// =====================================================================
+prevHigh = ta.highest(high, lookbackBars)[1]
+prevLow = ta.lowest(low, lookbackBars)[1]
+
+// Calculate the "Stretch" and the "Fractal Trigger"
+stretchUpper = math.max(0, high - prevHigh)
+stretchLower = math.max(0, prevLow - low)
+
+// Our Mathematically Proven Apex Levels
+fractalSell = high - stretchUpper * retracePct
+fractalBuy = low + stretchLower * retracePct
+
+// Sniper Levels (Fixed Offset)
+sniperSell = prevHigh + entryOffset
+sniperBuy = prevLow - entryOffset
+
+inSession = not useSession or not na(time(timeframe.period, sessionInput, sessionTz))
+
+// =====================================================================
+// DUAL-ENTRY ENGINE
+// =====================================================================
+// Check active trades by ID
+bool immShortActive = false
+immLongActive = false
+bool confShortActive = false
+confLongActive = false
+
+
+if strategy.opentrades > 0
+    for i = 0 to strategy.opentrades - 1 by 1
+        id = strategy.opentrades.entry_id(i)
+        if id == 'Sniper-S'
+            immShortActive := true
+            immShortActive
+        if id == 'Sniper-L'
+            immLongActive := true
+            immLongActive
+        if id == 'Fractal-S'
+            confShortActive := true
+            confShortActive
+        if id == 'Fractal-L'
+            confLongActive := true
+            confLongActive
+
+if inSession
+    // 1. SNIPER LIMIT ENTRY (Front-Running Inefficiency)
+    if enableImmediate
+        if not immShortActive
+            strategy.entry('Sniper-S', strategy.short, limit = sniperSell, comment = 'Sniper Limit')
+        if not immLongActive
+            strategy.entry('Sniper-L', strategy.long, limit = sniperBuy, comment = 'Sniper Limit')
+
+    // 2. FRACTAL CONFIRMATION (Waiting for the Turn)
+    if enableConfirm
+        // If price poked above sniper, set a STOP at the 66.5% Apex
+        if not confShortActive and high > sniperSell
+            strategy.entry('Fractal-S', strategy.short, stop = fractalSell, comment = 'Fractal Conf')
+
+        if not confLongActive and low < sniperBuy
+            strategy.entry('Fractal-L', strategy.long, stop = fractalBuy, comment = 'Fractal Conf')
+
+if not inSession
+    strategy.cancel_all()
+
+// =====================================================================
+// EXIT LOGIC
+// =====================================================================
+t_start = math.round(trailStart / syminfo.mintick)
+t_offset = math.round(trailOffset / syminfo.mintick)
+
+if strategy.position_size != 0
+    strategy.exit('Exit', limit = strategy.position_size > 0 ? strategy.position_avg_price + tpPoints : strategy.position_avg_price - tpPoints, stop = strategy.position_size > 0 ? strategy.position_avg_price - slPoints : strategy.position_avg_price + slPoints, trail_points = useTrailing ? t_start : na, trail_offset = useTrailing ? t_offset : na)
+
+// =====================================================================
+// VISUALS
+// =====================================================================
+plot(prevHigh, 'Old High', color = color.new(color.red, 60), style = plot.style_stepline)
+plot(prevLow, 'Old Low', color = color.new(color.blue, 60), style = plot.style_stepline)
+plot(enableImmediate ? sniperSell : na, 'Sniper Sell', color = color.red, style = plot.style_circles)
+plot(enableImmediate ? sniperBuy : na, 'Sniper Buy', color = color.blue, style = plot.style_circles)
+bgcolor(inSession ? color.new(color.green, 90) : color.new(color.red, 90))

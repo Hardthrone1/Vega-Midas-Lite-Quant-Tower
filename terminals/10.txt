@@ -1,0 +1,16 @@
+---
+pid: 1332
+cwd: "C:\Users\Softthrone\Claude\TradingView-Suite"
+command: "cd C:\\Users\\Softthrone\\Claude\\TradingView-Suite\\midas_code; npx vite build 2>&1"
+started_at: 2026-07-04T05:36:33.967Z
+running_for_ms: 45625000 
+---
+vite v5.4.21 building for production...
+transforming...
+✓ 1557 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.85 kB │ gzip:   0.45 kB
+dist/assets/index-jhHTejgd.css   32.38 kB │ gzip:   6.74 kB
+dist/assets/index-D96S9uqF.js   453.67 kB │ gzip: 138.75 kB
+✓ built in 10.83s
