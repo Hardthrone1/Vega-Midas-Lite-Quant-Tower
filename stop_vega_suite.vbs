@@ -1,4 +1,5 @@
-' Double-click this file (or stop_vega_suite.bat) to stop Vega with no CMD windows.
+Dim shell, fso, scriptPath
 Set shell = CreateObject("WScript.Shell")
-root = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
-shell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File """ & root & "\Vega-kill.ps1""", 0, True
+Set fso = CreateObject("Scripting.FileSystemObject")
+scriptPath = fso.GetParentFolderName(WScript.ScriptFullName)
+shell.Run "cmd.exe /c """ & scriptPath & "\stop_vega_suite.bat"" hidden", 0, False
