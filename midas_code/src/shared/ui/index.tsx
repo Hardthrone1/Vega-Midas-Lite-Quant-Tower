@@ -1,5 +1,15 @@
 // src/shared/ui/index.tsx
+// Shared primitives, now backed by Fluent UI v9. The exported API is unchanged
+// so every feature panel keeps working — but Button/Badge/Field render real
+// Fluent components, and Panel/Card surfaces follow the Fluent design tokens
+// remapped in portal.css.
 import React from 'react'
+import {
+  Badge as FluentBadge,
+  Button as FluentButton,
+  Caption1,
+  Label,
+} from '@fluentui/react-components'
 
 export type Status = 'idle' | 'ok' | 'warn' | 'err' | 'info'
 
@@ -40,7 +50,15 @@ export function StatusDot({ status, pulse = false }: { status: Status; pulse?: b
   return <span className={`dot dot-${status} ${pulse ? 'dot-pulse' : ''}`} />
 }
 
-// Badge
+const BADGE_COLOR: Record<Status, 'subtle' | 'success' | 'warning' | 'danger' | 'informative'> = {
+  idle: 'subtle',
+  ok: 'success',
+  warn: 'warning',
+  err: 'danger',
+  info: 'informative',
+}
+
+// Badge — Fluent tinted badge; status maps onto the Fluent status palette
 export function Badge({
   status = 'idle',
   children,
@@ -51,14 +69,13 @@ export function Badge({
   className?: string
 }) {
   return (
-    <span className={`badge badge-${status} ${className}`.trim()}>
-      <StatusDot status={status} />
+    <FluentBadge appearance="tint" color={BADGE_COLOR[status]} className={className || undefined}>
       {children}
-    </span>
+    </FluentBadge>
   )
 }
 
-// Button
+// Button — Fluent button; legacy variants map onto Fluent appearances
 export function Button({
   children, onClick, variant = 'ghost', disabled = false, type = 'button', title, 'aria-label': ariaLabel, 'aria-busy': ariaBusy,
 }: {
@@ -72,21 +89,24 @@ export function Button({
   'aria-busy'?: boolean
 }) {
   return (
-    <button
+    <FluentButton
+      appearance={variant === 'primary' ? 'primary' : variant === 'danger' ? 'outline' : 'secondary'}
+      className={variant === 'danger' ? 'vega-btn-danger' : undefined}
       type={type}
       title={title}
       aria-label={ariaLabel}
       aria-busy={ariaBusy}
-      className={`btn btn-${variant}`}
       onClick={onClick}
       disabled={disabled}
     >
       {children}
-    </button>
+    </FluentButton>
   )
 }
 
-// Field
+// Field — Fluent label + caption around any control (native or Fluent).
+// The intake form uses the full Fluent <Field> directly; this wrapper keeps
+// the legacy call sites (native selects/inputs) accessible and consistent.
 export function Field({
   label, hint, htmlFor, labelId, children,
 }: {
@@ -96,14 +116,13 @@ export function Field({
   labelId?: string
   children: React.ReactNode
 }) {
-  const labelProps = htmlFor ? { htmlFor } : { id: labelId }
-  const LabelTag = htmlFor ? 'label' : 'span'
-
   return (
     <div className="field">
-      <LabelTag {...labelProps} className="field-label">{label}</LabelTag>
+      <Label htmlFor={htmlFor} id={htmlFor ? undefined : labelId} size="small" className="field-label">
+        {label}
+      </Label>
       {children}
-      {hint && <span className="field-hint">{hint}</span>}
+      {hint && <Caption1 className="field-hint">{hint}</Caption1>}
     </div>
   )
 }

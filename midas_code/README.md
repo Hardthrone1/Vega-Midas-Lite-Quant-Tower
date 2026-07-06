@@ -33,8 +33,12 @@ right streams activity as you go.
 src/
   app/
     App.tsx
-    layout/AppShell.tsx        three-column shell: intake · workspace · timeline
-    layout/TopStatusBar.tsx    persistent context strip + deploy status
+    theme/ThemeProvider.tsx    FluentProvider root (webLight/webDark) + theme toggle
+    layout/PortalShell.tsx     Azure Portal-style shell: header · nav rail · blades · context pane
+    layout/PortalHeader.tsx    brand command bar: search, context, deploy status, utilities
+    layout/PortalNav.tsx       collapsible left rail (Fluent vertical TabList)
+    layout/BladeHost.tsx       breadcrumb + horizontal blade stack (maximize/close)
+    layout/blades.tsx          blade registry + useBlades() context (openBlade/closeBlade)
   features/
     strategy-intake/           symbol/timeframe/session/risk/mode → drafts spec
     canonical-spec/            spec summary + JSON view + validation issues
@@ -87,9 +91,51 @@ The store already exposes `setLintResult`, `setParityResult`, `setBacktestResult
 `setRiskResult`, `setPineCode`, `setPythonCode`, `addAgentMessage` — so the agents
 just call these and the UI + deploy gate react automatically.
 
-## Design
+## Design — Fluent UI shell (Azure Portal architecture)
 
-Control-tower aesthetic: near-black field, monospace for all data, status color
-carries meaning (the deploy-state machine drives the palette), one restrained accent
-(MGC gold). Tokens in `src/styles/theme.css`. Responsive down to a single column;
-keyboard focus visible; reduced-motion respected.
+The UI layer is built on **Fluent UI React v9** (`@fluentui/react-components`)
+and replicates the Azure Portal / AI Foundry shell:
+
+- **Shell + Blade layout** — a brand command bar on top (`PortalHeader`), a
+  collapsible left nav rail (`PortalNav`), and a horizontal **blade stack**
+  (`BladeHost`): each workflow step opens as a blade; child blades open to the
+  right (Intake → drafts a spec → the Spec blade slides in beside it), with
+  breadcrumb navigation, maximize/restore, and close — exactly like Azure
+  resource blades. Any panel can push a blade via the `useBlades()` context.
+- **Theming** — `ThemeProvider` wraps the app in a `FluentProvider` with the
+  Microsoft web themes (dark by default, header toggle for light). The legacy
+  control-tower CSS variables are remapped onto Fluent design tokens in
+  `src/styles/portal.css`, so all panel styles follow the active theme and
+  Segoe UI typography automatically.
+- **Zod ⇄ Fluent forms** — the intake form uses **React Hook Form** with
+  `zodResolver`: the Zod schema is the single validation contract, bound onto
+  Fluent `Field`/`Dropdown`/`RadioGroup` controls; validation messages render
+  through Fluent's `Field` validation slots. Backend validation is untouched.
+- **Shared primitives** (`src/shared/ui`) keep their old API but render Fluent
+  `Button`/`Badge`/`Label` underneath, so every panel picked up the Microsoft
+  look without per-panel rewrites.
+
+Keyboard focus visible; reduced-motion respected; responsive: blades stack
+vertically under 860px and the context pane hides under 1100px.
+
+## Micro-frontend scaling (optional)
+
+`vite.config.ts` carries an opt-in **module federation** setup
+(`@originjs/vite-plugin-federation`), mirroring how the Azure Portal loads
+extensions at runtime. Off by default — the normal build is unchanged. Enable:
+
+```bash
+VITE_FEDERATION=1 npm run build       # emits dist/assets/remoteEntry.js
+```
+
+The shell exposes `./ReplayPanel`, `./SwarmPanel`, and `./BacktestPanel` as
+federated modules, and can consume remote plugins itself:
+
+```bash
+VITE_FEDERATION=1 \
+VITE_FEDERATION_REMOTES="playground@https://host/assets/remoteEntry.js" \
+npm run build
+```
+
+`react`, `react-dom`, `zustand`, `zod`, and `@fluentui/react-components` are
+shared singletons so remotes reuse the host's copies.

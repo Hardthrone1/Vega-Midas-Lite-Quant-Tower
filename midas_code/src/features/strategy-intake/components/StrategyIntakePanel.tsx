@@ -1,8 +1,21 @@
 import React from 'react';
 import { z } from 'zod';
-import { Panel, Field, Button, Badge } from '../../../shared/ui';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Button,
+  Dropdown,
+  Field,
+  Option,
+  ProgressBar,
+  Radio,
+  RadioGroup,
+  Spinner,
+} from '@fluentui/react-components';
+import { Panel, Badge } from '../../../shared/ui';
 import { useStrategyStore } from '../../../store/useStrategyStore';
 import { createDefaultSpec } from '../../../shared/validation/strategySchema';
+import { useBlades } from '../../../app/layout/blades';
 import {
   deployLabel,
   deployStatusKind,
@@ -10,11 +23,29 @@ import {
   DEPLOY_PIPELINE,
 } from '../../../shared/deployStatus';
 
-const SYMBOLS = ['MGC1!', 'MNQ1!', 'NQ1!'];
-const TIMEFRAMES = ['1m', '5m', '13m', '15m', '1h'];
-const SESSIONS = ['NY Open', 'London Open', 'RTH', 'Globex', 'Lunch'];
-const RISK = ['conservative', 'balanced', 'aggressive'];
-const MODES: Array<'research' | 'paper' | 'live-ready'> = ['research', 'paper', 'live-ready'];
+const SYMBOLS = ['MGC1!', 'MNQ1!', 'NQ1!'] as const;
+const TIMEFRAMES = ['1m', '5m', '13m', '15m', '1h'] as const;
+const SESSIONS = ['NY Open', 'London Open', 'RTH', 'Globex', 'Lunch'] as const;
+const RISK_PROFILES = ['conservative', 'balanced', 'aggressive'] as const;
+const EXECUTION_MODES = ['research', 'paper', 'live-ready'] as const;
+
+// The Zod schema is the validation contract for the intake form; React Hook
+// Form binds it onto the Fluent fields below via zodResolver.
+const intakeFormSchema = z.object({
+  symbol: z.enum(SYMBOLS, { errorMap: () => ({ message: 'Select a supported contract' }) }),
+  timeframe: z.enum(TIMEFRAMES, { errorMap: () => ({ message: 'Select a timeframe' }) }),
+  session: z.enum(SESSIONS, { errorMap: () => ({ message: 'Select a trading session' }) }),
+  riskProfile: z.enum(RISK_PROFILES, { errorMap: () => ({ message: 'Select a risk profile' }) }),
+  executionMode: z.enum(EXECUTION_MODES, { errorMap: () => ({ message: 'Select an execution mode' }) }),
+});
+
+type IntakeFormValues = z.infer<typeof intakeFormSchema>;
+
+// Store values can predate the enum lists (e.g. persisted 'MGC' vs 'MGC1!');
+// coerce them to a valid option so the form starts in a submittable state.
+function pickEnum<T extends string>(value: string, options: readonly T[]): T {
+  return (options as readonly string[]).includes(value) ? (value as T) : options[0];
+}
 
 const API_BASE = import.meta.env.VITE_GATEWAY_URL ?? 'http://localhost:8001';
 
@@ -104,16 +135,40 @@ export function StrategyIntakePanel() {
     backtestResult,
   } = useStrategyStore();
 
+  const { openBlade } = useBlades();
   const [loading, setLoading] = React.useState(false);
   const abortRef = React.useRef<AbortController | null>(null);
 
-  const startSpec = async () => {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<IntakeFormValues>({
+    resolver: zodResolver(intakeFormSchema),
+    mode: 'onChange',
+    defaultValues: {
+      symbol: pickEnum(symbol, SYMBOLS),
+      timeframe: pickEnum(timeframe, TIMEFRAMES),
+      session: pickEnum(session, SESSIONS),
+      riskProfile: pickEnum(riskProfile, RISK_PROFILES),
+      executionMode: pickEnum(executionMode, EXECUTION_MODES),
+    },
+  });
+
+  const startSpec = async (intakeData: IntakeFormValues) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Zod already validated the form — sync the values into the store so the
+    // rest of the pipeline (and the header context strip) sees them.
+    setSymbol(intakeData.symbol);
+    setTimeframe(intakeData.timeframe);
+    setSession(intakeData.session);
+    setRiskProfile(intakeData.riskProfile);
+    setExecutionMode(intakeData.executionMode);
+
     setLoading(true);
-    const intakeData = { symbol, timeframe, session, riskProfile, executionMode };
 
     // Set timeout: abort if request takes >45 seconds
     const timeoutId = setTimeout(() => controller.abort(), 45000);
@@ -228,11 +283,13 @@ export function StrategyIntakePanel() {
       const finalSpec = {
         ...createDefaultSpec({ symbol: validatedSpec.symbol, timeframe: validatedSpec.timeframe }),
         ...validatedSpec,
-        session: validatedSpec.session || { sessionName: session },
+        session: validatedSpec.session || { sessionName: intakeData.session },
       };
 
       setCanonicalSpec(finalSpec);
       addAgentMessage({ agent: 'Intake', level: 'success', message: 'Spec generated via Gateway' });
+      // Azure Portal behavior: the result opens as a child blade to the right.
+      openBlade('spec');
 
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -269,24 +326,22 @@ export function StrategyIntakePanel() {
     return 'Awaiting spec draft';
   })();
 
+  const progressColor =
+    statusKind === 'err' ? 'error' : statusKind === 'warn' ? 'warning' : statusKind === 'ok' ? 'success' : 'brand';
+
   return (
     <Panel
       eyebrow="Step 01"
       title="Strategy intake"
       actions={canonicalSpec ? <Badge status="ok">spec live</Badge> : <Badge>no spec</Badge>}
     >
-      <div className="col">
+      <form className="col" onSubmit={handleSubmit(startSpec)} noValidate>
         <div className="system-state-strip">
           <div className="sss-head">
             <span className="eyebrow">System state</span>
-            <span className={`sss-badge sss-badge--${statusKind}`}>{deployLabel(deployStatus)}</span>
+            <Badge status={statusKind}>{deployLabel(deployStatus)}</Badge>
           </div>
-          <div className="sss-bar-track">
-            <div
-              className={`sss-bar-fill sss-bar-fill--${statusKind}`}
-              style={{ width: `${Math.round(progress * 100)}%` }}
-            />
-          </div>
+          <ProgressBar value={progress} max={1} thickness="medium" color={progressColor} />
           <div className="sss-steps">
             {DEPLOY_PIPELINE.map((s, i) => (
               <div
@@ -306,49 +361,122 @@ export function StrategyIntakePanel() {
           )}
         </div>
 
-        <Field label="Instrument" hint="Contract drives tick economics & guardrails" htmlFor="symbol-select">
-          <select id="symbol-select" value={symbol} onChange={(e) => setSymbol(e.target.value)}>
-            {SYMBOLS.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </Field>
+        <Controller
+          name="symbol"
+          control={control}
+          render={({ field }) => (
+            <Field
+              label="Instrument"
+              hint="Contract drives tick economics & guardrails"
+              validationMessage={errors.symbol?.message}
+            >
+              <Dropdown
+                placeholder="Select a contract"
+                value={field.value ?? ''}
+                selectedOptions={field.value ? [field.value] : []}
+                onOptionSelect={(_, data) => field.onChange(data.optionValue)}
+                onBlur={field.onBlur}
+              >
+                {SYMBOLS.map((s) => (
+                  <Option key={s} value={s}>{s}</Option>
+                ))}
+              </Dropdown>
+            </Field>
+          )}
+        />
 
         <div className="grid-2">
-          <Field label="Timeframe" htmlFor="timeframe-select">
-            <select id="timeframe-select" value={timeframe} onChange={(e) => setTimeframe(e.target.value)}>
-              {TIMEFRAMES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </Field>
-          <Field label="Session" htmlFor="session-select">
-            <select id="session-select" value={session} onChange={(e) => setSession(e.target.value)}>
-              {SESSIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </Field>
+          <Controller
+            name="timeframe"
+            control={control}
+            render={({ field }) => (
+              <Field label="Timeframe" validationMessage={errors.timeframe?.message}>
+                <Dropdown
+                  placeholder="Select a timeframe"
+                  value={field.value ?? ''}
+                  selectedOptions={field.value ? [field.value] : []}
+                  onOptionSelect={(_, data) => field.onChange(data.optionValue)}
+                  onBlur={field.onBlur}
+                >
+                  {TIMEFRAMES.map((t) => (
+                    <Option key={t} value={t}>{t}</Option>
+                  ))}
+                </Dropdown>
+              </Field>
+            )}
+          />
+          <Controller
+            name="session"
+            control={control}
+            render={({ field }) => (
+              <Field label="Session" validationMessage={errors.session?.message}>
+                <Dropdown
+                  placeholder="Select a session"
+                  value={field.value ?? ''}
+                  selectedOptions={field.value ? [field.value] : []}
+                  onOptionSelect={(_, data) => field.onChange(data.optionValue)}
+                  onBlur={field.onBlur}
+                >
+                  {SESSIONS.map((s) => (
+                    <Option key={s} value={s}>{s}</Option>
+                  ))}
+                </Dropdown>
+              </Field>
+            )}
+          />
         </div>
 
-        <Field label="Risk profile" htmlFor="risk-profile-select">
-          <select id="risk-profile-select" value={riskProfile} onChange={(e) => setRiskProfile(e.target.value)}>
-            {RISK.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
-        </Field>
-
-        <Field label="Execution mode" hint="Gates how strict the deploy checks are">
-          <div className="seg" role="group" aria-label="Execution mode">
-            {MODES.map((m) => (
-              <button
-                key={m}
-                className={`seg-btn ${executionMode === m ? 'seg-on' : ''}`}
-                onClick={() => setExecutionMode(m)}
+        <Controller
+          name="riskProfile"
+          control={control}
+          render={({ field }) => (
+            <Field label="Risk profile" validationMessage={errors.riskProfile?.message}>
+              <Dropdown
+                placeholder="Select a risk profile"
+                value={field.value ?? ''}
+                selectedOptions={field.value ? [field.value] : []}
+                onOptionSelect={(_, data) => field.onChange(data.optionValue)}
+                onBlur={field.onBlur}
               >
-                {m}
-              </button>
-            ))}
-          </div>
-        </Field>
+                {RISK_PROFILES.map((r) => (
+                  <Option key={r} value={r}>{r}</Option>
+                ))}
+              </Dropdown>
+            </Field>
+          )}
+        />
 
-        <Button variant="primary" onClick={startSpec} disabled={loading}>
+        <Controller
+          name="executionMode"
+          control={control}
+          render={({ field }) => (
+            <Field
+              label="Execution mode"
+              hint="Gates how strict the deploy checks are"
+              validationMessage={errors.executionMode?.message}
+            >
+              <RadioGroup
+                layout="horizontal"
+                value={field.value}
+                onChange={(_, data) => field.onChange(data.value)}
+              >
+                {EXECUTION_MODES.map((m) => (
+                  <Radio key={m} value={m} label={m} />
+                ))}
+              </RadioGroup>
+            </Field>
+          )}
+        />
+
+        <Button
+          appearance="primary"
+          type="submit"
+          disabled={loading}
+          icon={loading ? <Spinner size="tiny" /> : undefined}
+        >
           {loading ? 'Drafting…' : canonicalSpec ? 'Reset spec from intake' : 'Draft canonical spec'}
         </Button>
-      </div>
+      </form>
     </Panel>
   );
 }

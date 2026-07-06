@@ -99,9 +99,22 @@ export function buildPythonBacktestPayload(
     entry: {
       side: spec.entry.side,
       orderType: spec.entry.orderType,
+      // conditionSchema is a union: legacy {id, expression, enabled} entries
+      // pass through as-is (respecting the enabled flag); normalized
+      // {type, parameters} entries are always active and serialize to the
+      // same "type(param=value)" expression convention.
       conditions: spec.entry.conditions
-        .filter((c) => c.enabled)
-        .map((c) => ({ id: c.id, expression: c.expression })),
+        .filter((c) => ('enabled' in c ? c.enabled : true))
+        .map((c, i) =>
+          'expression' in c
+            ? { id: c.id, expression: c.expression }
+            : {
+                id: `cond_${i + 1}`,
+                expression: `${c.type}(${Object.entries(c.parameters)
+                  .map(([k, v]) => `${k}=${v}`)
+                  .join(', ')})`,
+              }
+        ),
     },
     exit: {
       stop: { ...spec.exit.stop },

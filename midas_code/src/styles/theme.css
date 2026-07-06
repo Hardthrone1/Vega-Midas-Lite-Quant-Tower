@@ -69,10 +69,9 @@ html, body, #root {
   margin: 0;
 }
 
+/* The FluentProvider root paints the app surface; these are pre-mount fallbacks. */
 body {
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(231, 183, 95, 0.05), transparent 60%),
-    var(--bg);
+  background: var(--bg);
   color: var(--ink-1);
   font-family: var(--font-body);
   font-size: var(--fs-base);

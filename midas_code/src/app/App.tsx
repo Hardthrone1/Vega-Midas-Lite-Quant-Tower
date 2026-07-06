@@ -1,6 +1,11 @@
 // src/app/App.tsx
-import { AppShell } from './layout/AppShell'
+import { VegaThemeProvider } from './theme/ThemeProvider'
+import { PortalShell } from './layout/PortalShell'
 
 export default function App() {
-  return <AppShell />
+  return (
+    <VegaThemeProvider>
+      <PortalShell />
+    </VegaThemeProvider>
+  )
 }

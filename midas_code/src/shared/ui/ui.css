@@ -53,54 +53,18 @@
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 
-/* badges */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 4px 9px;
-  border-radius: 99px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface-2);
-  color: #c9d1d9;
-  white-space: nowrap;
-  font-weight: 600;
+/* Badges and buttons are Fluent UI components now (see index.tsx).
+   Only the danger accent — which Fluent's Button has no appearance for —
+   lives here, expressed with Fluent status tokens. */
+.vega-btn-danger {
+  color: var(--colorStatusDangerForeground1);
+  border-color: var(--colorStatusDangerBorder1);
 }
-.badge-idle { color: #c9d1d9; border-color: var(--line-strong); }
-.badge-ok { color: #3fb950; border-color: var(--ok-dim); }
-.badge-warn { color: #e3b341; border-color: var(--warn-dim); }
-.badge-err { color: #ff7b72; border-color: var(--err-dim); }
-.badge-info { color: #79c0ff; border-color: var(--info-dim); }
-
-/* buttons */
-.btn {
-  font-family: var(--font-body);
-  font-size: var(--fs-md);
-  font-weight: 500;
-  padding: 7px 13px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
-  background: var(--surface-2);
-  color: var(--ink-1);
-  cursor: pointer;
-  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+.vega-btn-danger:hover:not(:disabled) {
+  color: var(--colorStatusDangerForeground1);
+  border-color: var(--colorStatusDangerBorder2);
+  background: var(--colorStatusDangerBackground1);
 }
-.btn:hover:not(:disabled) { background: var(--surface-3); border-color: var(--ink-3); }
-.btn:active:not(:disabled) { transform: translateY(1px); }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary {
-  background: var(--gold);
-  border-color: var(--gold);
-  color: var(--ink-inv);
-  font-weight: 600;
-}
-.btn-primary:hover:not(:disabled) { background: var(--gold-dim); border-color: var(--gold-dim); }
-.btn-danger { color: var(--err); border-color: var(--err-dim); }
-.btn-danger:hover:not(:disabled) { background: rgba(224, 96, 79, 0.1); }
 
 /* fields */
 .field { display: flex; flex-direction: column; gap: 5px; }
