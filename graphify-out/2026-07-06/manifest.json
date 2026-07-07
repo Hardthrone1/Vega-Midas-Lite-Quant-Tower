@@ -1075,8 +1075,8 @@
     "semantic_hash": ""
   },
   "midas_code/src/features/swarm/components/SwarmPanel.tsx": {
-    "mtime": 1783384741.3707204,
-    "ast_hash": "2b255647434e4766193d339e110ac7c8",
+    "mtime": 1783389914.4524074,
+    "ast_hash": "9cc8298a5f090527ed053a423e55d7f3",
     "semantic_hash": ""
   },
   "midas_code/src/features/vault/components/VaultPanel.tsx": {
@@ -1212,6 +1212,11 @@
   "midas_code/src/app/theme/ThemeProvider.tsx": {
     "mtime": 1783384595.9939303,
     "ast_hash": "8bba98330a6a9152b56e38b0658dd77f",
+    "semantic_hash": ""
+  },
+  "midas_code/src/features/swarm/components/SwarmHeader.tsx": {
+    "mtime": 1783389704.6420166,
+    "ast_hash": "9140df2c0370b7317f63c13b1cb3ed84",
     "semantic_hash": ""
   }
 }
