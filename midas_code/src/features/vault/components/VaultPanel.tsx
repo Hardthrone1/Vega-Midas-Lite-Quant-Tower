@@ -16,7 +16,7 @@ export function VaultPanel() {
   const totalItems = versionHistory.length + pineVault.length
 
   return (
-    <Panel eyebrow="Step 06" title="Strategy vault" actions={
+    <Panel eyebrow="Step 07" title="Strategy vault" actions={
       <Button variant="primary" onClick={save} disabled={!canonicalSpec}>Save version</Button>
     }>
       {totalItems === 0 ? (

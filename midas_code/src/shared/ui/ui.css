@@ -42,9 +42,83 @@
 
 .card {
   background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  background: var(--glass-tint);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
   padding: 12px;
+  box-shadow: var(--elev-2);
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elev-4);
+  border-color: var(--glass-highlight);
+}
+
+/* MetricCard — glass stat tile with a semantic accent bar */
+.metric-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--elev-2);
+  overflow: hidden;
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+.metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--metric-accent, var(--colorNeutralForeground4));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--metric-accent, transparent) 55%, transparent);
+}
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elev-4);
+  border-color: var(--glass-highlight);
+}
+.metric-card--ok   { --metric-accent: var(--colorStatusSuccessForeground1); }
+.metric-card--warn { --metric-accent: var(--colorStatusWarningForeground1); }
+.metric-card--err  { --metric-accent: var(--colorStatusDangerForeground1); }
+.metric-card--info { --metric-accent: var(--colorBrandForeground1); }
+.metric-card-label {
+  font-size: var(--fontSizeBase100);
+  line-height: var(--lineHeightBase100);
+  font-weight: var(--fontWeightSemibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--colorNeutralForeground3);
+}
+.metric-card-value {
+  font-size: var(--fontSizeBase500);
+  line-height: var(--lineHeightBase500);
+  font-weight: var(--fontWeightSemibold);
+  color: var(--colorNeutralForeground1);
+  transition: color var(--motion-fast) var(--ease-standard);
+}
+.metric-card--ok .metric-card-value   { color: var(--colorStatusSuccessForeground1); }
+.metric-card--err .metric-card-value  { color: var(--colorStatusDangerForeground1); }
+.metric-card--warn .metric-card-value { color: var(--colorStatusWarningForeground1); }
+.metric-card-delta {
+  font-size: var(--fontSizeBase200);
+  color: var(--metric-accent, var(--colorNeutralForeground3));
+}
+.metric-card-hint {
+  font-size: var(--fontSizeBase100);
+  color: var(--colorNeutralForeground4);
 }
 
 /* status dots */
@@ -103,18 +177,31 @@
   font-size: var(--fs-md);
   padding: 8px 10px;
   width: 100%;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
 }
-.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { border-color: var(--gold); }
+.field input:hover, .field select:hover, .field textarea:hover {
+  border-color: var(--colorNeutralStroke1Hover, var(--line-strong));
+  background: var(--surface-2);
+}
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--colorBrandStroke1) 30%, transparent);
+}
 
 .empty {
-  color: rgb(139, 148, 158);
+  color: var(--colorNeutralForeground3);
   font-weight: 500;
-  font-size: var(--fs-sm);
+  font-size: var(--fontSizeBase200);
   text-align: center;
   padding: 24px 16px;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--r-md);
+  border: 1px dashed var(--glass-highlight);
+  border-radius: 8px;
+  background: var(--glass-tint);
   line-height: 1.6;
+  animation: vega-fade-in var(--motion-slow) var(--ease-enter) both;
 }
 
 .row { display: flex; gap: var(--gap); }
@@ -208,7 +295,21 @@
   font-size: var(--fs-sm);
 }
 .range-slider-label { color: var(--ink-2); }
-.range-slider-value { font-size: var(--fs-sm); color: var(--gold); }
+.range-slider-value {
+  font-size: var(--fontSizeBase200);
+  color: var(--colorBrandForeground2);
+  background: var(--colorBrandBackground2);
+  border: 1px solid color-mix(in srgb, var(--colorBrandStroke1) 30%, transparent);
+  border-radius: 999px;
+  padding: 2px 10px;
+  transition:
+    background var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-subtle);
+}
+.range-slider:has(.range-slider-thumb:active) .range-slider-value {
+  transform: scale(1.06);
+}
 .range-slider--invalid .range-slider-label,
 .range-slider--invalid .range-slider-value { color: var(--err); }
 .range-slider-error { margin: 6px 0 0; font-size: var(--fs-xs); color: var(--err); }
@@ -224,18 +325,19 @@
 .range-slider-track {
   position: relative;
   flex-grow: 1;
-  height: 6px;
+  height: 4px;
   overflow: hidden;
   border-radius: 99px;
-  background: var(--surface-3);
-  transition: background var(--fast) var(--ease);
+  background: var(--colorNeutralStrokeAccessible, var(--surface-3));
+  background: color-mix(in srgb, var(--colorNeutralForeground1) 18%, transparent);
+  transition: background var(--motion-fast) var(--ease-standard);
 }
 .range-slider-range {
   position: absolute;
   height: 100%;
   border-radius: 99px;
-  background: var(--gold);
-  transition: background var(--fast) var(--ease);
+  background: var(--colorCompoundBrandBackground, var(--gold));
+  transition: background var(--motion-fast) var(--ease-standard);
 }
 .range-slider--invalid .range-slider-track { background: var(--err-dim); }
 .range-slider--invalid .range-slider-range { background: var(--err); }
@@ -254,16 +356,23 @@
 .range-slider-thumb {
   display: block;
   z-index: 20;
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--surface-1);
+  width: 18px;
+  height: 18px;
+  border: 4px solid var(--colorCompoundBrandBackground, var(--gold));
   border-radius: 99px;
-  background: var(--gold);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  background: var(--colorNeutralBackground1);
+  box-shadow: var(--elev-2);
   cursor: grab;
-  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition:
+    transform var(--motion-fast) var(--ease-subtle),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
 }
-.range-slider-thumb:hover { background: var(--gold-dim); }
+.range-slider-thumb:hover {
+  transform: scale(1.12);
+  border-color: var(--colorCompoundBrandBackgroundHover, var(--gold-dim));
+  box-shadow: var(--elev-4);
+}
 .range-slider-thumb:active { cursor: grabbing; }
 .range-slider-thumb:focus { outline: none; }
 .range-slider-thumb:focus-visible {
@@ -280,16 +389,19 @@
   top: -36px;
   z-index: 50;
   padding: 4px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
-  background: var(--surface-1);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   color: var(--ink-1);
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   white-space: nowrap;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--elev-4);
   transform: translateX(-50%);
   pointer-events: none;
+  animation: vega-rise-in var(--motion-fast) var(--ease-enter) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

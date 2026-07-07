@@ -1,6 +1,6 @@
 // src/features/backtest/components/BacktestPanel.tsx
-import { useMemo } from 'react'
-import { Panel, Card, Button, Empty } from '../../../shared/ui'
+import { useMemo, type CSSProperties } from 'react'
+import { Panel, Card, Button, Empty, MetricCard, type Status } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 
 export function BacktestPanel() {
@@ -50,8 +50,17 @@ export function BacktestPanel() {
   const m = backtestResult.metrics
   const has = backtestResult.equityCurve.length > 0
 
+  const metricCards: Array<{ label: string; value: string; status: Status; hint?: string }> = [
+    { label: 'Net P&L', value: `$${m.netProfit}`, status: (m.netProfit as number) >= 0 ? 'ok' : 'err' },
+    { label: 'Win rate', value: `${m.winRate}%`, status: 'info' },
+    { label: 'Profit factor', value: String(m.profitFactor), status: (m.profitFactor as number) >= 1.5 ? 'ok' : 'warn', hint: 'gate ≥ 1.5' },
+    { label: 'Expectancy', value: `${m.expectancy}R`, status: 'info' },
+    { label: 'Max DD', value: `$${m.maxDrawdown}`, status: 'err' },
+    { label: 'Trades', value: String(m.trades), status: 'idle' },
+  ]
+
   return (
-    <Panel eyebrow="Step 04" title="Backtest preview" actions={
+    <Panel eyebrow="Step 06" title="Backtest preview" actions={
       <Button variant="primary" onClick={runBacktest} disabled={!canonicalSpec}>Run backtest</Button>
     }>
       {!has ? (
@@ -65,24 +74,17 @@ export function BacktestPanel() {
             </svg>
           </Card>
           <div className="metrics-grid">
-            <Metric label="Net P&L" value={`$${m.netProfit}`} good={(m.netProfit as number) >= 0} />
-            <Metric label="Win rate" value={`${m.winRate}%`} />
-            <Metric label="Profit factor" value={String(m.profitFactor)} good={(m.profitFactor as number) >= 1.5} />
-            <Metric label="Expectancy" value={`${m.expectancy}R`} />
-            <Metric label="Max DD" value={`$${m.maxDrawdown}`} good={false} />
-            <Metric label="Trades" value={String(m.trades)} />
+            {metricCards.map((mc, i) => (
+              <MetricCard
+                key={mc.label}
+                {...mc}
+                className="stagger-item"
+                style={{ '--stagger-i': i } as CSSProperties}
+              />
+            ))}
           </div>
         </div>
       )}
     </Panel>
-  )
-}
-
-function Metric({ label, value, good }: { label: string; value: string; good?: boolean }) {
-  return (
-    <div className="metric">
-      <span className="metric-label">{label}</span>
-      <span className={`metric-value mono ${good === true ? 'pos' : good === false ? 'neg' : ''}`}>{value}</span>
-    </div>
   )
 }
