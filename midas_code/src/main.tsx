@@ -9,6 +9,7 @@ import './styles/theme.css'
 import './shared/ui/ui.css'
 import './styles/app.css'
 import './styles/portal.css'
+import './styles/tailwind.css'
 
 void setupDevtools()
 
