@@ -1,6 +1,6 @@
 // src/features/backtest/components/BacktestPanel.tsx
 import { useMemo, type CSSProperties } from 'react'
-import { Panel, Card, Button, Empty, MetricCard, type Status } from '../../../shared/ui'
+import { Card, Button, Empty, MetricCard, type Status } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 
 export function BacktestPanel() {
@@ -60,13 +60,14 @@ export function BacktestPanel() {
   ]
 
   return (
-    <Panel>
-      <header className="panel-header">
-        <div className="panel-header-left">
-          <span className="panel-step">Step 06</span>
-          <h1 className="panel-title">Backtest preview</h1>
+    <section className="backtest-panel">
+      {/* Single-row unified header */}
+      <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="flex items-baseline gap-2 flex-1 min-w-0">
+          <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Step 06</span>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Backtest preview</h1>
         </div>
-        <div className="panel-header-right">
+        <div className="flex-shrink-0">
           <Button variant="primary" onClick={runBacktest} disabled={!canonicalSpec}>Run backtest</Button>
         </div>
       </header>
@@ -92,6 +93,6 @@ export function BacktestPanel() {
           </div>
         </div>
       )}
-    </Panel>
+    </section>
   )
 }

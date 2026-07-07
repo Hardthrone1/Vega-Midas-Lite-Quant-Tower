@@ -4,14 +4,24 @@
   "graph": {},
   "nodes": [
     {
+      "label": "stop_vega_suite.ps1",
+      "file_type": "code",
+      "source_file": "stop_vega_suite.ps1",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "stop_vega_suite",
+      "community": 123,
+      "norm_label": "stop_vega_suite.ps1"
+    },
+    {
       "label": "AgentTimelinePanel.tsx",
       "file_type": "code",
       "source_file": "midas_code/src/features/agent-timeline/components/AgentTimelinePanel.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "components_agenttimelinepanel",
       "community": 42,
-      "norm_label": "agenttimelinepanel.tsx"
+      "norm_label": "agenttimelinepanel.tsx",
+      "id": "components_agenttimelinepanel"
     },
     {
       "label": "levelToStatus",
@@ -19,9 +29,9 @@
       "source_file": "midas_code/src/features/agent-timeline/components/AgentTimelinePanel.tsx",
       "source_location": "L7",
       "_origin": "ast",
-      "id": "components_agenttimelinepanel_leveltostatus",
       "community": 42,
-      "norm_label": "leveltostatus"
+      "norm_label": "leveltostatus",
+      "id": "components_agenttimelinepanel_leveltostatus"
     },
     {
       "label": "AgentTimelinePanel()",
@@ -29,9 +39,9 @@
       "source_file": "midas_code/src/features/agent-timeline/components/AgentTimelinePanel.tsx",
       "source_location": "L11",
       "_origin": "ast",
-      "id": "components_agenttimelinepanel_agenttimelinepanel",
       "community": 42,
-      "norm_label": "agenttimelinepanel()"
+      "norm_label": "agenttimelinepanel()",
+      "id": "components_agenttimelinepanel_agenttimelinepanel"
     },
     {
       "label": "BacktestPanel.tsx",
@@ -39,9 +49,9 @@
       "source_file": "midas_code/src/features/backtest/components/BacktestPanel.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "components_backtestpanel",
       "community": 42,
-      "norm_label": "backtestpanel.tsx"
+      "norm_label": "backtestpanel.tsx",
+      "id": "components_backtestpanel"
     },
     {
       "label": "BacktestPanel()",
@@ -49,9 +59,9 @@
       "source_file": "midas_code/src/features/backtest/components/BacktestPanel.tsx",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "components_backtestpanel_backtestpanel",
       "community": 42,
-      "norm_label": "backtestpanel()"
+      "norm_label": "backtestpanel()",
+      "id": "components_backtestpanel_backtestpanel"
     },
     {
       "label": "CanonicalSpecPanel.tsx",
@@ -59,9 +69,9 @@
       "source_file": "midas_code/src/features/canonical-spec/components/CanonicalSpecPanel.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "components_canonicalspecpanel",
       "community": 42,
-      "norm_label": "canonicalspecpanel.tsx"
+      "norm_label": "canonicalspecpanel.tsx",
+      "id": "components_canonicalspecpanel"
     },
     {
       "label": "CanonicalSpecPanel()",
@@ -69,9 +79,9 @@
       "source_file": "midas_code/src/features/canonical-spec/components/CanonicalSpecPanel.tsx",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "components_canonicalspecpanel_canonicalspecpanel",
       "community": 42,
-      "norm_label": "canonicalspecpanel()"
+      "norm_label": "canonicalspecpanel()",
+      "id": "components_canonicalspecpanel_canonicalspecpanel"
     },
     {
       "label": "DiagnosticsPanel.tsx",
@@ -79,9 +89,9 @@
       "source_file": "midas_code/src/features/diagnostics/components/DiagnosticsPanel.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "components_diagnosticspanel",
       "community": 29,
-      "norm_label": "diagnosticspanel.tsx"
+      "norm_label": "diagnosticspanel.tsx",
+      "id": "components_diagnosticspanel"
     },
     {
       "label": "DiagnosticsPanel()",
@@ -89,9 +99,9 @@
       "source_file": "midas_code/src/features/diagnostics/components/DiagnosticsPanel.tsx",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "components_diagnosticspanel_diagnosticspanel",
       "community": 29,
-      "norm_label": "diagnosticspanel()"
+      "norm_label": "diagnosticspanel()",
+      "id": "components_diagnosticspanel_diagnosticspanel"
     },
     {
       "label": "fmtNum()",
@@ -99,9 +109,9 @@
       "source_file": "midas_code/src/features/diagnostics/components/DiagnosticsPanel.tsx",
       "source_location": "L95",
       "_origin": "ast",
-      "id": "components_diagnosticspanel_fmtnum",
       "community": 29,
-      "norm_label": "fmtnum()"
+      "norm_label": "fmtnum()",
+      "id": "components_diagnosticspanel_fmtnum"
     },
     {
       "label": "fmtPct()",
@@ -109,9 +119,9 @@
       "source_file": "midas_code/src/features/diagnostics/components/DiagnosticsPanel.tsx",
       "source_location": "L96",
       "_origin": "ast",
-      "id": "components_diagnosticspanel_fmtpct",
       "community": 29,
-      "norm_label": "fmtpct()"
+      "norm_label": "fmtpct()",
+      "id": "components_diagnosticspanel_fmtpct"
     },
     {
       "label": "ReplayPanel.tsx",
@@ -119,9 +129,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "components_replaypanel",
       "community": 25,
-      "norm_label": "replaypanel.tsx"
+      "norm_label": "replaypanel.tsx",
+      "id": "components_replaypanel"
     },
     {
       "label": "InstrumentProfile",
@@ -129,9 +139,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L9",
       "_origin": "ast",
-      "id": "components_replaypanel_instrumentprofile",
       "community": 25,
-      "norm_label": "instrumentprofile"
+      "norm_label": "instrumentprofile",
+      "id": "components_replaypanel_instrumentprofile"
     },
     {
       "label": "INSTRUMENT_PROFILES",
@@ -139,9 +149,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "components_replaypanel_instrument_profiles",
       "community": 25,
-      "norm_label": "instrument_profiles"
+      "norm_label": "instrument_profiles",
+      "id": "components_replaypanel_instrument_profiles"
     },
     {
       "label": "timeframeMinutes()",
@@ -149,9 +159,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L26",
       "_origin": "ast",
-      "id": "components_replaypanel_timeframeminutes",
       "community": 25,
-      "norm_label": "timeframeminutes()"
+      "norm_label": "timeframeminutes()",
+      "id": "components_replaypanel_timeframeminutes"
     },
     {
       "label": "makeReplayBars()",
@@ -159,9 +169,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L32",
       "_origin": "ast",
-      "id": "components_replaypanel_makereplaybars",
       "community": 25,
-      "norm_label": "makereplaybars()"
+      "norm_label": "makereplaybars()",
+      "id": "components_replaypanel_makereplaybars"
     },
     {
       "label": "Toast",
@@ -169,9 +179,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L53",
       "_origin": "ast",
-      "id": "components_replaypanel_toast",
       "community": 25,
-      "norm_label": "toast"
+      "norm_label": "toast",
+      "id": "components_replaypanel_toast"
     },
     {
       "label": "ReplayToast()",
@@ -179,9 +189,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L55",
       "_origin": "ast",
-      "id": "components_replaypanel_replaytoast",
       "community": 25,
-      "norm_label": "replaytoast()"
+      "norm_label": "replaytoast()",
+      "id": "components_replaypanel_replaytoast"
     },
     {
       "label": "useReplayDiagState()",
@@ -189,9 +199,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L70",
       "_origin": "ast",
-      "id": "components_replaypanel_usereplaydiagstate",
       "community": 25,
-      "norm_label": "usereplaydiagstate()"
+      "norm_label": "usereplaydiagstate()",
+      "id": "components_replaypanel_usereplaydiagstate"
     },
     {
       "label": "ReplayPanel()",
@@ -199,9 +209,9 @@
       "source_file": "midas_code/src/features/replay/components/ReplayPanel.tsx",
       "source_location": "L121",
       "_origin": "ast",
-      "id": "components_replaypanel_replaypanel",
       "community": 25,
-      "norm_label": "replaypanel()"
+      "norm_label": "replaypanel()",
+      "id": "components_replaypanel_replaypanel"
     },
     {
       "label": "StrategyIntakePanel.tsx",
@@ -209,9 +219,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "components_strategyintakepanel",
       "community": 29,
-      "norm_label": "strategyintakepanel.tsx"
+      "norm_label": "strategyintakepanel.tsx",
+      "id": "components_strategyintakepanel"
     },
     {
       "label": "SYMBOLS",
@@ -219,9 +229,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L26",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_symbols",
       "community": 29,
-      "norm_label": "symbols"
+      "norm_label": "symbols",
+      "id": "components_strategyintakepanel_symbols"
     },
     {
       "label": "TIMEFRAMES",
@@ -229,9 +239,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L27",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_timeframes",
       "community": 29,
-      "norm_label": "timeframes"
+      "norm_label": "timeframes",
+      "id": "components_strategyintakepanel_timeframes"
     },
     {
       "label": "SESSIONS",
@@ -239,9 +249,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L28",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_sessions",
       "community": 29,
-      "norm_label": "sessions"
+      "norm_label": "sessions",
+      "id": "components_strategyintakepanel_sessions"
     },
     {
       "label": "RISK_PROFILES",
@@ -249,9 +259,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L29",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_risk_profiles",
       "community": 29,
-      "norm_label": "risk_profiles"
+      "norm_label": "risk_profiles",
+      "id": "components_strategyintakepanel_risk_profiles"
     },
     {
       "label": "EXECUTION_MODES",
@@ -259,9 +269,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L30",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_execution_modes",
       "community": 29,
-      "norm_label": "execution_modes"
+      "norm_label": "execution_modes",
+      "id": "components_strategyintakepanel_execution_modes"
     },
     {
       "label": "intakeFormSchema",
@@ -269,9 +279,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L34",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_intakeformschema",
       "community": 29,
-      "norm_label": "intakeformschema"
+      "norm_label": "intakeformschema",
+      "id": "components_strategyintakepanel_intakeformschema"
     },
     {
       "label": "IntakeFormValues",
@@ -279,9 +289,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L42",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_intakeformvalues",
       "community": 29,
-      "norm_label": "intakeformvalues"
+      "norm_label": "intakeformvalues",
+      "id": "components_strategyintakepanel_intakeformvalues"
     },
     {
       "label": "pickEnum()",
@@ -289,9 +299,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L46",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_pickenum",
       "community": 29,
-      "norm_label": "pickenum()"
+      "norm_label": "pickenum()",
+      "id": "components_strategyintakepanel_pickenum"
     },
     {
       "label": "IntakeResponseSchema",
@@ -299,9 +309,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L52",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_intakeresponseschema",
       "community": 29,
-      "norm_label": "intakeresponseschema"
+      "norm_label": "intakeresponseschema",
+      "id": "components_strategyintakepanel_intakeresponseschema"
     },
     {
       "label": "normalizeConditions()",
@@ -309,9 +319,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L72",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_normalizeconditions",
       "community": 29,
-      "norm_label": "normalizeconditions()"
+      "norm_label": "normalizeconditions()",
+      "id": "components_strategyintakepanel_normalizeconditions"
     },
     {
       "label": "StrategyIntakePanel()",
@@ -319,9 +329,9 @@
       "source_file": "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx",
       "source_location": "L116",
       "_origin": "ast",
-      "id": "components_strategyintakepanel_strategyintakepanel",
       "community": 29,
-      "norm_label": "strategyintakepanel()"
+      "norm_label": "strategyintakepanel()",
+      "id": "components_strategyintakepanel_strategyintakepanel"
     },
     {
       "label": "SwarmPanel.tsx",
@@ -329,9 +339,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "components_swarmpanel",
       "community": 42,
-      "norm_label": "swarmpanel.tsx"
+      "norm_label": "swarmpanel.tsx",
+      "id": "components_swarmpanel"
     },
     {
       "label": "AGENTS",
@@ -339,9 +349,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "components_swarmpanel_agents",
       "community": 42,
-      "norm_label": "agents"
+      "norm_label": "agents",
+      "id": "components_swarmpanel_agents"
     },
     {
       "label": "AgentMsg",
@@ -349,9 +359,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "components_swarmpanel_agentmsg",
       "community": 42,
-      "norm_label": "agentmsg"
+      "norm_label": "agentmsg",
+      "id": "components_swarmpanel_agentmsg"
     },
     {
       "label": "SwarmMode",
@@ -359,9 +369,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "components_swarmpanel_swarmmode",
       "community": 42,
-      "norm_label": "swarmmode"
+      "norm_label": "swarmmode",
+      "id": "components_swarmpanel_swarmmode"
     },
     {
       "label": "GatewayStatus",
@@ -369,9 +379,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L20",
       "_origin": "ast",
-      "id": "components_swarmpanel_gatewaystatus",
       "community": 42,
-      "norm_label": "gatewaystatus"
+      "norm_label": "gatewaystatus",
+      "id": "components_swarmpanel_gatewaystatus"
     },
     {
       "label": "lintPine()",
@@ -379,9 +389,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L23",
       "_origin": "ast",
-      "id": "components_swarmpanel_lintpine",
       "community": 42,
-      "norm_label": "lintpine()"
+      "norm_label": "lintpine()",
+      "id": "components_swarmpanel_lintpine"
     },
     {
       "label": "highlightPine()",
@@ -389,9 +399,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L39",
       "_origin": "ast",
-      "id": "components_swarmpanel_highlightpine",
       "community": 42,
-      "norm_label": "highlightpine()"
+      "norm_label": "highlightpine()",
+      "id": "components_swarmpanel_highlightpine"
     },
     {
       "label": "extractCode()",
@@ -399,9 +409,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L48",
       "_origin": "ast",
-      "id": "components_swarmpanel_extractcode",
       "community": 42,
-      "norm_label": "extractcode()"
+      "norm_label": "extractcode()",
+      "id": "components_swarmpanel_extractcode"
     },
     {
       "label": "SwarmPanel()",
@@ -409,9 +419,9 @@
       "source_file": "midas_code/src/features/swarm/components/SwarmPanel.tsx",
       "source_location": "L53",
       "_origin": "ast",
-      "id": "components_swarmpanel_swarmpanel",
       "community": 42,
-      "norm_label": "swarmpanel()"
+      "norm_label": "swarmpanel()",
+      "id": "components_swarmpanel_swarmpanel"
     },
     {
       "label": "VaultPanel.tsx",
@@ -419,9 +429,9 @@
       "source_file": "midas_code/src/features/vault/components/VaultPanel.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "components_vaultpanel",
       "community": 42,
-      "norm_label": "vaultpanel.tsx"
+      "norm_label": "vaultpanel.tsx",
+      "id": "components_vaultpanel"
     },
     {
       "label": "VaultPanel()",
@@ -429,9 +439,9 @@
       "source_file": "midas_code/src/features/vault/components/VaultPanel.tsx",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "components_vaultpanel_vaultpanel",
       "community": 42,
-      "norm_label": "vaultpanel()"
+      "norm_label": "vaultpanel()",
+      "id": "components_vaultpanel_vaultpanel"
     },
     {
       "label": "SwarmHeader.tsx",
@@ -21006,9 +21016,9 @@
       "source_file": "midas_code/src/features/backtest/components/BacktestPanel.tsx",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_backtestpanel",
-      "target": "ui_index_status",
-      "confidence_score": 1.0
+      "target": "ui_index_status"
     },
     {
       "relation": "calls",
@@ -71085,5 +71095,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "fc3728a6b7cfa84822a4c5eddcacdc59c7424822"
+  "built_at_commit": "4f3d6d1607fba30516b964668c662c886eb725ad"
 }

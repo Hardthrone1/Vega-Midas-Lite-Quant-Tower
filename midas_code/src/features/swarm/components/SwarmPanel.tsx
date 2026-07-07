@@ -1,8 +1,7 @@
 // src/features/swarm/components/SwarmPanel.tsx
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Panel, Button, Card } from '../../../shared/ui'
+import { Button, Card, Badge } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
-import { SwarmHeader } from './SwarmHeader'
 
 const GW_URL = 'http://127.0.0.1:8001'
 const GW_POLL_MS = 8000
@@ -243,16 +242,31 @@ export function SwarmPanel() {
   }
 
   return (
-    <Panel
-      className="swarm-panel"
-      ref={(el: HTMLElement | null) => { panelRef.current = el }}>
-      <SwarmHeader
-        breadcrumb="Swarm › Step 04"
-        title="Code generation · repair"
-        gatewayStatus={gatewayStatus}
-        onExpand={toggleFullscreen}
-        isFullscreen={isFs}
-      />
+    <section className="swarm-panel" ref={(el: HTMLElement | null) => { panelRef.current = el }}>
+      {/* Single-row unified header */}
+      <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="flex items-baseline gap-2 flex-1 min-w-0">
+          <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Swarm › Step 04</span>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Code generation · repair</h1>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge 
+            status={gatewayStatus === 'online' ? 'ok' : gatewayStatus === 'offline' ? 'err' : 'idle'}
+          >
+            Gateway {gatewayStatus}
+          </Badge>
+          <button
+            type="button"
+            className="w-8 h-8 inline-flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 bg-transparent hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10 text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            onClick={toggleFullscreen}
+            aria-label={isFs ? 'Exit fullscreen' : 'Expand to fullscreen'}
+            aria-pressed={isFs}
+            title={isFs ? 'Exit fullscreen' : 'Expand'}
+          >
+            {isFs ? '⤡' : '⤢'}
+          </button>
+        </div>
+      </header>
       <div className="swarm-workspace">
 
         {/* LEFT: Gateway + Agents + Message window */}
@@ -356,6 +370,6 @@ export function SwarmPanel() {
           </Card>
         </div>
       </div>
-    </Panel>
+    </section>
   )
 }

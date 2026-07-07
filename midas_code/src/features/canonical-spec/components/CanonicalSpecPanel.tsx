@@ -1,6 +1,6 @@
 // src/features/canonical-spec/components/CanonicalSpecPanel.tsx
 import { useMemo, useState } from 'react'
-import { Panel, Card, Button, Badge, Empty } from '../../../shared/ui'
+import { Card, Button, Badge, Empty } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 
 export function CanonicalSpecPanel() {
@@ -17,9 +17,15 @@ export function CanonicalSpecPanel() {
 
   if (!canonicalSpec) {
     return (
-      <Panel eyebrow="Step 02" title="Canonical spec">
+      <section className="canonical-spec-panel">
+        <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+          <div className="flex items-baseline gap-2 flex-1 min-w-0">
+            <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Step 02</span>
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Canonical spec</h1>
+          </div>
+        </header>
         <Empty>No spec yet. Draft one from intake — it becomes the single source<br />both Pine and Python are generated from.</Empty>
-      </Panel>
+      </section>
     )
   }
 
@@ -33,13 +39,14 @@ export function CanonicalSpecPanel() {
   }
 
   return (
-    <Panel>
-      <header className="panel-header">
-        <div className="panel-header-left">
-          <span className="panel-step">Step 02</span>
-          <h1 className="panel-title">Canonical spec</h1>
+    <section className="canonical-spec-panel">
+      {/* Single-row unified header */}
+      <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="flex items-baseline gap-2 flex-1 min-w-0">
+          <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Step 02</span>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Canonical spec</h1>
         </div>
-        <div className="panel-header-right">
+        <div className="flex items-center gap-3 flex-shrink-0">
           {validBadge}
           <div className="seg">
             <button className={`seg-btn ${view === 'summary' ? 'seg-on' : ''}`} onClick={() => setView('summary')}>summary</button>
@@ -84,6 +91,6 @@ export function CanonicalSpecPanel() {
       ) : (
         <pre className="json">{json}</pre>
       )}
-    </Panel>
+    </section>
   )
 }

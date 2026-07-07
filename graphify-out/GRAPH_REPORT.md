@@ -1,16 +1,16 @@
 # Graph Report - TradingView-Suite  (2026-07-06)
 
 ## Corpus Check
-- 244 files · ~96,991 words
+- 245 files · ~97,115 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2075 nodes · 4750 edges · 126 communities (79 shown, 47 thin omitted)
+- 2076 nodes · 4750 edges · 127 communities (80 shown, 47 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 41 edges (avg confidence: 0.73)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fc3728a6`
+- Built from commit: `4f3d6d16`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -153,7 +153,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (126 total, 47 thin omitted)
+## Communities (127 total, 47 thin omitted)
 
 ### Community 0 - "Backtest Payload Models"
 Cohesion: 0.05
@@ -416,11 +416,11 @@ Nodes (3): outPath, t, targets
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `vn` connect `Chart Data Internal` to `Lightweight Charts Core`, `Price Scale Internal`, `Internal Chart Components`, `Internal Chart Constructor`, `Coordinate Conversion Internal`, `Price Coordinate Mapping`, `Chart Element Removal`, `File System Internal`, `Chart Resizing Utilities`, `Visible Range Utilities`, `Internal Chart Logic`, `Internal Chart Rendering`, `Internal Chart Logic`, `Internal Chart Rendering`, `Internal Chart Core`, `UI Component Library`, `Strategy Property Schemas`, `Time Coordinate Mapping`, `List Component Internals`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+  _High betweenness centrality (0.036) - this node is a cross-community bridge._
 - **Why does `as()` connect `Internal Chart Logic` to `Internal Chart Logic`, `Chart Resizing Utilities`, `Lightweight Charts Core`, `Price Scale Internal`, `Chart Rendering Internal`, `Formatter Update Logic`, `Cache and UI Internal`, `File System Internal`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+  _High betweenness centrality (0.034) - this node is a cross-community bridge._
 - **Why does `sn()` connect `Scroll and Position Internal` to `Chart Resizing Utilities`, `Lightweight Charts Core`, `Chart Subscription API`, `Visible Range Utilities`, `Tick Mark Formatting`, `Internal Chart Components`, `Time Coordinate Mapping`, `Internal Chart Logic`, `Internal Chart Constructor`, `Internal Data Formatting`, `Coordinate Mapping Internal`, `Coordinate Conversion Internal`, `Internal Chart Core`, `Internal Utility Classes`, `Deployment Status State`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._
 - **What connects `levelToStatus`, `InstrumentProfile`, `INSTRUMENT_PROFILES` to the rest of the system?**
   _333 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Backtest Payload Models` be split into smaller, more focused modules?**

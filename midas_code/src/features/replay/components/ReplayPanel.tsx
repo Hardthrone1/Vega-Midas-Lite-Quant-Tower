@@ -1,6 +1,6 @@
 // src/features/replay/components/ReplayPanel.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Badge, Card, Panel } from '../../../shared/ui'
+import { Badge, Card } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { ReplayChart } from './ReplayChart'
 import { emitReplayEvent, onReplayEvent } from '../lib/replayEvents'
@@ -172,22 +172,21 @@ export function ReplayPanel() {
   const tickInfo = scheduler.mode !== 'bar_close' ? ` · tick ${scheduler.currentTickIndex + 1}` : ''
 
   return (
-    <Panel
-      className="replay-panel"
-      ref={(el: HTMLElement | null) => { panelRef.current = el }}
-    >
-      <header className="panel-header">
-        <div className="panel-header-left">
-          <span className="panel-step">Step 03</span>
-          <h1 className="panel-title">Replay</h1>
+    <section className="replay-panel" ref={(el: HTMLElement | null) => { panelRef.current = el }}>
+      {/* Single-row unified header */}
+      <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="flex items-baseline gap-2 flex-1 min-w-0">
+          <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Step 03</span>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Replay</h1>
         </div>
-        <div className="panel-header-right">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             type="button"
-            className="replay-fs-btn"
+            className="w-8 h-8 inline-flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 bg-transparent hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10 text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
             onClick={() => setSidecarOpen(o => !o)}
             aria-expanded={sidecarOpen}
             aria-label={sidecarOpen ? 'Hide contract panel' : 'Show contract panel'}
+            title={sidecarOpen ? 'Hide' : 'Show'}
           >
             {sidecarOpen ? '⊞' : '⊟'}
           </button>
@@ -276,6 +275,6 @@ export function ReplayPanel() {
           </aside>
         )}
       </div>
-    </Panel>
+    </section>
   )
 }

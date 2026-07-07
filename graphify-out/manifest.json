@@ -510,8 +510,8 @@
     "semantic_hash": ""
   },
   "launch_vega_suite.ps1": {
-    "mtime": 1783391851.7459211,
-    "ast_hash": "81e7d79e6b09c863327f8a55822bb390",
+    "mtime": 1783396685.628421,
+    "ast_hash": "a449442f2a364655ab0ebc5c4ef78a88",
     "semantic_hash": ""
   },
   "list_vega.py": {
@@ -1217,6 +1217,11 @@
   "midas_code/src/features/swarm/components/SwarmHeader.tsx": {
     "mtime": 1783391851.9065983,
     "ast_hash": "9140df2c0370b7317f63c13b1cb3ed84",
+    "semantic_hash": ""
+  },
+  "stop_vega_suite.ps1": {
+    "mtime": 1783396459.9286637,
+    "ast_hash": "fe2df8e62eb9e9a98c5fb476ca16ffc9",
     "semantic_hash": ""
   }
 }

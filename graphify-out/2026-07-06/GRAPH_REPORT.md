@@ -1,16 +1,16 @@
 # Graph Report - TradingView-Suite  (2026-07-06)
 
 ## Corpus Check
-- 244 files · ~96,772 words
+- 244 files · ~96,991 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2076 nodes · 4750 edges · 125 communities (78 shown, 47 thin omitted)
+- 2075 nodes · 4750 edges · 126 communities (79 shown, 47 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 41 edges (avg confidence: 0.73)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0263c265`
+- Built from commit: `fc3728a6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -26,7 +26,6 @@
 - [[_COMMUNITY_Internal Chart Components|Internal Chart Components]]
 - [[_COMMUNITY_Chart Rendering Internal|Chart Rendering Internal]]
 - [[_COMMUNITY_Automated Screenshot Service|Automated Screenshot Service]]
-- [[_COMMUNITY_Internal Chart Constructor|Internal Chart Constructor]]
 - [[_COMMUNITY_Command Router CLI|Command Router CLI]]
 - [[_COMMUNITY_Browser Tab Management|Browser Tab Management]]
 - [[_COMMUNITY_Coordinate Conversion Internal|Coordinate Conversion Internal]]
@@ -39,7 +38,6 @@
 - [[_COMMUNITY_Frontend Dependencies|Frontend Dependencies]]
 - [[_COMMUNITY_Frontend Dependencies|Frontend Dependencies]]
 - [[_COMMUNITY_MCP Server Configuration|MCP Server Configuration]]
-- [[_COMMUNITY_Chart Element Removal|Chart Element Removal]]
 - [[_COMMUNITY_Replay and Agent UI|Replay and Agent UI]]
 - [[_COMMUNITY_Internal Chart Events|Internal Chart Events]]
 - [[_COMMUNITY_Chart Options Internal|Chart Options Internal]]
@@ -48,7 +46,6 @@
 - [[_COMMUNITY_File System Internal|File System Internal]]
 - [[_COMMUNITY_Series Management API|Series Management API]]
 - [[_COMMUNITY_Internal Chart Logic|Internal Chart Logic]]
-- [[_COMMUNITY_Chart Resizing Utilities|Chart Resizing Utilities]]
 - [[_COMMUNITY_Internal Data Converters|Internal Data Converters]]
 - [[_COMMUNITY_Vault Sync Service|Vault Sync Service]]
 - [[_COMMUNITY_Series Options API|Series Options API]]
@@ -61,6 +58,7 @@
 - [[_COMMUNITY_Data Stream Polling|Data Stream Polling]]
 - [[_COMMUNITY_Internal Chart Rendering|Internal Chart Rendering]]
 - [[_COMMUNITY_Internal Chart State|Internal Chart State]]
+- [[_COMMUNITY_Coordinate Mapping Internal|Coordinate Mapping Internal]]
 - [[_COMMUNITY_Internal Chart Core|Internal Chart Core]]
 - [[_COMMUNITY_Strategy Store State|Strategy Store State]]
 - [[_COMMUNITY_Strategy Store State|Strategy Store State]]
@@ -90,8 +88,6 @@
 - [[_COMMUNITY_Internal Chart State|Internal Chart State]]
 - [[_COMMUNITY_Internal Chart Logic|Internal Chart Logic]]
 - [[_COMMUNITY_Vega Gateway Server|Vega Gateway Server]]
-- [[_COMMUNITY_Internal Chart Rendering|Internal Chart Rendering]]
-- [[_COMMUNITY_Internal Data Formatting|Internal Data Formatting]]
 - [[_COMMUNITY_Formatter Update Logic|Formatter Update Logic]]
 - [[_COMMUNITY_Internal Chart Core|Internal Chart Core]]
 - [[_COMMUNITY_Replay Control API|Replay Control API]]
@@ -99,7 +95,6 @@
 - [[_COMMUNITY_Chart Markers Internal|Chart Markers Internal]]
 - [[_COMMUNITY_Internal Chart Core|Internal Chart Core]]
 - [[_COMMUNITY_UI Component Library|UI Component Library]]
-- [[_COMMUNITY_Strategy Property Schemas|Strategy Property Schemas]]
 - [[_COMMUNITY_UI Component Library|UI Component Library]]
 - [[_COMMUNITY_Strategy Property Schemas|Strategy Property Schemas]]
 - [[_COMMUNITY_Parameter Sweep Wrapper|Parameter Sweep Wrapper]]
@@ -123,6 +118,7 @@
 - [[_COMMUNITY_End-to-End Testing|End-to-End Testing]]
 - [[_COMMUNITY_List Component Internals|List Component Internals]]
 - [[_COMMUNITY_CLI Integration Tests|CLI Integration Tests]]
+- [[_COMMUNITY_Community 114|Community 114]]
 - [[_COMMUNITY_Core Base Classes|Core Base Classes]]
 - [[_COMMUNITY_Value Formatting Utilities|Value Formatting Utilities]]
 - [[_COMMUNITY_Pine Script Retrieval|Pine Script Retrieval]]
@@ -143,21 +139,21 @@
 10. `Be` - 33 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `BacktestPanel()` --calls--> `useStrategyStore`  [EXTRACTED]
+  midas_code/src/features/backtest/components/BacktestPanel.tsx → midas_code/src/store/useStrategyStore.ts
+- `CanonicalSpecPanel()` --calls--> `useStrategyStore`  [EXTRACTED]
+  midas_code/src/features/canonical-spec/components/CanonicalSpecPanel.tsx → midas_code/src/store/useStrategyStore.ts
+- `VaultPanel()` --calls--> `useStrategyStore`  [EXTRACTED]
+  midas_code/src/features/vault/components/VaultPanel.tsx → midas_code/src/store/useStrategyStore.ts
 - `AgentConsole()` --calls--> `useStrategyStore`  [EXTRACTED]
   midas_code/src/features/agent-console/components/AgentConsole.tsx → midas_code/src/store/useStrategyStore.ts
 - `deleteAlerts()` --calls--> `evaluate()`  [EXTRACTED]
   tradingview-mcp-jackson/src/core/alerts.js → tradingview-mcp-jackson/src/connection.js
-- `discover()` --calls--> `evaluate()`  [EXTRACTED]
-  tradingview-mcp-jackson/src/core/health.js → tradingview-mcp-jackson/src/connection.js
-- `uiState()` --calls--> `evaluate()`  [EXTRACTED]
-  tradingview-mcp-jackson/src/core/health.js → tradingview-mcp-jackson/src/connection.js
-- `setInputs()` --calls--> `evaluate()`  [EXTRACTED]
-  tradingview-mcp-jackson/src/core/indicators.js → tradingview-mcp-jackson/src/connection.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (125 total, 47 thin omitted)
+## Communities (126 total, 47 thin omitted)
 
 ### Community 0 - "Backtest Payload Models"
 Cohesion: 0.05
@@ -169,18 +165,18 @@ Nodes (28): assertSafeDate(), assertSafeRulesPath(), __dirname, getSession(), lo
 
 ### Community 2 - "Lightweight Charts Core"
 Cohesion: 0.06
-Nodes (16): ae(), ce(), de(), fe(), gs(), In(), mt(), ni (+8 more)
+Nodes (18): ae(), ce(), de(), fe(), hi(), In(), Js(), li() (+10 more)
 
 ### Community 5 - "Data Formatting Utilities"
-Cohesion: 0.15
-Nodes (8): bs(), Ft, ks(), ls(), ms(), Ss(), ws, xs()
+Cohesion: 0.14
+Nodes (9): bs(), Ft, gs(), ks(), ls(), ms(), Ss(), ws (+1 more)
 
 ### Community 7 - "Chart State Controller"
 Cohesion: 0.14
 Nodes (25): getState(), getVisibleRange(), manageIndicator(), scrollToDate(), setSymbol(), setTimeframe(), setType(), setVisibleRange() (+17 more)
 
 ### Community 8 - "Internal Chart Components"
-Cohesion: 0.15
+Cohesion: 0.16
 Nodes (6): an(), en(), hn(), ln(), rn(), tn()
 
 ### Community 10 - "Automated Screenshot Service"
@@ -199,13 +195,13 @@ Nodes (19): discover(), healthCheck(), uiState(), closeTab(), newTab(), click(),
 Cohesion: 0.07
 Nodes (34): ALLOWED_ORIGINS, app, callProvider(), circuitBreakers, client, coerceConditionType(), CONDITION_TYPES, cors (+26 more)
 
-### Community 18 - "Logical Range Internal"
+### Community 19 - "Price Coordinate Mapping"
 Cohesion: 0.11
-Nodes (3): fi(), wi(), zi
+Nodes (5): fi(), ni, pi(), si, y()
 
 ### Community 20 - "Internal Utility Classes"
-Cohesion: 0.20
-Nodes (4): nn(), ot(), R(), T()
+Cohesion: 0.22
+Nodes (3): nn(), ot(), R()
 
 ### Community 21 - "Frontend Dependencies"
 Cohesion: 0.05
@@ -224,28 +220,24 @@ Cohesion: 0.05
 Nodes (39): markerFromEvent(), ReplayChart(), ReplayChartProps, ReplayMarker, toChartTime(), DiagnosticItem, ReplayDiagnosticsOverlayProps, INSTRUMENT_PROFILES (+31 more)
 
 ### Community 27 - "Chart Options Internal"
-Cohesion: 0.13
-Nodes (3): le(), nt, xt()
+Cohesion: 0.17
+Nodes (3): gi(), le(), nt
 
 ### Community 28 - "TypeScript Configuration"
-Cohesion: 0.10
-Nodes (17): buildPythonBacktestPayload(), PythonBacktestPayload, AgentLevel, AgentMessage, BacktestResult, DeployStatus, initialState, LintResult (+9 more)
+Cohesion: 0.07
+Nodes (25): buildPythonBacktestPayload(), PythonBacktestPayload, AgentLevel, AgentMessage, BacktestResult, DeployStatus, initialState, LintResult (+17 more)
 
 ### Community 29 - "TypeScript Configuration"
-Cohesion: 0.13
-Nodes (22): DiagnosticsPanel(), fmtNum(), fmtPct(), EXECUTION_MODES, intakeFormSchema, IntakeFormValues, IntakeResponseSchema, pickEnum() (+14 more)
+Cohesion: 0.12
+Nodes (25): DiagnosticsPanel(), fmtNum(), fmtPct(), EXECUTION_MODES, intakeFormSchema, IntakeFormValues, IntakeResponseSchema, pickEnum() (+17 more)
 
 ### Community 34 - "Internal Data Converters"
-Cohesion: 0.14
+Cohesion: 0.16
 Nodes (4): ee(), he, qn(), se()
 
 ### Community 35 - "Vault Sync Service"
 Cohesion: 0.08
 Nodes (24): author, bugs, url, dependencies, cors, dotenv, express, prom-client (+16 more)
-
-### Community 36 - "Series Options API"
-Cohesion: 0.11
-Nodes (4): ne(), pe(), ve(), zn()
 
 ### Community 37 - "Internal Data Mapping"
 Cohesion: 0.29
@@ -256,24 +248,20 @@ Cohesion: 0.16
 Nodes (3): J, ki(), ps()
 
 ### Community 41 - "Strategy Validation Schemas"
-Cohesion: 0.15
-Nodes (10): App(), hasReduxDevtoolsExtension(), setupDevtools(), AgentConsole, BADGE_COLOR, PortalShell(), ThemeMode, ThemeModeContext (+2 more)
+Cohesion: 0.21
+Nodes (7): App(), hasReduxDevtoolsExtension(), setupDevtools(), PortalShell(), ThemeMode, ThemeModeContext, VegaThemeProvider()
 
 ### Community 42 - "Strategy Validation Schemas"
-Cohesion: 0.12
-Nodes (24): AgentTimelinePanel(), levelToStatus, BacktestPanel(), CanonicalSpecPanel(), SwarmHeader(), SwarmHeaderProps, AgentMsg, AGENTS (+16 more)
+Cohesion: 0.09
+Nodes (28): AgentTimelinePanel(), levelToStatus, BacktestPanel(), CanonicalSpecPanel(), SwarmHeader(), SwarmHeaderProps, AgentMsg, AGENTS (+20 more)
 
 ### Community 43 - "Data Stream Polling"
 Cohesion: 0.18
 Nodes (16): fetchAllPanes(), fetchLabels(), fetchLastBar(), fetchLines(), fetchQuote(), fetchTables(), fetchValues(), pollLoop() (+8 more)
 
-### Community 44 - "Internal Chart Rendering"
-Cohesion: 0.11
-Nodes (4): ai, ei, hi(), li()
-
 ### Community 45 - "Internal Chart State"
-Cohesion: 0.12
-Nodes (3): Cn, on, st
+Cohesion: 0.13
+Nodes (5): Cn, H, on, X(), Z()
 
 ### Community 47 - "Internal Chart Core"
 Cohesion: 0.13
@@ -284,12 +272,12 @@ Cohesion: 0.09
 Nodes (21): compilerOptions, allowImportingTsExtensions, composite, declaration, declarationMap, emitDeclarationOnly, isolatedModules, lib (+13 more)
 
 ### Community 49 - "Strategy Store State"
-Cohesion: 0.20
-Nodes (17): count_bullets(), extract_code_blocks(), extract_headings(), extract_inline_codes(), extract_paths(), extract_urls(), Line-based fenced code block extractor.      Handles ``` and ~~~ fences with v, read_file() (+9 more)
+Cohesion: 0.22
+Nodes (16): count_bullets(), extract_code_blocks(), extract_headings(), extract_inline_codes(), extract_paths(), extract_urls(), Line-based fenced code block extractor.      Handles ``` and ~~~ fences with v, read_file() (+8 more)
 
 ### Community 50 - "Internal Chart UI"
 Cohesion: 0.18
-Nodes (4): bi(), di(), mi, vi()
+Nodes (3): di(), mi, wi()
 
 ### Community 51 - "Liquidity Sweep Backtester"
 Cohesion: 0.26
@@ -312,8 +300,8 @@ Cohesion: 0.19
 Nodes (3): Et, ie(), kt
 
 ### Community 56 - "Replay Event System"
-Cohesion: 0.22
-Nodes (16): count_bullets(), extract_code_blocks(), extract_headings(), extract_inline_codes(), extract_paths(), extract_urls(), Line-based fenced code block extractor.      Handles ``` and ~~~ fences with v, read_file() (+8 more)
+Cohesion: 0.20
+Nodes (17): count_bullets(), extract_code_blocks(), extract_headings(), extract_inline_codes(), extract_paths(), extract_urls(), Line-based fenced code block extractor.      Handles ``` and ~~~ fences with v, read_file() (+9 more)
 
 ### Community 57 - "Replay Event System"
 Cohesion: 0.16
@@ -347,9 +335,9 @@ Nodes (5): ACTION_LABELS, ActionProposal, AgentConsole(), Message, Role
 Cohesion: 0.18
 Nodes (6): GraphifyMCPServer, main(), Semantic query across graph nodes, Get full node details, Get all connected nodes, Find shortest path between two nodes (BFS)
 
-### Community 66 - "Chart Subscription API"
-Cohesion: 0.17
-Nodes (3): bn, gi(), vt()
+### Community 67 - "Internal Chart View"
+Cohesion: 0.18
+Nodes (4): ci(), I, oi(), ui()
 
 ### Community 68 - "Internal Chart Properties"
 Cohesion: 0.25
@@ -359,9 +347,13 @@ Nodes (10): detect_file_type(), _is_code_line(), _is_json_content(), _is_yaml_co
 Cohesion: 0.27
 Nodes (11): load_payload(), load_pine_truth(), main(), match_trades(), normalize_dt(), Parity Validator: Compare Python backtest vs Pine truth  Loads backtest_payload., Load backtest payload., Load Pine CSV truth export. (+3 more)
 
-### Community 73 - "Internal Chart State"
-Cohesion: 0.11
-Nodes (5): ci(), ji, oi(), qi(), ui()
+### Community 70 - "Internal Chart Logic"
+Cohesion: 0.07
+Nodes (5): as(), es(), os(), us, ys()
+
+### Community 72 - "Internal Chart Core"
+Cohesion: 0.14
+Nodes (4): bi(), G, vi(), xi
 
 ### Community 75 - "Vega Gateway Server"
 Cohesion: 0.25
@@ -375,13 +367,9 @@ Nodes (8): autoplay(), start(), status(), step(), stop(), trade(), wv(), getRepl
 Cohesion: 0.18
 Nodes (3): kn, qt, vs()
 
-### Community 84 - "UI Component Library"
-Cohesion: 0.22
-Nodes (8): backtestRiskSchema, BacktestRiskSpec, commissionTypeSchema, orderFillModeSchema, qtyTypeSchema, recalcModeSchema, strategyPropertySchema, StrategyPropertySpec
-
 ### Community 86 - "UI Component Library"
-Cohesion: 0.09
-Nodes (7): ct, dt(), ii, k(), u(), wt, _()
+Cohesion: 0.12
+Nodes (6): ct, dt(), k(), u(), wt, _()
 
 ### Community 87 - "Strategy Property Schemas"
 Cohesion: 0.70
@@ -391,17 +379,13 @@ Nodes (4): benchmark_pair(), count_tokens(), main(), print_table()
 Cohesion: 0.31
 Nodes (8): load_backtester(), main(), parse_range(), Parameter Sweep Wrapper Grid-searches over key strategy parameters and produces, Dynamically load the backtester module., Parse 'start,end,step' or 'val1,val2,val3' into list., Run grid search over parameter ranges., run_sweep()
 
-### Community 90 - "Internal Chart Logic"
-Cohesion: 0.25
-Nodes (4): At, Js(), qs(), ye()
+### Community 89 - "Internal Chart Logic"
+Cohesion: 0.16
+Nodes (4): d(), jt, v(), yn
 
 ### Community 91 - "Internal Chart Logic"
 Cohesion: 0.70
 Nodes (4): benchmark_pair(), count_tokens(), main(), print_table()
-
-### Community 92 - "Deployment Status State"
-Cohesion: 0.33
-Nodes (3): H, X(), Z()
 
 ### Community 94 - "MRE WebSocket Server"
 Cohesion: 0.36
@@ -410,10 +394,6 @@ Nodes (3): ReplaySession, ws_stream(), WebSocket
 ### Community 95 - "MRE WebSocket Hook"
 Cohesion: 0.50
 Nodes (3): dest, files, root
-
-### Community 97 - "Price Line Management"
-Cohesion: 0.40
-Nodes (4): AnimatedPopover(), AnimatedPopoverProps, Portal(), PortalProps
 
 ### Community 106 - "Pine Script Deployment"
 Cohesion: 0.33
@@ -428,24 +408,24 @@ Cohesion: 0.50
 Nodes (3): outPath, t, targets
 
 ## Knowledge Gaps
-- **264 isolated node(s):** `SwarmHeaderProps`, `AGENTS`, `AgentMsg`, `SwarmMode`, `GatewayStatus` (+259 more)
+- **264 isolated node(s):** `levelToStatus`, `InstrumentProfile`, `INSTRUMENT_PROFILES`, `Toast`, `SYMBOLS` (+259 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `vn` connect `Chart Data Internal` to `Lightweight Charts Core`, `Price Scale Internal`, `Internal Chart Components`, `Chart Rendering Internal`, `Internal Chart Constructor`, `Coordinate Conversion Internal`, `Cache and UI Internal`, `Price Coordinate Mapping`, `Chart Element Removal`, `Chart Options Internal`, `File System Internal`, `Chart Resizing Utilities`, `Tick Mark Formatting`, `Coordinate Mapping Internal`, `Internal Chart Logic`, `Internal Chart View`, `Internal Chart Rendering`, `Internal Chart Logic`, `Internal Data Formatting`, `Formatter Update Logic`, `Time Coordinate Mapping`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
-- **Why does `yi` connect `Internal Chart State` to `Lightweight Charts Core`, `Internal Data Converters`, `Chart Data Internal`, `Series Options API`, `Internal Chart Rendering`, `WebGL Rendering Utilities`, `Internal Chart Components`, `Internal Chart Rendering`, `Internal Chart Core`, `Logical Range Internal`, `Price Coordinate Mapping`, `Chart Element Removal`?**
+- **Why does `vn` connect `Chart Data Internal` to `Lightweight Charts Core`, `Price Scale Internal`, `Internal Chart Components`, `Internal Chart Constructor`, `Coordinate Conversion Internal`, `Price Coordinate Mapping`, `Chart Element Removal`, `File System Internal`, `Chart Resizing Utilities`, `Visible Range Utilities`, `Internal Chart Logic`, `Internal Chart Rendering`, `Internal Chart Logic`, `Internal Chart Rendering`, `Internal Chart Core`, `UI Component Library`, `Strategy Property Schemas`, `Time Coordinate Mapping`, `List Component Internals`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **Why does `as()` connect `Internal Chart Logic` to `Internal Chart Logic`, `Chart Resizing Utilities`, `Lightweight Charts Core`, `Price Scale Internal`, `Chart Rendering Internal`, `Formatter Update Logic`, `Cache and UI Internal`, `File System Internal`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Why does `sn()` connect `Scroll and Position Internal` to `Chart Resizing Utilities`, `Lightweight Charts Core`, `Chart Subscription API`, `Visible Range Utilities`, `Tick Mark Formatting`, `Internal Chart Components`, `Time Coordinate Mapping`, `Internal Chart Logic`, `Internal Chart Constructor`, `Internal Data Formatting`, `Coordinate Mapping Internal`, `Coordinate Conversion Internal`, `Internal Chart Core`, `Internal Utility Classes`, `Deployment Status State`?**
   _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **Why does `f()` connect `Chart Element Removal` to `Lightweight Charts Core`, `Price Scale Internal`, `Chart Data Internal`, `Data Formatting Utilities`, `Scroll and Position Internal`, `Internal Chart Components`, `Chart Rendering Internal`, `Internal Chart Constructor`, `Internal Chart State`, `Cache and UI Internal`, `Logical Range Internal`, `Price Coordinate Mapping`, `Internal Chart Events`, `Chart Options Internal`, `Chart Resizing Utilities`, `Internal Data Converters`, `Coordinate Mapping Internal`, `Internal Chart Logic`, `Chart Subscription API`, `Internal Chart Logic`, `Internal Chart Logic`, `Internal Chart Rendering`, `Internal Data Formatting`, `Strategy Property Schemas`, `Internal Utility Classes`, `Chart Layout Options`?**
-  _High betweenness centrality (0.024) - this node is a cross-community bridge._
-- **What connects `SwarmHeaderProps`, `AGENTS`, `AgentMsg` to the rest of the system?**
+- **What connects `levelToStatus`, `InstrumentProfile`, `INSTRUMENT_PROFILES` to the rest of the system?**
   _333 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Backtest Payload Models` be split into smaller, more focused modules?**
   _Cohesion score 0.051600573339703776 - nodes in this community are weakly interconnected._
 - **Should `Server Session Management` be split into smaller, more focused modules?**
   _Cohesion score 0.08985507246376812 - nodes in this community are weakly interconnected._
 - **Should `Lightweight Charts Core` be split into smaller, more focused modules?**
-  _Cohesion score 0.057692307692307696 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05647840531561462 - nodes in this community are weakly interconnected._
