@@ -1,7 +1,8 @@
 // src/features/swarm/components/SwarmPanel.tsx
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Panel, Badge, Button, Card } from '../../../shared/ui'
+import { Panel, Button, Card } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
+import { SwarmHeader } from './SwarmHeader'
 
 const GW_URL = 'http://127.0.0.1:8001'
 const GW_POLL_MS = 8000
@@ -240,25 +241,17 @@ export function SwarmPanel() {
     })
   }
 
-  const gwBadgeStatus = gatewayStatus === 'online' ? 'ok' : gatewayStatus === 'offline' ? 'err' : 'idle'
-
   return (
-    <Panel eyebrow="Swarm › Step 04" title="Code generation · repair"
-      actions={
-        <>
-          <Badge status={gwBadgeStatus} className={gatewayStatus === 'online' ? 'status-live badge-live' : ''}>Gateway {gatewayStatus}</Badge>
-          <button
-            type="button"
-            className="panel-expand-btn"
-            onClick={toggleFullscreen}
-            aria-label={isFs ? 'Exit fullscreen' : 'Expand panel to fullscreen'}
-          >
-            {isFs ? '⤡' : '⤢'}
-          </button>
-        </>
-      }
+    <Panel
       className="swarm-panel"
       ref={(el: HTMLElement | null) => { panelRef.current = el }}>
+      <SwarmHeader
+        breadcrumb="Swarm › Step 04"
+        title="Code generation · repair"
+        gatewayStatus={gatewayStatus}
+        onExpand={toggleFullscreen}
+        isFullscreen={isFs}
+      />
       <div className="swarm-workspace">
 
         {/* LEFT: Gateway + Agents + Message window */}
