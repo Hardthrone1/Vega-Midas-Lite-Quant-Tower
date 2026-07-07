@@ -1,0 +1,24 @@
+---
+source_file: "Vega_code/package.json"
+type: "code"
+community: "Frontend Dependencies"
+location: "L12"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Frontend_Dependencies
+---
+
+# dependencies
+
+## Connections
+- [[lightweight-charts]] - `contains` [EXTRACTED]
+- [[lucide-react]] - `contains` [EXTRACTED]
+- [[package.json]] - `contains` [EXTRACTED]
+- [[playwright]] - `contains` [EXTRACTED]
+- [[react]] - `contains` [EXTRACTED]
+- [[react-dom]] - `contains` [EXTRACTED]
+- [[zod]] - `contains` [EXTRACTED]
+- [[zustand]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Frontend_Dependencies

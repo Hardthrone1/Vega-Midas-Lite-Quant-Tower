@@ -1,0 +1,19 @@
+---
+source_file: "lightweight-charts.standalone.production.js"
+type: "code"
+community: "Visible Range Utilities"
+location: "L7"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Visible_Range_Utilities
+---
+
+# S()
+
+## Connections
+- [[.m()]] - `calls` [EXTRACTED]
+- [[b()]] - `calls` [EXTRACTED]
+- [[lightweight-charts.standalone.production.js]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Visible_Range_Utilities
