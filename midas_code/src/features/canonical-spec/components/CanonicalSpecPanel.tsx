@@ -33,15 +33,20 @@ export function CanonicalSpecPanel() {
   }
 
   return (
-    <Panel eyebrow="Step 02" title="Canonical spec" actions={
-      <>
-        {validBadge}
-        <div className="seg">
-          <button className={`seg-btn ${view === 'summary' ? 'seg-on' : ''}`} onClick={() => setView('summary')}>summary</button>
-          <button className={`seg-btn ${view === 'json' ? 'seg-on' : ''}`} onClick={() => setView('json')}>json</button>
+    <Panel>
+      <header className="panel-header">
+        <div className="panel-header-left">
+          <span className="panel-step">Step 02</span>
+          <h1 className="panel-title">Canonical spec</h1>
         </div>
-      </>
-    }>
+        <div className="panel-header-right">
+          {validBadge}
+          <div className="seg">
+            <button className={`seg-btn ${view === 'summary' ? 'seg-on' : ''}`} onClick={() => setView('summary')}>summary</button>
+            <button className={`seg-btn ${view === 'json' ? 'seg-on' : ''}`} onClick={() => setView('json')}>json</button>
+          </div>
+        </div>
+      </header>
       {!specValidation.valid && specValidation.issues.length > 0 && (
         <Card className="issues">
           {specValidation.issues.map((i, n) => (

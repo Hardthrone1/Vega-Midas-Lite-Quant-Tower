@@ -60,9 +60,16 @@ export function BacktestPanel() {
   ]
 
   return (
-    <Panel eyebrow="Step 06" title="Backtest preview" actions={
-      <Button variant="primary" onClick={runBacktest} disabled={!canonicalSpec}>Run backtest</Button>
-    }>
+    <Panel>
+      <header className="panel-header">
+        <div className="panel-header-left">
+          <span className="panel-step">Step 06</span>
+          <h1 className="panel-title">Backtest preview</h1>
+        </div>
+        <div className="panel-header-right">
+          <Button variant="primary" onClick={runBacktest} disabled={!canonicalSpec}>Run backtest</Button>
+        </div>
+      </header>
       {!has ? (
         <Empty>No backtest yet. Run one to preview the equity curve and<br />edge metrics before the live-readiness gate.</Empty>
       ) : (

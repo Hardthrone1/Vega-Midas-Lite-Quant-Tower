@@ -10,8 +10,8 @@ const GW_POLL_MS = 8000
 const AGENTS = [
   { name: 'Hermes',   role: 'Router · Primary',      model: 'llama-3.3-70b',            tier: 'INTAKE' },
   { name: 'Nemotron', role: 'Quant + Logic',          model: 'nemotron-3-ultra',          tier: 'BACKTEST' },
-  { name: 'Gemini',   role: 'Fast Synthesis',         model: 'gemini-2.0-flash',          tier: 'GEMINI' },
-  { name: 'Claude',   role: 'Pine Script Authority',  model: 'llama-4-maverick',          tier: 'PINE' },
+  { name: 'Gemini',   role: 'Multi-Modal Synthesis',  model: 'gemini-2.0-flash',          tier: 'SYNTHESIS' },
+  { name: 'Claude',   role: 'Pine Script Authority',  model: 'claude-opus',               tier: 'PINE' },
   { name: 'Nex',      role: 'Agentic Coding',         model: 'llama-4-maverick',          tier: 'PINE' },
 ]
 
@@ -100,7 +100,8 @@ export function SwarmPanel() {
       const d = await r.json()
       if (r.ok) {
         setGatewayStatus('online')
-        setGatewayMeta(`v${d.version || '?'} · ${d.openrouter || '?'} · ${new Date(d.timestamp).toLocaleTimeString()}`)
+        const ts = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()
+        setGatewayMeta(`v${d.version || '?'} · ${d.openrouter || '?'} · ${ts}`)
       } else {
         setGatewayStatus('offline')
         setGatewayMeta('Gateway not reachable — run: node Vega_Gateway_Server.js')
@@ -293,10 +294,10 @@ export function SwarmPanel() {
         {/* RIGHT: Mode toggle + Input + Output */}
         <div className="swarm-right">
           <Card className="swarm-card">
-            {/* Mode toggle */}
+        {/* Mode toggle */}
             <div className="seg" style={{ marginBottom: 16 }}>
-              <button className={`seg-btn ${mode === 'generate' ? 'seg-on' : ''}`} onClick={() => setMode('generate')}>⬡ Generate</button>
-              <button className={`seg-btn ${mode === 'repair' ? 'seg-on' : ''}`} onClick={() => setMode('repair')}>⚙ Repair</button>
+              <button className={`seg-btn ${mode === 'generate' ? 'seg-on' : ''}`} onClick={() => setMode('generate')}>Generate</button>
+              <button className={`seg-btn ${mode === 'repair' ? 'seg-on' : ''}`} onClick={() => setMode('repair')}>Repair</button>
             </div>
 
             {mode === 'generate' && (
@@ -305,7 +306,7 @@ export function SwarmPanel() {
                 <Button variant="primary"
                   disabled={busy || gatewayStatus !== 'online'}
                   onClick={handleGenerate}>
-                  {busy ? '⏳ Generating…' : '⬡ Generate Pine Script'}
+                  {busy ? '⏳ Generating…' : 'Generate Pine Script'}
                 </Button>
               </div>
             )}
@@ -328,7 +329,7 @@ export function SwarmPanel() {
                 <Button variant="primary"
                   disabled={busy || gatewayStatus !== 'online' || !repairInput.trim()}
                   onClick={handleRepair}>
-                  {busy ? '⏳ Repairing…' : '⚙ Repair Pine Script'}
+                  {busy ? '⏳ Repairing…' : 'Repair Pine Script'}
                 </Button>
               </div>
             )}

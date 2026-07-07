@@ -330,11 +330,16 @@ export function StrategyIntakePanel() {
     statusKind === 'err' ? 'error' : statusKind === 'warn' ? 'warning' : statusKind === 'ok' ? 'success' : 'brand';
 
   return (
-    <Panel
-      eyebrow="Step 01"
-      title="Strategy intake"
-      actions={canonicalSpec ? <Badge status="ok">spec live</Badge> : <Badge>no spec</Badge>}
-    >
+    <Panel>
+      <header className="panel-header">
+        <div className="panel-header-left">
+          <span className="panel-step">Step 01</span>
+          <h1 className="panel-title">Strategy intake</h1>
+        </div>
+        <div className="panel-header-right">
+          {canonicalSpec ? <Badge status="ok">spec live</Badge> : <Badge>no spec</Badge>}
+        </div>
+      </header>
       <form className="col" onSubmit={handleSubmit(startSpec)} noValidate>
         <div className="system-state-strip">
           <div className="sss-head">

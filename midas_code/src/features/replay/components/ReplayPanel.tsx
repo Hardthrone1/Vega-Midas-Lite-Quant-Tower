@@ -173,10 +173,15 @@ export function ReplayPanel() {
 
   return (
     <Panel
-      eyebrow="Step 03"
-      title="Replay"
-      actions={
-        <>
+      className="replay-panel"
+      ref={(el: HTMLElement | null) => { panelRef.current = el }}
+    >
+      <header className="panel-header">
+        <div className="panel-header-left">
+          <span className="panel-step">Step 03</span>
+          <h1 className="panel-title">Replay</h1>
+        </div>
+        <div className="panel-header-right">
           <button
             type="button"
             className="replay-fs-btn"
@@ -187,11 +192,8 @@ export function ReplayPanel() {
             {sidecarOpen ? '⊞' : '⊟'}
           </button>
           <Badge status={scheduler.status === 'playing' ? 'ok' : 'info'}>{scheduler.status}</Badge>
-        </>
-      }
-      className="replay-panel"
-      ref={(el: HTMLElement | null) => { panelRef.current = el }}
-    >
+        </div>
+      </header>
       {/* Toast container */}
       {toasts.length > 0 && (
         <div className="replay-toast-stack">

@@ -17,9 +17,16 @@ export function AgentTimelinePanel() {
   }, [agentMessages.length])
 
   return (
-    <Panel eyebrow="Live" title="Agent timeline" actions={
-      agentMessages.length > 0 ? <Button onClick={clearAgentMessages} aria-label="Clear agent timeline">Clear</Button> : null
-    }>
+    <Panel>
+      <header className="panel-header">
+        <div className="panel-header-left">
+          <span className="panel-step">Live</span>
+          <h1 className="panel-title">Agent timeline</h1>
+        </div>
+        <div className="panel-header-right">
+          {agentMessages.length > 0 && <Button onClick={clearAgentMessages} aria-label="Clear agent timeline">Clear</Button>}
+        </div>
+      </header>
       {agentMessages.length === 0 ? (
         <Empty>Agent activity appears here as the pipeline runs.</Empty>
       ) : (

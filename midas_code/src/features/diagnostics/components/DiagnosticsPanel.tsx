@@ -24,9 +24,16 @@ export function DiagnosticsPanel() {
   const pct = Math.round(deployProgress(deployStatus) * 100)
 
   return (
-    <Panel eyebrow="Step 05" title="Diagnostics & deploy gate" actions={
-      <Button variant="primary" onClick={runChecks} disabled={!canonicalSpec}>Run checks</Button>
-    }>
+    <Panel>
+      <header className="panel-header">
+        <div className="panel-header-left">
+          <span className="panel-step">Step 05</span>
+          <h1 className="panel-title">Diagnostics & deploy gate</h1>
+        </div>
+        <div className="panel-header-right">
+          <Button variant="primary" onClick={runChecks} disabled={!canonicalSpec}>Run checks</Button>
+        </div>
+      </header>
       <div className="col">
         {/* Deploy gate */}
         <Card>

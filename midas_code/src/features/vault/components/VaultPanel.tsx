@@ -16,9 +16,16 @@ export function VaultPanel() {
   const totalItems = versionHistory.length + pineVault.length
 
   return (
-    <Panel eyebrow="Step 07" title="Strategy vault" actions={
-      <Button variant="primary" onClick={save} disabled={!canonicalSpec}>Save version</Button>
-    }>
+    <Panel>
+      <header className="panel-header">
+        <div className="panel-header-left">
+          <span className="panel-step">Step 07</span>
+          <h1 className="panel-title">Strategy vault</h1>
+        </div>
+        <div className="panel-header-right">
+          <Button variant="primary" onClick={save} disabled={!canonicalSpec}>Save version</Button>
+        </div>
+      </header>
       {totalItems === 0 ? (
         <Empty>No saved versions. Save a spec version here or generate Pine Script via the Swarm tab — both land in this registry.</Empty>
       ) : (
