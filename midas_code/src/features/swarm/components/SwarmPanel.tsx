@@ -63,8 +63,10 @@ export function SwarmPanel() {
   const [repairRequest, setRepairRequest] = useState('')
   const [lintDisplay, setLintDisplay] = useState<{ state: 'pass' | 'warn' | 'fail'; text: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [isFs, setIsFs] = useState(false)
   const msgIdRef = useRef(1)
   const msgsEndRef = useRef<HTMLDivElement | null>(null)
+  const panelRef = useRef<HTMLElement | null>(null)
 
   const addMsg = useCallback((who: string, txt: string, level: AgentMsg['level'] = 'sys') => {
     setAgentMsgs(prev => [...prev, { id: msgIdRef.current++, who, txt, level }])
@@ -74,6 +76,21 @@ export function SwarmPanel() {
   useEffect(() => {
     msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [agentMsgs])
+
+  // Track real fullscreen state so the expand toggle reflects it
+  useEffect(() => {
+    const onFsChange = () => setIsFs(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', onFsChange)
+    return () => document.removeEventListener('fullscreenchange', onFsChange)
+  }, [])
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      panelRef.current?.requestFullscreen?.()
+    } else {
+      document.exitFullscreen?.()
+    }
+  }, [])
 
   // Gateway polling
   const checkGateway = useCallback(async () => {
@@ -226,19 +243,28 @@ export function SwarmPanel() {
   const gwBadgeStatus = gatewayStatus === 'online' ? 'ok' : gatewayStatus === 'offline' ? 'err' : 'idle'
 
   return (
-    <Panel eyebrow="Swarm" title="Code generation · repair"
-      actions={<Badge status={gwBadgeStatus} className={gatewayStatus === 'online' ? 'status-live badge-live' : ''}>Gateway {gatewayStatus}</Badge>}
-      className="swarm-panel">
+    <Panel eyebrow="Swarm › Step 04" title="Code generation · repair"
+      actions={
+        <>
+          <Badge status={gwBadgeStatus} className={gatewayStatus === 'online' ? 'status-live badge-live' : ''}>Gateway {gatewayStatus}</Badge>
+          <button
+            type="button"
+            className="panel-expand-btn"
+            onClick={toggleFullscreen}
+            aria-label={isFs ? 'Exit fullscreen' : 'Expand panel to fullscreen'}
+          >
+            {isFs ? '⤡' : '⤢'}
+          </button>
+        </>
+      }
+      className="swarm-panel"
+      ref={(el: HTMLElement | null) => { panelRef.current = el }}>
       <div className="swarm-workspace">
 
         {/* LEFT: Gateway + Agents + Message window */}
         <div className="swarm-left">
           <Card className="swarm-card">
             <span className="eyebrow">Gateway · Port 8001</span>
-            <div className="swarm-gw-row">
-              <span className={`swarm-gw-dot swarm-gw-dot--${gatewayStatus}${gatewayStatus === 'online' ? ' live-indicator status-live' : ''}`} />
-              <span className={`swarm-gw-label${gatewayStatus === 'online' ? ' live-text status-live' : ''}`}>{gatewayStatus.toUpperCase()}</span>
-            </div>
             <div className="swarm-gw-meta">{gatewayMeta}</div>
             <div className="swarm-agent-grid">
               {AGENTS.map(a => (
