@@ -1,4 +1,7 @@
-# midas-kill.ps1 — stop MIDAS services (hidden launcher; no CMD windows required)
+# Vega-kill.ps1 — stop Vega services (hidden launcher; no CMD windows required)
+# Set execution policy for this scope to avoid prompts
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+
 $ErrorActionPreference = 'SilentlyContinue'
 
 $patterns = @(

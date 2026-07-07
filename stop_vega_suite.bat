@@ -7,6 +7,6 @@ if /I not "%~1"=="hidden" (
 )
 
 echo [Vega Tower] Stopping services...
-powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0Vega-kill.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Vega-kill.ps1"
 echo [Vega Tower] Services stopped.
 exit /b 0

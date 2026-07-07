@@ -995,8 +995,8 @@
     "semantic_hash": ""
   },
   "midas_code/package.json": {
-    "mtime": 1783384260.9934058,
-    "ast_hash": "8984b75949fb82beb0f0ad15d1f92cb8",
+    "mtime": 1783384595.9879284,
+    "ast_hash": "987cb568935e470850a9bc03b864e692",
     "semantic_hash": ""
   },
   "midas_code/scripts/copy-fonts.mjs": {
@@ -1005,18 +1005,8 @@
     "semantic_hash": ""
   },
   "midas_code/src/app/App.tsx": {
-    "mtime": 1783384260.997395,
-    "ast_hash": "d74c5331624bb420fb584f7708d1dae8",
-    "semantic_hash": ""
-  },
-  "midas_code/src/app/layout/AppShell.tsx": {
-    "mtime": 1783384260.9984095,
-    "ast_hash": "381a0507f167efd3f1b6d0a9f852ed2b",
-    "semantic_hash": ""
-  },
-  "midas_code/src/app/layout/TopStatusBar.tsx": {
-    "mtime": 1783384260.9994056,
-    "ast_hash": "15c17fa2bce2de8dcb4716ba8e9c4adf",
+    "mtime": 1783384595.9889307,
+    "ast_hash": "a61c6f054e586cb711802c5b219c3dfa",
     "semantic_hash": ""
   },
   "midas_code/src/dev/setupDevtools.ts": {
@@ -1080,12 +1070,12 @@
     "semantic_hash": ""
   },
   "midas_code/src/features/strategy-intake/components/StrategyIntakePanel.tsx": {
-    "mtime": 1783384261.0004056,
-    "ast_hash": "b80f63393bae9e60ffe6aea18374d1eb",
+    "mtime": 1783388033.708281,
+    "ast_hash": "5c14fc0c8fa12e620bbe35441ae08922",
     "semantic_hash": ""
   },
   "midas_code/src/features/swarm/components/SwarmPanel.tsx": {
-    "mtime": 1783384261.1144066,
+    "mtime": 1783384741.3707204,
     "ast_hash": "2b255647434e4766193d339e110ac7c8",
     "semantic_hash": ""
   },
@@ -1095,13 +1085,13 @@
     "semantic_hash": ""
   },
   "midas_code/src/main.tsx": {
-    "mtime": 1783384261.1154032,
-    "ast_hash": "0346df7e4f55e201b61b6e248dd9c2d6",
+    "mtime": 1783384595.9979327,
+    "ast_hash": "45f0dfa3a51ed8090d829351267e5518",
     "semantic_hash": ""
   },
   "midas_code/src/shared/adapters/pythonBacktestAdapter.ts": {
-    "mtime": 1783384261.1164064,
-    "ast_hash": "e07c2a0541df3c93ec4cfe51c5b73f15",
+    "mtime": 1783384595.9989316,
+    "ast_hash": "c4b04b91c6434893950ed07435a858b5",
     "semantic_hash": ""
   },
   "midas_code/src/shared/deployStatus.ts": {
@@ -1130,8 +1120,8 @@
     "semantic_hash": ""
   },
   "midas_code/src/shared/ui/index.tsx": {
-    "mtime": 1783384261.1174061,
-    "ast_hash": "c254580309217f1518ef412439269654",
+    "mtime": 1783384595.9989316,
+    "ast_hash": "ca68438598960b17c96135df21816225",
     "semantic_hash": ""
   },
   "midas_code/src/shared/validation/strategyPropertySchema.ts": {
@@ -1175,8 +1165,8 @@
     "semantic_hash": ""
   },
   "midas_code/vite.config.ts": {
-    "mtime": 1783384261.1573973,
-    "ast_hash": "7ee161be2e27cc6041858948eecf2669",
+    "mtime": 1783384596.0079274,
+    "ast_hash": "e3dce21b61dc399ec4b8dd766415f839",
     "semantic_hash": ""
   },
   "package.json": {
@@ -1192,6 +1182,36 @@
   "skills-lock.json": {
     "mtime": 1783323936.6225252,
     "ast_hash": "3ca13f099464f10d2de705a391f994f8",
+    "semantic_hash": ""
+  },
+  "midas_code/src/app/layout/BladeHost.tsx": {
+    "mtime": 1783384595.989932,
+    "ast_hash": "2c70293442507a736cd21cd7531fefe6",
+    "semantic_hash": ""
+  },
+  "midas_code/src/app/layout/PortalHeader.tsx": {
+    "mtime": 1783384595.989932,
+    "ast_hash": "63cebe835eced3f1ce413da501f0f490",
+    "semantic_hash": ""
+  },
+  "midas_code/src/app/layout/PortalNav.tsx": {
+    "mtime": 1783384595.9909263,
+    "ast_hash": "a1bd99a65bfeb6ada7e9384a3904b09e",
+    "semantic_hash": ""
+  },
+  "midas_code/src/app/layout/PortalShell.tsx": {
+    "mtime": 1783384595.991921,
+    "ast_hash": "a8b761a4c9d52d052e54b6809eafc969",
+    "semantic_hash": ""
+  },
+  "midas_code/src/app/layout/blades.tsx": {
+    "mtime": 1783384595.991921,
+    "ast_hash": "8e4cb4ab021ec241ddc833a71ece2c8b",
+    "semantic_hash": ""
+  },
+  "midas_code/src/app/theme/ThemeProvider.tsx": {
+    "mtime": 1783384595.9939303,
+    "ast_hash": "8bba98330a6a9152b56e38b0658dd77f",
     "semantic_hash": ""
   }
 }

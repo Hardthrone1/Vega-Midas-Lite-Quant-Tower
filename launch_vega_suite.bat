@@ -13,16 +13,16 @@ if /I not "%~1"=="hidden" (
 echo [Vega Tower] Starting services...
 timeout /t 2 >nul
 
-powershell -NoProfile -WindowStyle Hidden -Command "Start-Process -FilePath 'node' -ArgumentList 'Vega_Gateway_Server.js' -WorkingDirectory '%CD%' -WindowStyle Hidden"
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Start-Process -FilePath 'node' -ArgumentList 'Vega_Gateway_Server.js' -WorkingDirectory '%CD%' -WindowStyle Hidden"
 timeout /t 2 >nul
 
-powershell -NoProfile -WindowStyle Hidden -Command "Start-Process -FilePath 'python' -ArgumentList 'MRE_Server.py' -WorkingDirectory '%CD%' -WindowStyle Hidden"
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Start-Process -FilePath 'python' -ArgumentList 'MRE_Server.py' -WorkingDirectory '%CD%' -WindowStyle Hidden"
 timeout /t 2 >nul
 
 if /I "%MODE%"=="prod" (
-  powershell -NoProfile -WindowStyle Hidden -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run build && npm run preview -- --open' -WorkingDirectory '%CD%\midas_code' -WindowStyle Hidden"
+  powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run build && npm run preview -- --open' -WorkingDirectory '%CD%\midas_code' -WindowStyle Hidden"
 ) else (
-  powershell -NoProfile -WindowStyle Hidden -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run dev -- --open' -WorkingDirectory '%CD%\midas_code' -WindowStyle Hidden"
+  powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run dev -- --open' -WorkingDirectory '%CD%\midas_code' -WindowStyle Hidden"
 )
 
 echo [Vega Tower] Services started. Open http://localhost:5173
