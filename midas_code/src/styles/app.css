@@ -220,7 +220,7 @@
 .swarm-gw-dot--online  { background: var(--ok);  box-shadow: 0 0 6px rgba(70,192,138,0.5); }
 .swarm-gw-dot--offline { background: var(--err); }
 .swarm-gw-label { font-size: var(--fs-sm); font-weight: 600; color: var(--ink-1); }
-.swarm-gw-meta  { font-size: var(--fs-xs); color: var(--ink-3); margin-bottom: 10px; }
+.swarm-gw-meta  { font-size: var(--fs-xs); color: var(--ink-3); margin: 8px 0 10px; }
 /* Single column — 280px left panel is not wide enough for 2 cols without overflow */
 .swarm-agent-grid { display: grid; grid-template-columns: 1fr; gap: 5px; margin-top: 8px; }
 .swarm-agent-card  { padding: 7px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: var(--r-md); display: flex; align-items: center; gap: 8px; min-width: 0; }

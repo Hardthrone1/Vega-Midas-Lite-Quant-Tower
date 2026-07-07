@@ -23,6 +23,23 @@
 .panel-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 .panel-body { padding: var(--pad); overflow: auto; flex: 1; min-height: 0; }
 
+/* Expand / fullscreen toggle for panel headers */
+.panel-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 4px 8px;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.panel-expand-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
+
 .card {
   background: var(--surface-2);
   border: 1px solid var(--line);
