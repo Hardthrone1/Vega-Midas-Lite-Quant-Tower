@@ -2,21 +2,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Card, Badge } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
+import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 
 const GW_URL = 'http://127.0.0.1:8001'
 const GW_POLL_MS = 8000
 
+// Live swarm roster — mirrors SWARM_AGENTS in swarm_orchestrator.js. Each lane
+// maps to a gateway provider slot; the model shown is the slot the agent runs on.
 const AGENTS = [
-  { name: 'Hermes',   role: 'Router · Primary',      model: 'llama-3.3-70b',            tier: 'INTAKE' },
-  { name: 'Nemotron', role: 'Quant + Logic',          model: 'nemotron-3-ultra',          tier: 'BACKTEST' },
-  { name: 'Gemini',   role: 'Multi-Modal Synthesis',  model: 'gemini-2.0-flash',          tier: 'SYNTHESIS' },
-  { name: 'Claude',   role: 'Pine Script Authority',  model: 'claude-opus',               tier: 'PINE' },
-  { name: 'Nex',      role: 'Agentic Coding',         model: 'llama-4-maverick',          tier: 'PINE' },
+  { name: 'Architect',  role: 'Structure · Sessions',  model: 'nvidia_intake',   tier: 'ANALYZE' },
+  { name: 'Quant Core', role: 'Math · Logic',          model: 'nvidia_backtest', tier: 'ANALYZE' },
+  { name: 'Synthesis',  role: 'Merge · Thesis',        model: 'gemini',          tier: 'SYNTH' },
+  { name: 'Pine Coder', role: 'Pine Authority',        model: 'nvidia_pine',     tier: 'AUDIT' },
+  { name: 'Lint',       role: 'Anti-cheat Validator',  model: 'nvidia_lint',     tier: 'GATE' },
 ]
 
 type AgentMsg = { id: number; who: string; txt: string; level: 'sys' | 'route' | 'lint' | 'ok' | 'err' | 'work' }
-type SwarmMode = 'generate' | 'repair'
+type SwarmMode = 'swarm' | 'generate' | 'repair'
 type GatewayStatus = 'checking' | 'online' | 'offline'
+
+// Shape returned by POST /api/swarm (see swarm_orchestrator.js).
+type SwarmAgentResult = { agent: string; name: string; lane: string; result: string; ok: boolean }
+type SwarmRuleCheck = {
+  passed: boolean
+  violations: string[]
+  warnings: string[]
+  trapCheck?: { status: string; message: string }
+}
+type SwarmResponse = {
+  success: boolean
+  taskId: string
+  routing: string[]
+  swarmResults: SwarmAgentResult[]
+  synthesis: { synthesis: string; by: string | null; confidence: number }
+  audit: { pine: string; auditNotes: string; successAgent: string | null; ruleCheck: SwarmRuleCheck | null; confidence: number }
+}
 
 // ── Pine linter (matches gateway validatePineScriptRules) ──────────────
 function lintPine(code: string) {
@@ -54,7 +74,7 @@ export function SwarmPanel() {
 
   const [gatewayStatus, setGatewayStatus] = useState<GatewayStatus>('checking')
   const [gatewayMeta, setGatewayMeta] = useState('—')
-  const [mode, setMode] = useState<SwarmMode>('generate')
+  const [mode, setMode] = useState<SwarmMode>('swarm')
   const [busy, setBusy] = useState(false)
   const [agentMsgs, setAgentMsgs] = useState<AgentMsg[]>([
     { id: 0, who: 'VEGA', txt: 'Agent message window ready.', level: 'sys' },
@@ -233,6 +253,59 @@ export function SwarmPanel() {
     }
   }
 
+  // Full multi-agent swarm: fan-out → synthesis → audit, server-side.
+  async function handleSwarm() {
+    if (busy || gatewayStatus !== 'online') return
+    setBusy(true)
+    setLintDisplay(null)
+    const context = `${symbol} ${timeframe} · ${backtestResult.equityCurve.length} bars loaded`
+    addMsg('ROUTER', 'Dispatching multi-agent swarm…', 'route')
+    addMsg('CONTEXT', context, 'sys')
+    try {
+      const resp = await fetch(`${GW_URL}/api/swarm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: { type: 'strategy-analysis', symbol, setup: `${symbol} liquidity sweep + BOS`, context },
+        }),
+        signal: AbortSignal.timeout(180000),
+      })
+      const data: SwarmResponse = await resp.json()
+      if (!resp.ok) throw new Error((data as unknown as { error?: { message?: string } })?.error?.message || `Gateway HTTP ${resp.status}`)
+
+      addMsg('ROUTER', `Agents engaged: ${data.routing.join(', ')}`, 'route')
+      for (const r of data.swarmResults) {
+        addMsg(r.name.toUpperCase(), r.ok ? `${r.result.slice(0, 160)}…` : r.result, r.ok ? 'work' : 'err')
+      }
+      if (data.synthesis?.by) {
+        addMsg('SYNTHESIS', `${data.synthesis.by} · conf ${data.synthesis.confidence.toFixed(2)} — ${data.synthesis.synthesis.slice(0, 180)}…`, 'work')
+      }
+
+      const code = data.audit?.pine || ''
+      if (!code) throw new Error(data.audit?.auditNotes || 'Swarm produced no Pine')
+      setPineCode(code)
+      addMsg('AUDIT', `${data.audit.successAgent ?? 'coder'} produced ${code.length} chars`, 'ok')
+
+      // Real anti-cheat lint from the server-side audit drives the pipeline gate.
+      const rc = data.audit.ruleCheck
+      const lint = rc
+        ? { passed: rc.passed, violations: rc.violations, warnings: rc.warnings }
+        : lintPine(code)
+      applyLintResult(lint, 'Swarm')
+      if (rc?.trapCheck) addMsg('TRAP-CHECK', `${rc.trapCheck.status.toUpperCase()} — ${rc.trapCheck.message.replace(/^TRAP-CHECK:\s*/, '')}`, 'lint')
+
+      addPineVault({ name: `${symbol}_${timeframe}_swarm_${new Date().toLocaleTimeString()}.pine`, code, lintPassed: lint.passed, violations: lint.violations, warnings: lint.warnings, source: 'generate' })
+      addAgentMessage({ agent: 'Swarm', level: lint.passed ? 'success' : 'warn', message: `Swarm produced Pine — ${code.length} chars — lint ${lint.passed ? 'OK' : 'FAIL'}` })
+      addMsg('DONE', `Swarm complete · ${data.routing.length} agents · ${code.length} chars`, 'ok')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      addMsg('ERROR', msg, 'err')
+      addAgentMessage({ agent: 'Swarm', level: 'error', message: `Swarm failed: ${msg}` })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   function copyPine() {
     if (!pineCode) return
     navigator.clipboard.writeText(pineCode).then(() => {
@@ -243,30 +316,24 @@ export function SwarmPanel() {
 
   return (
     <section className="swarm-panel" ref={(el: HTMLElement | null) => { panelRef.current = el }}>
-      {/* Single-row unified header */}
-      <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <div className="flex items-baseline gap-2 flex-1 min-w-0">
-          <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Swarm › Step 04</span>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Code generation · repair</h1>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Badge 
-            status={gatewayStatus === 'online' ? 'ok' : gatewayStatus === 'offline' ? 'err' : 'idle'}
-          >
-            Gateway {gatewayStatus}
-          </Badge>
-          <button
-            type="button"
-            className="w-8 h-8 inline-flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 bg-transparent hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10 text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
-            onClick={toggleFullscreen}
-            aria-label={isFs ? 'Exit fullscreen' : 'Expand to fullscreen'}
-            aria-pressed={isFs}
-            title={isFs ? 'Exit fullscreen' : 'Expand'}
-          >
-            {isFs ? '⤡' : '⤢'}
-          </button>
-        </div>
-      </header>
+      <BladeHeaderActions>
+        <Badge
+          status={gatewayStatus === 'online' ? 'ok' : gatewayStatus === 'offline' ? 'err' : 'idle'}
+          className={gatewayStatus === 'online' ? 'badge-live' : undefined}
+        >
+          Gateway {gatewayStatus}
+        </Badge>
+        <button
+          type="button"
+          className="blade-icon-btn"
+          onClick={toggleFullscreen}
+          aria-label={isFs ? 'Exit fullscreen' : 'Expand to fullscreen'}
+          aria-pressed={isFs}
+          title={isFs ? 'Exit fullscreen' : 'Expand to fullscreen'}
+        >
+          {isFs ? '⤡' : '⤢'}
+        </button>
+      </BladeHeaderActions>
       <div className="swarm-workspace">
 
         {/* LEFT: Gateway + Agents + Message window */}
@@ -310,9 +377,21 @@ export function SwarmPanel() {
           <Card className="swarm-card">
         {/* Mode toggle */}
             <div className="seg" style={{ marginBottom: 16 }}>
+              <button className={`seg-btn ${mode === 'swarm' ? 'seg-on' : ''}`} onClick={() => setMode('swarm')}>Swarm</button>
               <button className={`seg-btn ${mode === 'generate' ? 'seg-on' : ''}`} onClick={() => setMode('generate')}>Generate</button>
               <button className={`seg-btn ${mode === 'repair' ? 'seg-on' : ''}`} onClick={() => setMode('repair')}>Repair</button>
             </div>
+
+            {mode === 'swarm' && (
+              <div className="swarm-mode-pane">
+                <p className="sub">Runs the full multi-agent swarm on the gateway: analysis agents fan out, a synthesis model merges them into a thesis, then a coder audits it into Pine — validated by the anti-cheat linter. Watch the agent messages below.</p>
+                <Button variant="primary"
+                  disabled={busy || gatewayStatus !== 'online'}
+                  onClick={handleSwarm}>
+                  {busy ? '⏳ Swarm running…' : 'Run Swarm'}
+                </Button>
+              </div>
+            )}
 
             {mode === 'generate' && (
               <div className="swarm-mode-pane">

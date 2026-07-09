@@ -8,6 +8,34 @@ Push-Location $PSScriptRoot
 # Suppress progress bars (they're slow in subprocess calls)
 $ProgressPreference = 'SilentlyContinue'
 
+# Ports the suite owns: 5173 frontend (Vite), 8001 gateway, 8002 MRE server.
+$VegaPorts = 5173, 8001, 8002
+
+# Free a set of TCP ports by killing whatever is listening on them. This is the
+# key to a clean start: if a stale Vite server is still holding 5173, Vite would
+# silently bump to 5174/5175 — and the gateway CORS origin would no longer match,
+# so the health check fails and the Gateway shows offline. Reclaiming 5173 first
+# keeps the frontend origin stable and in sync with the backend.
+function Clear-VegaPorts {
+  param([int[]]$Ports)
+  foreach ($port in $Ports) {
+    $conns = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+    if ($conns) {
+      $conns | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object {
+        if ($_ -and $_ -ne 0) {
+          Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+          Write-Host "    [$port] freed (stopped PID $_)" -ForegroundColor DarkYellow
+        }
+      }
+    } else {
+      Write-Host "    [$port] clear" -ForegroundColor DarkGray
+    }
+  }
+}
+
+Write-Host "[VEGA Tower] Pre-flight: freeing suite ports (5173, 8001, 8002)..." -ForegroundColor Cyan
+Clear-VegaPorts -Ports $VegaPorts
+
 Write-Host "[VEGA Tower] Launching services in parallel..." -ForegroundColor Cyan
 
 # Start all backend services as background jobs (truly parallel, no wait)
@@ -17,9 +45,11 @@ try {
   # Node.js services
   Write-Host "[VEGA Tower] Starting Gateway..." -ForegroundColor Green
   $jobs += Start-Job -ScriptBlock { cd $using:PSScriptRoot; node Vega_Gateway_Server.js } -Name "Vega-Gateway" -ErrorAction Stop
-  
-  Write-Host "[VEGA Tower] Starting Orchestrator..." -ForegroundColor Green
-  $jobs += Start-Job -ScriptBlock { cd $using:PSScriptRoot; node Vega_Orchestrator.js } -Name "Vega-Orchestrator" -ErrorAction Stop
+
+  # NOTE: Vega_Orchestrator was removed from the launch set — it's a class
+  # library with no Node entry point (see archive/Vega_Orchestrator.legacy.js),
+  # so running it as a service did nothing. Re-add a job here only if it's
+  # revived as a real standalone service.
 
   # Python MRE server
   Write-Host "[VEGA Tower] Starting MRE Server..." -ForegroundColor Green
@@ -35,8 +65,10 @@ try {
       npm run build --quiet
       npm run preview -- --open
     } else {
-      Write-Host "[VEGA Tower] Starting dev server..." -ForegroundColor Yellow
-      npm run dev -- --open
+      Write-Host "[VEGA Tower] Starting dev server on port 5173..." -ForegroundColor Yellow
+      # --strictPort makes Vite fail loudly if 5173 is taken instead of silently
+      # drifting to another port (which would break the gateway CORS origin).
+      npm run dev -- --open --strictPort
     }
   }
   catch {
@@ -51,16 +83,19 @@ try {
   Write-Host "[VEGA Tower] Frontend stopped. Cleaning up..." -ForegroundColor Yellow
   $jobs | Stop-Job -PassThru | Remove-Job
 
+  # Belt-and-suspenders: make sure the backend ports are actually released.
+  Clear-VegaPorts -Ports $VegaPorts
+
   Write-Host "[VEGA Tower] All services stopped." -ForegroundColor Cyan
 }
 catch {
   Write-Host "[VEGA Tower] STARTUP FAILED: $_" -ForegroundColor Red
   Write-Host "[VEGA Tower] Stopping background jobs..." -ForegroundColor Yellow
   $jobs | Stop-Job -ErrorAction SilentlyContinue | Remove-Job -ErrorAction SilentlyContinue
+  Clear-VegaPorts -Ports $VegaPorts
   Read-Host "Press Enter to exit"
   exit 1
 }
 finally {
   Pop-Location
 }
-

@@ -120,15 +120,12 @@ export function bladeById(id: Tab): BladeDefinition | undefined {
 export type BladeApi = {
   /** Open blades, left to right. stack[0] is the root blade (the nav selection). */
   stack: Tab[]
-  /** When set, only this blade is rendered, full width. */
-  maximized: Tab | null
   /** Push a child blade (or collapse back to it if already open). */
   openBlade: (tab: Tab) => void
   /** Close a blade and everything to its right. No-op on the root blade. */
   closeBlade: (tab: Tab) => void
   /** Replace the whole stack — what the left nav does. */
   resetTo: (tab: Tab) => void
-  toggleMaximize: (tab: Tab) => void
 }
 
 export const BladeContext = createContext<BladeApi | null>(null)

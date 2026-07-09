@@ -16,6 +16,7 @@ import { Badge } from '../../../shared/ui';
 import { useStrategyStore } from '../../../store/useStrategyStore';
 import { createDefaultSpec } from '../../../shared/validation/strategySchema';
 import { useBlades } from '../../../app/layout/blades';
+import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot';
 import {
   deployLabel,
   deployStatusKind,
@@ -331,16 +332,9 @@ export function StrategyIntakePanel() {
 
   return (
     <section className="intake-panel">
-      {/* Single-row unified header */}
-      <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <div className="flex items-baseline gap-2 flex-1 min-w-0">
-          <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Step 01</span>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Strategy intake</h1>
-        </div>
-        <div className="flex-shrink-0">
-          {canonicalSpec ? <Badge status="ok">spec live</Badge> : <Badge>no spec</Badge>}
-        </div>
-      </header>
+      <BladeHeaderActions>
+        {canonicalSpec ? <Badge status="ok">spec live</Badge> : <Badge>no spec</Badge>}
+      </BladeHeaderActions>
       <form className="col" onSubmit={handleSubmit(startSpec)} noValidate>
         <div className="system-state-strip">
           <div className="sss-head">

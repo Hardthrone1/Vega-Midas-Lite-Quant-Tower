@@ -1,0 +1,399 @@
+/* src/styles/control-tower.css
+   Control-tower layout fix + visual identity pass.
+
+   Loaded last so it layers on top of portal.css. Two jobs:
+   1. Style the relocated blade-header controls (the panels no longer render
+      their own duplicate header — their controls teleport up here).
+   2. High-impact polish: live glow pulses, loading gauge, scroll-triggered
+      reveals, and micro-interactions — all theme-aware via Fluent tokens. */
+
+/* ============================================================= *
+ *  1 · Blade header — one consolidated, high-impact header row  *
+ * ============================================================= */
+
+/* A hairline brand sheen rides the top edge of every blade header. */
+.blade-header {
+  position: relative;
+  gap: 12px;
+  padding: 12px 16px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--colorBrandBackground2) 22%, transparent),
+      transparent 78%),
+    var(--glass-tint);
+}
+.blade-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--colorBrandForeground1) 60%, transparent) 20%,
+    var(--colorBrandForeground1) 50%,
+    color-mix(in srgb, var(--colorBrandForeground1) 60%, transparent) 80%,
+    transparent
+  );
+  background-size: 220% 100%;
+  opacity: 0.55;
+  animation: ct-header-sheen 7s var(--ease-standard) infinite;
+}
+@keyframes ct-header-sheen {
+  0%, 100% { background-position: 0% 0; opacity: 0.35; }
+  50% { background-position: 100% 0; opacity: 0.8; }
+}
+
+/* Glowing, breathing step icon. */
+.blade-header-icon {
+  position: relative;
+  overflow: visible;
+}
+.blade-header-icon-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  background: radial-gradient(circle, var(--colorBrandForeground1), transparent 68%);
+  opacity: 0.28;
+  filter: blur(5px);
+  animation: ct-icon-breathe 3.6s var(--ease-standard) infinite;
+  pointer-events: none;
+}
+@keyframes ct-icon-breathe {
+  0%, 100% { opacity: 0.18; transform: scale(0.9); }
+  50% { opacity: 0.4; transform: scale(1.12); }
+}
+.blade-header:hover .blade-header-icon {
+  transform: scale(1.08) rotate(-2deg);
+}
+
+/* Bolder title, structured subtitle with a mono step chip. */
+.blade-title {
+  letter-spacing: -0.01em;
+  font-weight: var(--fontWeightSemibold);
+}
+.blade-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.blade-step {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: var(--colorBrandForeground2);
+  background: color-mix(in srgb, var(--colorBrandBackground2) 60%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--colorBrandForeground2) 26%, transparent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.blade-subtitle-sep { opacity: 0.4; }
+.blade-subtitle-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Actions area now hosts the relocated panel controls + close. */
+.blade-header-actions {
+  align-items: center;
+  gap: 8px;
+}
+.blade-header-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.blade-actions-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  animation: ct-actions-in var(--motion-gentle) var(--ease-enter) both;
+}
+@keyframes ct-actions-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Square icon-button used by Replay (sidecar) + Swarm (fullscreen). */
+.blade-icon-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  border-radius: var(--borderRadiusMedium);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-tint);
+  color: var(--colorNeutralForeground2);
+  cursor: pointer;
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard);
+}
+.blade-icon-btn:hover {
+  transform: translateY(-1px);
+  color: var(--colorBrandForeground1);
+  border-color: color-mix(in srgb, var(--colorBrandForeground1) 55%, transparent);
+  background: color-mix(in srgb, var(--colorBrandBackground2) 55%, transparent);
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--colorBrandForeground1) 55%, transparent);
+}
+.blade-icon-btn:active { transform: translateY(0) scale(0.94); }
+.blade-icon-btn[aria-pressed='true'],
+.blade-icon-btn[aria-expanded='true'] {
+  color: var(--colorBrandForeground1);
+  border-color: color-mix(in srgb, var(--colorBrandForeground1) 55%, transparent);
+  background: color-mix(in srgb, var(--colorBrandBackground2) 45%, transparent);
+}
+
+/* Close button spins subtly on hover. */
+.blade-close-btn { transition: transform var(--motion-normal) var(--ease-standard); }
+.blade-close-btn:hover { transform: rotate(90deg); }
+
+/* ============================================================= *
+ *  2 · Live glow pulses                                         *
+ * ============================================================= */
+
+/* A soft haloed pulse for any "live" tinted badge (gateway online, playing…). */
+.fui-Badge.badge-live {
+  position: relative;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorStatusSuccessForeground1) 60%, transparent);
+  animation: ct-badge-live 2.2s var(--ease-standard) infinite;
+}
+@keyframes ct-badge-live {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorStatusSuccessForeground1) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ============================================================= *
+ *  3 · Agent timeline — compact live header                    *
+ * ============================================================= */
+.agent-timeline-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 8px 10px 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--glass-border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--colorNeutralBackground1) 82%, transparent),
+    transparent
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.agent-timeline-heading {
+  display: inline-flex;
+  align-items: center;   /* fixes the old items-baseline gap collapse */
+  gap: 10px;
+  min-width: 0;
+}
+.agent-timeline-title {
+  font-size: 1rem;        /* text-base — was text-lg */
+  line-height: 1.25;
+  font-weight: var(--fontWeightSemibold);
+  color: var(--colorNeutralForeground1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agent-timeline-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--colorNeutralForeground3);
+  background: color-mix(in srgb, var(--colorNeutralForeground1) 6%, transparent);
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+  flex-shrink: 0;
+}
+.agent-timeline-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--colorNeutralForeground4);
+}
+.agent-timeline-live.is-live {
+  color: var(--colorStatusSuccessForeground1);
+  background: color-mix(in srgb, var(--colorStatusSuccessBackground1) 70%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--colorStatusSuccessForeground1) 30%, transparent);
+}
+.agent-timeline-live.is-live .agent-timeline-live-dot {
+  background: var(--colorStatusSuccessForeground1);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorStatusSuccessForeground1) 65%, transparent);
+  animation: ct-livedot 1.8s var(--ease-standard) infinite;
+}
+@keyframes ct-livedot {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorStatusSuccessForeground1) 60%, transparent); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.agent-timeline-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: var(--colorNeutralForeground2);
+  background: color-mix(in srgb, var(--colorNeutralForeground1) 8%, transparent);
+  flex-shrink: 0;
+}
+
+/* ============================================================= *
+ *  4 · Sidebar nav — glowing active rail + micro-interactions   *
+ * ============================================================= */
+.portal-nav-tabs [role='tab'] {
+  border-radius: var(--borderRadiusMedium);
+  transition:
+    background var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-normal) var(--ease-standard);
+}
+.portal-nav-tabs [role='tab']:hover {
+  transform: translateX(2px);
+  background: color-mix(in srgb, var(--colorBrandBackground2) 40%, transparent);
+}
+.portal-nav-tabs [role='tab'] svg {
+  transition: transform var(--motion-normal) var(--ease-enter);
+}
+.portal-nav-tabs [role='tab']:hover svg {
+  transform: scale(1.14);
+}
+.portal-nav-tabs [role='tab'][aria-selected='true'] {
+  background: color-mix(in srgb, var(--colorBrandBackground2) 55%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--colorBrandForeground1) 22%, transparent),
+    0 4px 18px -8px color-mix(in srgb, var(--colorBrandForeground1) 70%, transparent);
+}
+.portal-nav-tabs [role='tab'][aria-selected='true'] svg {
+  color: var(--colorBrandForeground1);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--colorBrandForeground1) 65%, transparent));
+}
+
+/* Rich nav tooltip surface. */
+.nav-tooltip-surface {
+  max-width: 260px;
+  padding: 9px 12px;
+}
+.nav-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.nav-tooltip-head {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.nav-tooltip-step {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--colorBrandForeground2);
+}
+.nav-tooltip-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+.nav-tooltip-desc {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--colorNeutralForeground3);
+}
+
+/* ============================================================= *
+ *  5 · Loading gauge — a branded pulse instead of a bare spinner *
+ * ============================================================= */
+.blade-loading { flex-direction: column; gap: 14px; }
+.blade-loading-gauge {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.blade-loading-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--colorBrandForeground1) 22%, transparent);
+  border-top-color: var(--colorBrandForeground1);
+  animation: spin 0.9s linear infinite;
+}
+.blade-loading-core {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--colorBrandForeground1), transparent 70%);
+  animation: ct-core-pulse 1.4s var(--ease-standard) infinite;
+}
+@keyframes ct-core-pulse {
+  0%, 100% { transform: scale(0.7); opacity: 0.5; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================= *
+ *  6 · Scroll-triggered reveal for blade content                *
+ * ============================================================= */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .blade-body .card,
+    .blade-body .metrics-grid,
+    .blade-body .system-state-strip {
+      animation: ct-scroll-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 20%;
+    }
+  }
+}
+@keyframes ct-scroll-reveal {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ============================================================= *
+ *  7 · Panel height chain                                        *
+ * ============================================================= */
+/* Blade panels fill their body so internal flex layouts (the replay chart,
+   the swarm workspace) get a real height instead of collapsing to content.
+   Content-flow panels simply top-align and let the body scroll — unchanged. */
+.blade-body > section {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cards lift toward the pointer — dense compositions feel tactile. */
+.blade-body .card {
+  transition:
+    transform var(--motion-normal) var(--ease-standard),
+    box-shadow var(--motion-normal) var(--ease-standard),
+    border-color var(--motion-normal) var(--ease-standard);
+}
+.blade-body .card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elev-4);
+}

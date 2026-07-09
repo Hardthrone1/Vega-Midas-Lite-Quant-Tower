@@ -2,6 +2,7 @@
 import { useMemo, type CSSProperties } from 'react'
 import { Card, Button, Empty, MetricCard, type Status } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
+import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 
 export function BacktestPanel() {
   const { backtestResult, canonicalSpec, setBacktestResult, addAgentMessage } = useStrategyStore()
@@ -61,16 +62,9 @@ export function BacktestPanel() {
 
   return (
     <section className="backtest-panel">
-      {/* Single-row unified header */}
-      <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <div className="flex items-baseline gap-2 flex-1 min-w-0">
-          <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Step 06</span>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Backtest preview</h1>
-        </div>
-        <div className="flex-shrink-0">
-          <Button variant="primary" onClick={runBacktest} disabled={!canonicalSpec}>Run backtest</Button>
-        </div>
-      </header>
+      <BladeHeaderActions>
+        <Button variant="primary" onClick={runBacktest} disabled={!canonicalSpec}>Run backtest</Button>
+      </BladeHeaderActions>
       {!has ? (
         <Empty>No backtest yet. Run one to preview the equity curve and<br />edge metrics before the live-readiness gate.</Empty>
       ) : (

@@ -25,21 +25,17 @@ export function PortalShell() {
   const [navExpanded, setNavExpanded] = useState(true)
   const [timelineOpen, setTimelineOpen] = useState(true)
   const [stack, setStack] = useState<Tab[]>(() => [activeTab])
-  const [maximized, setMaximized] = useState<Tab | null>(null)
 
   const bladeApi = useMemo<BladeApi>(
     () => ({
       stack,
-      maximized,
       resetTo: (tab) => {
         setStack([tab])
-        setMaximized(null)
         setActiveTab(tab)
       },
       openBlade: (tab) => {
         const i = stack.indexOf(tab)
         setStack(i === -1 ? [...stack, tab] : stack.slice(0, i + 1))
-        setMaximized(null)
         setActiveTab(tab)
       },
       closeBlade: (tab) => {
@@ -48,11 +44,9 @@ export function PortalShell() {
         const next = stack.slice(0, i)
         setStack(next)
         setActiveTab(next[next.length - 1])
-        if (maximized === tab) setMaximized(null)
       },
-      toggleMaximize: (tab) => setMaximized((m) => (m === tab ? null : tab)),
     }),
-    [stack, maximized, setActiveTab]
+    [stack, setActiveTab]
   )
 
   return (

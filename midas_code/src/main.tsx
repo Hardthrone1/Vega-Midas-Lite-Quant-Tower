@@ -10,6 +10,7 @@ import './shared/ui/ui.css'
 import './styles/app.css'
 import './styles/portal.css'
 import './styles/tailwind.css'
+import './styles/control-tower.css'
 
 void setupDevtools()
 

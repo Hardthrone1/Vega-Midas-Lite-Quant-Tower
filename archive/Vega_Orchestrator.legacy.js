@@ -1,4 +1,21 @@
 /**
+ * ============================================================================
+ *  ⚠️  ARCHIVED — NOT PART OF THE ACTIVE VEGA SUITE.  DO NOT WIRE THIS IN.
+ * ============================================================================
+ *  This is a standalone multi-agent swarm orchestrator class from the older
+ *  vanilla-JS HUD. It is NOT used by the current stack:
+ *    - The React frontend (midas_code/) does not import it.
+ *    - Vega_Gateway_Server.js does not require it.
+ *    - No index.html loads it.
+ *  It has no Node entry point (it only exports a class / attaches to
+ *  `window.Vega` in a browser), so `node Vega_Orchestrator.legacy.js` does
+ *  nothing. It was removed from launch_vega_suite.ps1 for that reason.
+ *
+ *  Kept for reference / possible future reuse (agent routing, swarm→synthesis→
+ *  audit pipeline, Pine validation, cost tracking). If you revive it, give it a
+ *  real entry point and move it back out of archive/ deliberately.
+ * ============================================================================
+ *
  * Vega Orchestrator v1.5 - Fixed & Updated June 2026
  * Stable version with better proxy handling, code extraction, and new models
  */

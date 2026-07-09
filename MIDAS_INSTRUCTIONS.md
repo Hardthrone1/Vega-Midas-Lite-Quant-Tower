@@ -185,7 +185,7 @@ Expected output:
 | File | Purpose | Status |
 |------|---------|--------|
 | `Vega_Gateway_Server.js` | Multi-provider gateway | ✅ Running |
-| `Vega_Orchestrator.js` | Agent orchestration | ✅ Running |
+| `archive/Vega_Orchestrator.legacy.js` | Agent orchestration (class lib) | 🗄️ Archived — not wired into the current suite |
 | `MRE_Server.py` | Bar replay engine | ✅ Running |
 | `midas_code/` | React dashboard | ✅ Built (demo mode) |
 | `parity_engine/` | Python validator | ✅ Ready |

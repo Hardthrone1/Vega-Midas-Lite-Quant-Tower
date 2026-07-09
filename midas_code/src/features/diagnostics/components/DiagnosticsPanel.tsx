@@ -1,6 +1,7 @@
 // src/features/diagnostics/components/DiagnosticsPanel.tsx
 import { Card, Badge, Button, StatusDot } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
+import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 import { deployLabel, deployStatusKind, deployProgress, DEPLOY_PIPELINE } from '../../../shared/deployStatus'
 
 export function DiagnosticsPanel() {
@@ -25,16 +26,9 @@ export function DiagnosticsPanel() {
 
   return (
     <section className="diagnostics-panel">
-      {/* Single-row unified header */}
-      <header className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <div className="flex items-baseline gap-2 flex-1 min-w-0">
-          <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Step 05</span>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Diagnostics & deploy gate</h1>
-        </div>
-        <div className="flex-shrink-0">
-          <Button variant="primary" onClick={runChecks} disabled={!canonicalSpec}>Run checks</Button>
-        </div>
-      </header>
+      <BladeHeaderActions>
+        <Button variant="primary" onClick={runChecks} disabled={!canonicalSpec}>Run checks</Button>
+      </BladeHeaderActions>
       <div className="col">
         {/* Deploy gate */}
         <Card>

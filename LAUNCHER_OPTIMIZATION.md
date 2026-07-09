@@ -43,7 +43,7 @@ launch_vega_suite.bat [prod]
 ```batch
 @echo off
 start "" /b node Vega_Gateway_Server.js
-start "" /b node Vega_Orchestrator.js
+REM Vega_Orchestrator is archived (class lib, no entry point) — not launched.
 start "" /b python MRE_Server.py
 cd midas_code && npm run dev -- --open
 ```
@@ -108,7 +108,7 @@ If you want to launch specific services:
 ```bash
 # Terminal 1: Node services
 node Vega_Gateway_Server.js
-node Vega_Orchestrator.js
+# (Vega_Orchestrator is archived — class lib, no entry point — nothing to run)
 
 # Terminal 2: Python
 python MRE_Server.py

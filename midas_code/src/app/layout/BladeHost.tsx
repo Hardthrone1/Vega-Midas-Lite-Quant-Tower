@@ -1,9 +1,9 @@
 // src/app/layout/BladeHost.tsx
 // Renders the breadcrumb trail and the horizontal blade stack — the dynamic
-// "Shell + Blade" workspace from the Azure Portal. Every blade has a Fluent
-// header with maximize/restore and close; the last blade flexes to fill the
-// remaining width and the track scrolls horizontally when blades overflow.
-import { Fragment, Suspense } from 'react'
+// "Shell + Blade" workspace from the Azure Portal. Each blade has a header
+// with controls and close; the last blade flexes to fill the remaining width
+// and the track scrolls horizontally when blades overflow.
+import { Fragment, Suspense, useState } from 'react'
 import {
   Breadcrumb,
   BreadcrumbButton,
@@ -15,25 +15,20 @@ import {
   Text,
   Tooltip,
 } from '@fluentui/react-components'
-import {
-  ArrowMaximize20Regular,
-  ArrowMinimize20Regular,
-  Dismiss20Regular,
-  Home20Regular,
-} from '@fluentui/react-icons'
+import { Dismiss20Regular, Home20Regular } from '@fluentui/react-icons'
 import type { Tab } from '../../store/useStrategyStore'
 import { bladeById, useBlades } from './blades'
+import { BladeHeaderSlotProvider } from './BladeHeaderSlot'
 
 export function BladeHost() {
-  const { stack, maximized } = useBlades()
-  const visible = maximized ? stack.filter((t) => t === maximized) : stack
+  const { stack } = useBlades()
 
   return (
     <div className="blade-host">
       <BladeBreadcrumb />
       <div className="blade-track" role="region" aria-label="Open blades">
-        {visible.map((tab, i) => (
-          <Blade key={tab} tab={tab} isRoot={tab === stack[0]} isLast={i === visible.length - 1} />
+        {stack.map((tab, i) => (
+          <Blade key={tab} tab={tab} isRoot={tab === stack[0]} isLast={i === stack.length - 1} />
         ))}
       </div>
     </div>
@@ -70,18 +65,20 @@ function BladeBreadcrumb() {
 }
 
 function Blade({ tab, isRoot, isLast }: { tab: Tab; isRoot: boolean; isLast: boolean }) {
-  const { closeBlade, toggleMaximize, maximized } = useBlades()
+  const { closeBlade } = useBlades()
+  // The DOM node that panel controls teleport into (see BladeHeaderSlot).
+  const [actionsNode, setActionsNode] = useState<HTMLDivElement | null>(null)
   const def = bladeById(tab)
   if (!def) return null
 
   const Icon = def.icon
   const BladeContent = def.Component
-  const isMaximized = maximized === tab
 
   return (
     <section className={`blade${isLast ? ' blade--last' : ''}`} aria-label={`${def.label} blade`}>
       <header className="blade-header">
         <span className="blade-header-icon" aria-hidden>
+          <span className="blade-header-icon-glow" aria-hidden />
           <Icon />
         </span>
         <div className="blade-header-text">
@@ -89,23 +86,20 @@ function Blade({ tab, isRoot, isLast }: { tab: Tab; isRoot: boolean; isLast: boo
             {def.label}
           </Text>
           <Caption1 block className="blade-subtitle">
-            Step {def.step} · {def.description}
+            <span className="blade-step mono">Step {def.step}</span>
+            <span className="blade-subtitle-sep" aria-hidden>·</span>
+            <span className="blade-subtitle-desc">{def.description}</span>
           </Caption1>
         </div>
         <div className="blade-header-actions">
-          <Tooltip content={isMaximized ? 'Restore' : 'Maximize'} relationship="label">
-            <Button
-              appearance="subtle"
-              size="small"
-              icon={isMaximized ? <ArrowMinimize20Regular /> : <ArrowMaximize20Regular />}
-              onClick={() => toggleMaximize(tab)}
-            />
-          </Tooltip>
+          {/* Panel-owned controls teleport into here. */}
+          <div className="blade-header-slot" ref={setActionsNode} />
           {!isRoot && (
-            <Tooltip content="Close" relationship="label">
+            <Tooltip content="Close blade" relationship="label">
               <Button
                 appearance="subtle"
                 size="small"
+                className="blade-close-btn"
                 icon={<Dismiss20Regular />}
                 onClick={() => closeBlade(tab)}
               />
@@ -117,11 +111,17 @@ function Blade({ tab, isRoot, isLast }: { tab: Tab; isRoot: boolean; isLast: boo
         <Suspense
           fallback={
             <div className="blade-loading" role="status" aria-live="polite">
+              <span className="blade-loading-gauge" aria-hidden>
+                <span className="blade-loading-ring" />
+                <span className="blade-loading-core" />
+              </span>
               <Spinner size="small" label="Loading blade…" />
             </div>
           }
         >
-          <BladeContent />
+          <BladeHeaderSlotProvider node={actionsNode}>
+            <BladeContent />
+          </BladeHeaderSlotProvider>
         </Suspense>
       </div>
     </section>

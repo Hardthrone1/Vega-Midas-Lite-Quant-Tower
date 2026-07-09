@@ -4,7 +4,21 @@
 import type { CSSProperties } from 'react'
 import { Tab, TabList, Tooltip } from '@fluentui/react-components'
 import type { Tab as WorkflowTab } from '../../store/useStrategyStore'
-import { BLADES } from './blades'
+import { BLADES, type BladeDefinition } from './blades'
+
+// Rich tooltip: step + label headline, description underneath. The description
+// is the same field that renders as the blade subtitle, so the two never drift.
+function NavTooltip({ blade }: { blade: BladeDefinition }) {
+  return (
+    <span className="nav-tooltip">
+      <span className="nav-tooltip-head">
+        <span className="nav-tooltip-step mono">{blade.step}</span>
+        <span className="nav-tooltip-label">{blade.label}</span>
+      </span>
+      <span className="nav-tooltip-desc">{blade.description}</span>
+    </span>
+  )
+}
 
 export function PortalNav({
   expanded,
@@ -46,10 +60,16 @@ export function PortalNav({
               )}
             </Tab>
           )
-          return expanded ? (
-            tab
-          ) : (
-            <Tooltip key={blade.id} content={`${blade.step} · ${blade.label}`} relationship="label" positioning="after">
+          // Description is fed from the same blades.tsx config that drives the
+          // blade subtitle — one source of truth for the step's meaning.
+          return (
+            <Tooltip
+              key={blade.id}
+              content={{ children: <NavTooltip blade={blade} />, className: 'nav-tooltip-surface' }}
+              relationship="description"
+              positioning="after"
+              withArrow
+            >
               {tab}
             </Tooltip>
           )

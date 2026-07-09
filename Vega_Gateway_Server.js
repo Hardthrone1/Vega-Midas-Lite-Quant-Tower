@@ -13,6 +13,7 @@ const { RateLimiterMemory } = require('rate-limiter-flexible');
 const { z } = require('zod');
 const { v4: uuidv4 } = require('uuid');
 const client = require('prom-client');
+const { createSwarmOrchestrator } = require('./swarm_orchestrator');
 
 const app = express();
 const PORT = 8001;
@@ -75,9 +76,25 @@ const PROVIDERS = {
 
 const DEFAULT_PROVIDER = process.env.DEFAULT_PROVIDER || 'nvidia_intake';
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+// Explicit allow-list from env (comma-separated). When unset we fall back to a
+// permissive localhost rule below so the dev frontend keeps working no matter
+// which port Vite lands on (5173, 5174, 5175…).
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
-  .map(o => o.trim());
+  .map(o => o.trim())
+  .filter(Boolean);
+
+// Any http://localhost:<port> or http://127.0.0.1:<port> is treated as a local
+// dev origin. This avoids CORS breakage when Vite bumps to the next free port.
+const LOCALHOST_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+function corsOrigin(origin, cb) {
+  // Same-origin / curl / server-to-server requests have no Origin header.
+  if (!origin) return cb(null, true);
+  if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+  if (LOCALHOST_ORIGIN.test(origin)) return cb(null, true);
+  return cb(new Error(`Origin not allowed by CORS: ${origin}`));
+}
 
 // ---------------------------------------------------------------------------
 // Zod Tool Schemas
@@ -469,7 +486,7 @@ async function callProvider(providerConfig, body, maxAttempts = 4) {
 // ---------------------------------------------------------------------------
 // Middleware (with Tracing)
 // ---------------------------------------------------------------------------
-app.use(cors({ origin: ALLOWED_ORIGINS }));
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '2mb' }));
 
 app.use((req, res, next) => {
@@ -596,6 +613,37 @@ app.post('/api/v1/chat/completions', async (req, res) => {
 
 app.post('/api/vision', async (_req, res) => {
   res.status(501).json({ error: 'Vision route not yet implemented with tools' });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-agent swarm — fan-out → synthesis → audit (see swarm_orchestrator.js).
+// Runs inside the gateway so every agent call reuses the same rate limiting,
+// circuit breakers and retries as a normal chat request.
+// ---------------------------------------------------------------------------
+const swarm = createSwarmOrchestrator({
+  callProvider,
+  getProviderConfig,
+  resolveModelForProvider,
+  log: (msg) => console.log(msg),
+});
+
+app.post('/api/swarm', async (req, res) => {
+  const task = req.body?.task || {};
+  if (!task.setup && !task.context && !task.symbol) {
+    return res.status(400).json({
+      error: { message: 'task must include at least one of: setup, context, symbol' },
+    });
+  }
+  try {
+    const result = await swarm.runSwarm(task, { agents: req.body?.agents });
+    result.swarmResults?.forEach((r) => {
+      gatewayToolCallsTotal.inc({ tool: `swarm_${r.lane}`, provider: 'swarm' });
+    });
+    res.json(result);
+  } catch (err) {
+    console.error(`[SWARM] failed: ${err.message}`);
+    res.status(500).json({ error: { message: err.message } });
+  }
 });
 
 app.get('/api/providers', (_req, res) => {
