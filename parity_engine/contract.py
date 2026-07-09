@@ -1,6 +1,6 @@
 """Typed Python mirror of the dashboard's PythonBacktestPayload contract.
 
-Source of truth: Vega_code/src/shared/adapters/pythonBacktestAdapter.ts
+Source of truth: midas_code/src/shared/adapters/pythonBacktestAdapter.ts
 Keep these dataclasses in lock-step with that TypeScript type. The parser is
 defensive: it accepts the exact JSON the adapter emits and fills sane defaults
 so a slightly older/newer payload still loads.

@@ -10,8 +10,20 @@ live exactly. The three rules that close the backtest→live gap:
    unless `processOrdersOnClose` is True — Pine's default is next-bar fill for
    market orders during intrabar recalculation.
 
-3. Slippage (in ticks × tickSize, in the trade direction) and commission are
-   charged per fill, matching what live execution actually costs.
+3. Slippage (in ticks × tickSize, adverse to the trade direction) is applied
+   by worsening the fill price — the cost is embedded in the price, never
+   charged again as a separate fee. Limit-style fills (profit targets) take no
+   slippage, matching TradingView's broker emulator. Commission is charged per
+   fill.
+
+4. Stops that gap: when a bar opens beyond the stop (weekend/overnight gap),
+   the fill is the bar's open — not the stop price. Targets that gap open
+   fill at the (better) open.
+
+5. Session window: when the payload carries session.timezone + start + end,
+   entries are only evaluated on bars inside that window (DST-aware via
+   zoneinfo; overnight windows like Globex 18:00→17:00 supported). Exits
+   still process on every bar so open risk is never ignored.
 
 Usage:
     from parity_engine.contract import BacktestPayload
@@ -25,7 +37,9 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from datetime import datetime, time as dtime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from .contract import BacktestPayload, resolve_economics
 from .expressions import ExpressionError, evaluate
@@ -65,6 +79,7 @@ class Trade:
     side: str
     entry_fill: Fill
     exit_fill: Fill | None = None
+    point_value: float = 1.0  # dollars per 1.0 of price move per contract
 
     @property
     def is_open(self) -> bool:
@@ -75,14 +90,19 @@ class Trade:
         if self.exit_fill is None:
             return 0.0
         if self.side == "long":
-            return (self.exit_fill.price - self.entry_fill.price) * self.entry_fill.qty
-        return (self.entry_fill.price - self.exit_fill.price) * self.entry_fill.qty
+            points = self.exit_fill.price - self.entry_fill.price
+        else:
+            points = self.entry_fill.price - self.exit_fill.price
+        return points * self.entry_fill.qty * self.point_value
 
     @property
     def net_pnl(self) -> float:
-        costs = self.entry_fill.commission + self.entry_fill.slippage
+        # Slippage is already embedded in the fill prices (adverse fills), so
+        # the only cost deducted here is commission. Fill.slippage is
+        # reporting metadata, not a second charge.
+        costs = self.entry_fill.commission
         if self.exit_fill:
-            costs += self.exit_fill.commission + self.exit_fill.slippage
+            costs += self.exit_fill.commission
         return self.gross_pnl - costs
 
 
@@ -119,6 +139,23 @@ class Engine:
 
         atr_len = self._atr_length_from_spec()
         self._atr_series = atr(self._highs, self._lows, self._closes, atr_len)
+
+        # Session window (entries only). Active when the payload provides
+        # timezone + start + end; anything malformed disables gating rather
+        # than silently misclassifying bars.
+        self._session_tz: ZoneInfo | None = None
+        self._session_start: dtime | None = None
+        self._session_end: dtime | None = None
+        s = payload.session
+        if s and s.timezone and s.start and s.end:
+            try:
+                self._session_tz = ZoneInfo(s.timezone)
+                self._session_start = _parse_hhmm(s.start)
+                self._session_end = _parse_hhmm(s.end)
+            except (KeyError, ValueError, OSError):
+                self._session_tz = None
+                self._session_start = None
+                self._session_end = None
 
     def _atr_length_from_spec(self) -> int:
         stop = self.payload.exit.stop or {}
@@ -184,7 +221,7 @@ class Engine:
             # 4. Signal evaluation on confirmed bar
             # -----------------------------------------------------------
             ctx = self._bar_context(i, bar)
-            if open_trade is None and pending is None:
+            if open_trade is None and pending is None and self._in_session(bar.time):
                 signal = self._evaluate_entry(ctx, bar, i)
                 if signal:
                     pending = {
@@ -204,9 +241,10 @@ class Engine:
             open_unrealized = 0.0
             if open_trade:
                 if open_trade.side == "long":
-                    open_unrealized = (bar.close - open_trade.entry_fill.price) * open_trade.entry_fill.qty
+                    points = bar.close - open_trade.entry_fill.price
                 else:
-                    open_unrealized = (open_trade.entry_fill.price - bar.close) * open_trade.entry_fill.qty
+                    points = open_trade.entry_fill.price - bar.close
+                open_unrealized = points * open_trade.entry_fill.qty * self.point_value
 
             equity_curve.append({
                 "bar_index": i,
@@ -235,6 +273,19 @@ class Engine:
     # -----------------------------------------------------------------------
     # Helpers
     # -----------------------------------------------------------------------
+
+    def _in_session(self, epoch_ms: int) -> bool:
+        """True when the bar's wall-clock time (in the session's timezone,
+        DST-aware) falls inside the session window. Always True when no
+        window is configured. Overnight windows (start > end) wrap midnight.
+        """
+        if self._session_tz is None or self._session_start is None or self._session_end is None:
+            return True
+        local = datetime.fromtimestamp(epoch_ms / 1000.0, tz=self._session_tz).time()
+        start, end = self._session_start, self._session_end
+        if start <= end:
+            return start <= local < end
+        return local >= start or local < end
 
     def _bar_context(self, i: int, bar: Bar) -> dict[str, float | None]:
         """Build expression evaluation context for bar i."""
@@ -275,16 +326,21 @@ class Engine:
         """Create and return a Trade by filling pending at bar open or close."""
         price = bar.open if not self.payload.execution.processOrdersOnClose else bar.close
         fill = self._build_fill(i, bar.time, price, pending["qty"], "entry", pending["side"])
-        return Trade(id=trade_id, side=pending["side"], entry_fill=fill)
+        return Trade(id=trade_id, side=pending["side"], entry_fill=fill,
+                     point_value=self.point_value)
 
     def _build_fill(
         self, bar_index: int, time: int, price: float, qty: float,
-        direction: str, side: str
+        direction: str, side: str, is_limit: bool = False
     ) -> Fill:
-        """Build a Fill, applying slippage and commission."""
+        """Build a Fill. Market-style fills (entries, stops) are worsened by
+        slippage; limit-style fills (profit targets) take none — matching
+        TradingView's broker emulator. The Fill.slippage field records the
+        dollar cost of that price adjustment for reporting; it is NOT charged
+        again in net_pnl.
+        """
         exec_cfg = self.payload.execution
-        tick_size = self.tick_size
-        slip_amount = exec_cfg.slippageTicks * tick_size
+        slip_amount = 0.0 if is_limit else exec_cfg.slippageTicks * self.tick_size
 
         # Slippage is adverse: entry longs get filled higher, shorts lower; exits vice-versa.
         if direction == "entry":
@@ -301,7 +357,7 @@ class Engine:
             direction=direction,
             price=round(fill_price, 8),
             qty=qty,
-            slippage=round(slip_amount * qty * self.point_value / tick_size if tick_size else 0.0, 4),
+            slippage=round(slip_amount * qty * self.point_value, 4),
             commission=round(comm, 4),
         )
 
@@ -318,23 +374,37 @@ class Engine:
         return 0.0
 
     def _check_stop_target(self, trade: Trade, bar: Bar, i: int) -> Fill | None:
-        """Check intrabar stop/target touch. Returns exit Fill or None."""
+        """Check intrabar stop/target touch. Returns exit Fill or None.
+
+        Gap handling: a stop is a stop-market order — if the bar OPENS beyond
+        the stop (weekend/overnight gap), the realistic fill is the open, not
+        the stop price. A target is a limit order — a favorable gap fills at
+        the (better) open, and limit fills take no slippage.
+
+        When both stop and target lie inside one bar's range the stop is
+        assumed to hit first (conservative; sub-bar data would be needed to
+        know the true touch order).
+        """
         stop_price = self._resolve_stop(trade, bar, i)
         target_price = self._resolve_target(trade, bar, i)
 
-        entry_p = trade.entry_fill.price
+        qty = trade.entry_fill.qty
         side = trade.side
 
         if side == "long":
-            if stop_price and bar.low <= stop_price:
-                return self._build_fill(i, bar.time, stop_price, trade.entry_fill.qty, "exit", side)
-            if target_price and bar.high >= target_price:
-                return self._build_fill(i, bar.time, target_price, trade.entry_fill.qty, "exit", side)
+            if stop_price is not None and bar.low <= stop_price:
+                price = min(stop_price, bar.open)  # gap down fills at the open
+                return self._build_fill(i, bar.time, price, qty, "exit", side)
+            if target_price is not None and bar.high >= target_price:
+                price = max(target_price, bar.open)  # gap up fills at the better open
+                return self._build_fill(i, bar.time, price, qty, "exit", side, is_limit=True)
         else:
-            if stop_price and bar.high >= stop_price:
-                return self._build_fill(i, bar.time, stop_price, trade.entry_fill.qty, "exit", side)
-            if target_price and bar.low <= target_price:
-                return self._build_fill(i, bar.time, target_price, trade.entry_fill.qty, "exit", side)
+            if stop_price is not None and bar.high >= stop_price:
+                price = max(stop_price, bar.open)
+                return self._build_fill(i, bar.time, price, qty, "exit", side)
+            if target_price is not None and bar.low <= target_price:
+                price = min(target_price, bar.open)
+                return self._build_fill(i, bar.time, price, qty, "exit", side, is_limit=True)
         return None
 
     def _resolve_stop(self, trade: Trade, bar: Bar, i: int) -> float | None:
@@ -380,6 +450,12 @@ class Engine:
             risk = abs(entry_p - stop_p)
             return entry_p + rr * risk if side == "long" else entry_p - rr * risk
         return None
+
+
+def _parse_hhmm(value: str) -> dtime:
+    """Parse 'HH:MM' into a time; raises ValueError on malformed input."""
+    h, m = value.strip().split(":")
+    return dtime(int(h), int(m))
 
 
 # ---------------------------------------------------------------------------

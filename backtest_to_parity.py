@@ -25,17 +25,17 @@ from dataclasses import dataclass, asdict
 
 @dataclass
 class ContractSpec:
-    """Instrument tick economics."""
+    """Instrument tick economics. tick_value = tick_size * point_value."""
     instrument: str          # "MGC", "MNQ", "NQ"
     tick_size: float         # 0.1 for MGC
-    tick_value: float        # $10 for MGC
-    point_value: float       # $10 for MGC (1 point = tick_size * tick_value)
+    tick_value: float        # $1.00 for MGC (0.1 * $10/pt)
+    point_value: float       # $10 for MGC — dollars per 1.0 price move per contract
     margin_req: float        # $2000 for MGC
 
 INSTRUMENT_DEFAULTS = {
-    "MGC": ContractSpec("MGC", 0.1, 10.0, 10.0, 2000.0),
-    "MNQ": ContractSpec("MNQ", 0.25, 5.0, 1.25, 4000.0),
-    "NQ": ContractSpec("NQ", 0.25, 20.0, 5.0, 20000.0),
+    "MGC": ContractSpec("MGC", 0.1, 1.0, 10.0, 2000.0),
+    "MNQ": ContractSpec("MNQ", 0.25, 0.5, 2.0, 4000.0),
+    "NQ": ContractSpec("NQ", 0.25, 5.0, 20.0, 20000.0),
 }
 
 @dataclass
