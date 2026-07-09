@@ -9,6 +9,11 @@ from parity_engine.engine import bars_from_dicts
 from parity_engine.risk_engine import RiskEngine
 
 
+def _fmt(value, suffix="", prefix="", digits=2):
+    """Format a possibly-None metric."""
+    return "n/a" if value is None else f"{prefix}{value:.{digits}f}{suffix}"
+
+
 def demo_profitable_strategy_within_risk_limits():
     """Profitable backtest that passes all risk checks."""
     print("\n" + "=" * 70)
@@ -73,11 +78,12 @@ def demo_profitable_strategy_within_risk_limits():
 
     print(f"\nRisk Metrics:")
     if result.risk_metrics:
-        print(f"  Max drawdown: {result.risk_metrics.max_drawdown_pct:.2f}% (limit: 10.0%)")
-        print(f"  Profit factor: {result.risk_metrics.profit_factor:.2f}x (min: 1.2x)")
+        m = result.risk_metrics
+        print(f"  Max drawdown: {m.max_drawdown_pct:.2f}% (limit: 10.0%)")
+        print(f"  Profit factor: {_fmt(m.profit_factor, 'x')} (min: 1.2x)")
         print(f"  Win rate: {100 * sum(1 for t in result.engine_result.trades if t.net_pnl > 0) / max(1, len([t for t in result.engine_result.trades if not t.is_open]))}% (min: 40%)")
-        print(f"  Expectancy: ${result.risk_metrics.expectancy:.2f}")
-        print(f"  Max consecutive losses: {result.risk_metrics.max_consecutive_losses}")
+        print(f"  Expectancy: {_fmt(m.expectancy, prefix='$')}")
+        print(f"  Max consecutive losses: {m.max_consecutive_losses}")
 
     print(f"\nRisk Status: {result.risk_status.upper()}")
     print(f"Violations: {len(result.risk_violations)}")
@@ -148,7 +154,7 @@ def demo_strategy_exceeding_consecutive_loss_limit():
     print(f"\nRisk Metrics:")
     if result.risk_metrics:
         print(f"  Max consecutive losses: {result.risk_metrics.max_consecutive_losses} (limit: 2)")
-        print(f"  Profit factor: {result.risk_metrics.profit_factor:.2f}x")
+        print(f"  Profit factor: {_fmt(result.risk_metrics.profit_factor, 'x')}")
 
     print(f"\nRisk Status: {result.risk_status.upper()}")
     if result.risk_violations:
@@ -220,8 +226,8 @@ def demo_scalability_check():
     print(f"\nRisk Metrics:")
     if result.risk_metrics:
         print(f"  Max drawdown: {result.risk_metrics.max_drawdown_pct:.2f}%")
-        print(f"  Sharpe ratio: {result.risk_metrics.sharpe_ratio:.4f}")
-        print(f"  Profit factor: {result.risk_metrics.profit_factor:.2f}x")
+        print(f"  Sharpe ratio: {_fmt(result.risk_metrics.sharpe_ratio, digits=4)}")
+        print(f"  Profit factor: {_fmt(result.risk_metrics.profit_factor, 'x')}")
 
     print(f"\nRisk Status: {result.risk_status.upper()}")
     print(f"Violations: {len(result.risk_violations)}")

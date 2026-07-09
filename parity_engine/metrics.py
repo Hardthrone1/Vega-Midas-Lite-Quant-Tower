@@ -112,6 +112,11 @@ def _empty_metrics() -> dict[str, Any]:
     ]}
 
 
+# Below this, dispersion is float-rounding noise (e.g. identical trade PnLs
+# differing in the last bit) — a ratio against it would explode to ~1e16.
+_STD_EPS = 1e-12
+
+
 def _sharpe(returns: list[float], risk_free: float = 0.0) -> float | None:
     n = len(returns)
     if n < 2:
@@ -119,7 +124,7 @@ def _sharpe(returns: list[float], risk_free: float = 0.0) -> float | None:
     mean = sum(returns) / n - risk_free
     variance = sum((r - mean - risk_free) ** 2 for r in returns) / (n - 1)
     std = math.sqrt(variance) if variance > 0 else 0.0
-    return mean / std * math.sqrt(252) if std > 0 else None
+    return mean / std * math.sqrt(252) if std > _STD_EPS else None
 
 
 def _sortino(returns: list[float], risk_free: float = 0.0) -> float | None:
@@ -131,7 +136,7 @@ def _sortino(returns: list[float], risk_free: float = 0.0) -> float | None:
     if not neg_sq:
         return None
     downside_std = math.sqrt(sum(neg_sq) / len(neg_sq))
-    return mean / downside_std * math.sqrt(252) if downside_std > 0 else None
+    return mean / downside_std * math.sqrt(252) if downside_std > _STD_EPS else None
 
 
 def _var(returns: list[float], confidence: float) -> float | None:

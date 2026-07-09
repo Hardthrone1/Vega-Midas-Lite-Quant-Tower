@@ -25,6 +25,14 @@ live exactly. The three rules that close the backtest→live gap:
    zoneinfo; overnight windows like Globex 18:00→17:00 supported). Exits
    still process on every bar so open risk is never ignored.
 
+6. Trailing stop: exit.trailing {enabled, mode: "ticks"|"points", value,
+   activation?} arms once price moves `activation` in favor (immediately when
+   absent), then ratchets a stop `value` behind the best price seen. The
+   trail updates from a bar's extremes AFTER that bar's exit checks, so the
+   stop tested on bar N reflects extremes through bar N-1 — deterministic and
+   conservative (no same-bar ratchet-then-fill). Trail exits are stop-market:
+   slippage and gap handling apply. The tighter of fixed stop vs trail wins.
+
 Usage:
     from parity_engine.contract import BacktestPayload
     from parity_engine.engine import Engine
@@ -80,6 +88,9 @@ class Trade:
     entry_fill: Fill
     exit_fill: Fill | None = None
     point_value: float = 1.0  # dollars per 1.0 of price move per contract
+    # Trailing-stop runtime state (managed by Engine when trailing is enabled)
+    trail_armed: bool = False
+    trail_stop: float | None = None
 
     @property
     def is_open(self) -> bool:
@@ -156,6 +167,23 @@ class Engine:
                 self._session_tz = None
                 self._session_start = None
                 self._session_end = None
+
+        # Trailing stop config. `value` (trail distance) and `activation`
+        # (profit needed to arm; 0/absent = armed immediately) are both in
+        # the units of `mode`: "ticks" (x tickSize) or "points" (raw price).
+        # Anything malformed or an unknown mode disables trailing.
+        self._trail_offset: float | None = None
+        self._trail_activation: float = 0.0
+        tr = payload.exit.trailing or {}
+        if tr.get("enabled") and tr.get("value") is not None:
+            try:
+                mode = tr.get("mode", "ticks")
+                unit = self.tick_size if mode == "ticks" else 1.0 if mode == "points" else None
+                if unit is not None:
+                    self._trail_offset = float(tr["value"]) * unit
+                    self._trail_activation = float(tr.get("activation") or 0.0) * unit
+            except (TypeError, ValueError):
+                self._trail_offset = None
 
     def _atr_length_from_spec(self) -> int:
         stop = self.payload.exit.stop or {}
@@ -234,6 +262,14 @@ class Engine:
                         new_trade = self._open_trade(pending, bar, i, len(trades) + 1)
                         open_trade = new_trade
                         pending = None
+
+            # -----------------------------------------------------------
+            # 4b. Trailing-stop update from this bar's extremes. Runs AFTER
+            #     exit checks so the ratchet from bar N is first tested on
+            #     bar N+1 (no same-bar ratchet-then-fill ambiguity).
+            # -----------------------------------------------------------
+            if open_trade is not None and self._trail_offset is not None:
+                self._update_trailing(open_trade, bar)
 
             # -----------------------------------------------------------
             # 5. Equity snapshot
@@ -388,6 +424,13 @@ class Engine:
         stop_price = self._resolve_stop(trade, bar, i)
         target_price = self._resolve_target(trade, bar, i)
 
+        # An armed trailing stop tightens (never loosens) the fixed stop.
+        if trade.trail_armed and trade.trail_stop is not None:
+            if trade.side == "long":
+                stop_price = trade.trail_stop if stop_price is None else max(stop_price, trade.trail_stop)
+            else:
+                stop_price = trade.trail_stop if stop_price is None else min(stop_price, trade.trail_stop)
+
         qty = trade.entry_fill.qty
         side = trade.side
 
@@ -406,6 +449,29 @@ class Engine:
                 price = min(target_price, bar.open)
                 return self._build_fill(i, bar.time, price, qty, "exit", side, is_limit=True)
         return None
+
+    def _update_trailing(self, trade: Trade, bar: Bar) -> None:
+        """Arm and ratchet the trailing stop from this bar's extremes.
+
+        Long: arms when high >= entry + activation, then trails at
+        high - offset, only ever moving up. Short is mirrored on the low.
+        """
+        assert self._trail_offset is not None
+        entry_p = trade.entry_fill.price
+        if trade.side == "long":
+            if not trade.trail_armed and bar.high >= entry_p + self._trail_activation:
+                trade.trail_armed = True
+            if trade.trail_armed:
+                candidate = bar.high - self._trail_offset
+                if trade.trail_stop is None or candidate > trade.trail_stop:
+                    trade.trail_stop = candidate
+        else:
+            if not trade.trail_armed and bar.low <= entry_p - self._trail_activation:
+                trade.trail_armed = True
+            if trade.trail_armed:
+                candidate = bar.low + self._trail_offset
+                if trade.trail_stop is None or candidate < trade.trail_stop:
+                    trade.trail_stop = candidate
 
     def _resolve_stop(self, trade: Trade, bar: Bar, i: int) -> float | None:
         stop = self.payload.exit.stop or {}

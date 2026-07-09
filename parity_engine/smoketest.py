@@ -7,6 +7,8 @@ Assertion suite proving the contract economics are dollar-correct:
   4. Targets are limit orders: no slippage on target fills
   5. MNQ economics resolve correctly ($2/pt, 0.25 tick)
   6. Session window gates entries, DST-aware, incl. overnight (Globex) windows
+  7. Trailing stop arms at activation, ratchets off prior-bar extremes, and
+     exits as a stop-market
 
 Then runs the original 80-bar demo and prints its metrics.
 """
@@ -26,7 +28,7 @@ BAR_MS = 300000     # 5m
 
 
 def make_payload(symbol="MGC1!", slippage_ticks=0, commission=0.0,
-                 stop_ticks=10, target_ticks=20, session=None):
+                 stop_ticks=10, target_ticks=20, session=None, trailing=None):
     return BacktestPayload.from_dict({
         "schemaVersion": 1, "strategyId": "smoke", "generatedFrom": "test",
         "asset": {"symbol": symbol, "timeframe": "5m"},
@@ -41,7 +43,8 @@ def make_payload(symbol="MGC1!", slippage_ticks=0, commission=0.0,
         "entry": {"side": "long", "orderType": "market",
                   "conditions": [{"id": "c1", "expression": "close > open"}]},
         "exit": {"stop": {"mode": "fixed_ticks", "value": stop_ticks},
-                 "target": {"mode": "fixed_ticks", "value": target_ticks}},
+                 "target": {"mode": "fixed_ticks", "value": target_ticks},
+                 "trailing": trailing or {}},
     })
 
 
@@ -198,6 +201,41 @@ def test_session_window():
 
 
 # ---------------------------------------------------------------------------
+# 7. Trailing stop (MGC: 0.1 tick, $10/pt)
+# ---------------------------------------------------------------------------
+
+def test_trailing_stop():
+    # Trail: offset 10 ticks (1.0pt), arms after 20 ticks (2.0pt) of profit.
+    # Fixed stop 100 ticks (far), target 400 ticks (far) — the trail must exit.
+    payload = make_payload(stop_ticks=100, target_ticks=400,
+                           trailing={"enabled": True, "mode": "ticks",
+                                     "value": 10, "activation": 20})
+    # bar0 signal; bar1 entry @3350.0, high 3352.5 >= 3352.0 arms the trail
+    #   -> trail = 3352.5 - 1.0 = 3351.5 (takes effect NEXT bar)
+    # bar2 low 3351.0 <= 3351.5 -> stop-market exit at 3351.5 (+1.5pt = $15)
+    t = one_closed_trade(payload, [
+        (3350.0, 3351.5, 3349.8, 3351.0),
+        (3350.0, 3352.5, 3349.9, 3352.0),
+        (3352.0, 3353.0, 3351.0, 3351.2),
+    ])
+    approx(t.exit_fill.price, 3351.5)
+    approx(t.net_pnl, 15.0)
+
+    # Same trade but the move never reaches activation: trail never arms,
+    # the fixed stop (3340.0) governs and nothing exits on these bars.
+    payload2 = make_payload(stop_ticks=100, target_ticks=400,
+                            trailing={"enabled": True, "mode": "ticks",
+                                      "value": 10, "activation": 20})
+    result = Engine(payload2, bars_ohlc([
+        (3350.0, 3351.5, 3349.8, 3351.0),
+        (3350.0, 3351.5, 3349.9, 3350.4),   # high 3351.5 < 3352.0: not armed
+        (3350.4, 3351.0, 3349.5, 3350.0),   # low 3349.5 > 3340: no exit
+    ])).run()
+    assert all(t.is_open for t in result.trades), "unarmed trail must not exit"
+    print("PASS  trailing stop: arms at +2.0pt, ratchets to 3351.5, exits +$15.00")
+
+
+# ---------------------------------------------------------------------------
 # Original 80-bar demo
 # ---------------------------------------------------------------------------
 
@@ -261,5 +299,6 @@ if __name__ == "__main__":
     test_target_limit_no_slippage()
     test_mnq_economics()
     test_session_window()
+    test_trailing_stop()
     print("\nAll parity-engine economics assertions passed.")
     demo()
