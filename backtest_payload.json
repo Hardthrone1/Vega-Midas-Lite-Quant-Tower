@@ -3,45 +3,1584 @@
   "contract": {
     "instrument": "MGC",
     "tick_size": 0.1,
-    "tick_value": 10.0,
+    "tick_value": 1.0,
     "point_value": 10.0,
     "margin_req": 2000.0
   },
   "config": {
-    "offset_price_l": 3.0,
-    "bar_window_l": 7,
-    "tp_l": 100.0,
-    "sl_l": 14.0,
-    "trail_act_l": 4.0,
-    "trail_step_l": 0.1,
-    "pivot_len": 5,
-    "min_opp_breaks": 2,
-    "max_opp_breaks": 6
+    "entry_offset": 2.0,
+    "point_mult": 1.0,
+    "tp_points": 20.0,
+    "sl_points": 10.0,
+    "use_trail": true,
+    "trail_act": 10.0,
+    "trail_off": 2.0,
+    "point_value": 10.0
   },
   "initial_capital": 50000.0,
-  "bars_csv_path": "mgc1_13m_backtest_data.csv",
+  "bars_csv_path": "mgc_5m_et.csv",
   "trades": [
     {
-      "trade_num": 1,
-      "entry_dt": "2026-06-22T17:17:00+00:00",
-      "entry_price": 4213.2,
-      "entry_signal": "brk#3",
-      "exit_dt": "2026-06-22T17:30:00+00:00",
-      "exit_price": 4199.2,
-      "exit_reason": "SL",
-      "pnl_usd": -140.0
+      "entry_dt": "2026-06-22 01:15:00",
+      "entry_price": 4204.6,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-22 01:40:00",
+      "exit_price": 4214.4,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 98.0,
+      "trade_num": 64
     },
     {
-      "trade_num": 2,
-      "entry_dt": "2026-06-22T22:00:00+00:00",
-      "entry_price": 4215.8,
-      "entry_signal": "brk#3",
-      "exit_dt": "2026-06-22T23:44:00+00:00",
-      "exit_price": 4201.8,
-      "exit_reason": "SL_WINDOW",
-      "pnl_usd": -140.0
+      "entry_dt": "2026-06-22 02:45:00",
+      "entry_price": 4222.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-22 03:30:00",
+      "exit_price": 4212.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 65
+    },
+    {
+      "entry_dt": "2026-06-22 03:50:00",
+      "entry_price": 4209.9,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-22 05:00:00",
+      "exit_price": 4219.9,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 66
+    },
+    {
+      "entry_dt": "2026-06-22 06:10:00",
+      "entry_price": 4230.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-22 07:35:00",
+      "exit_price": 4220.8,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 67
+    },
+    {
+      "entry_dt": "2026-06-22 08:50:00",
+      "entry_price": 4215.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-22 09:30:00",
+      "exit_price": 4205.8,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 98.0,
+      "trade_num": 68
+    },
+    {
+      "entry_dt": "2026-06-22 10:00:00",
+      "entry_price": 4215.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-22 10:05:00",
+      "exit_price": 4225.3,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 69
+    },
+    {
+      "entry_dt": "2026-06-22 11:15:00",
+      "entry_price": 4212.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-22 11:35:00",
+      "exit_price": 4199.2,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 129.0,
+      "trade_num": 70
+    },
+    {
+      "entry_dt": "2026-06-22 14:00:00",
+      "entry_price": 4203.4,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-22 19:40:00",
+      "exit_price": 4212.5,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 91.0,
+      "trade_num": 72
+    },
+    {
+      "entry_dt": "2026-06-22 20:05:00",
+      "entry_price": 4202.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-22 20:45:00",
+      "exit_price": 4212.2,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 73
+    },
+    {
+      "entry_dt": "2026-06-22 21:05:00",
+      "entry_price": 4204.0,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-22 21:20:00",
+      "exit_price": 4189.9,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 141.0,
+      "trade_num": 74
+    },
+    {
+      "entry_dt": "2026-06-23 00:00:00",
+      "entry_price": 4164.2,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 00:30:00",
+      "exit_price": 4154.2,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 75
+    },
+    {
+      "entry_dt": "2026-06-23 01:35:00",
+      "entry_price": 4151.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 01:40:00",
+      "exit_price": 4141.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 76
+    },
+    {
+      "entry_dt": "2026-06-23 02:15:00",
+      "entry_price": 4144.9,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 02:25:00",
+      "exit_price": 4134.9,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 77
+    },
+    {
+      "entry_dt": "2026-06-23 02:55:00",
+      "entry_price": 4138.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 03:00:00",
+      "exit_price": 4128.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 78
+    },
+    {
+      "entry_dt": "2026-06-23 06:00:00",
+      "entry_price": 4142.4,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 08:10:00",
+      "exit_price": 4132.4,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 79
+    },
+    {
+      "entry_dt": "2026-06-23 09:25:00",
+      "entry_price": 4136.5,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 09:40:00",
+      "exit_price": 4144.6,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 81.0,
+      "trade_num": 80
+    },
+    {
+      "entry_dt": "2026-06-23 10:25:00",
+      "entry_price": 4148.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-23 11:40:00",
+      "exit_price": 4158.6,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 81
+    },
+    {
+      "entry_dt": "2026-06-23 12:30:00",
+      "entry_price": 4158.2,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 13:05:00",
+      "exit_price": 4148.2,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 82
+    },
+    {
+      "entry_dt": "2026-06-23 14:05:00",
+      "entry_price": 4142.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-23 14:45:00",
+      "exit_price": 4132.6,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 96.0,
+      "trade_num": 83
+    },
+    {
+      "entry_dt": "2026-06-23 18:00:00",
+      "entry_price": 4131.5,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 18:25:00",
+      "exit_price": 4121.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 84
+    },
+    {
+      "entry_dt": "2026-06-23 20:05:00",
+      "entry_price": 4124.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 20:20:00",
+      "exit_price": 4114.8,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 85
+    },
+    {
+      "entry_dt": "2026-06-23 22:30:00",
+      "entry_price": 4086.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-23 22:40:00",
+      "exit_price": 4070.9,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 152.0,
+      "trade_num": 86
+    },
+    {
+      "entry_dt": "2026-06-23 23:30:00",
+      "entry_price": 4075.9,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-23 23:45:00",
+      "exit_price": 4086.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 102.0,
+      "trade_num": 87
+    },
+    {
+      "entry_dt": "2026-06-24 00:05:00",
+      "entry_price": 4073.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 00:25:00",
+      "exit_price": 4083.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 88
+    },
+    {
+      "entry_dt": "2026-06-24 01:05:00",
+      "entry_price": 4077.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 01:05:00",
+      "exit_price": 4085.1,
+      "exit_reason": "OPP_STOP",
+      "pnl_usd": -79.0,
+      "trade_num": 89
+    },
+    {
+      "entry_dt": "2026-06-24 01:20:00",
+      "entry_price": 4088.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-24 01:30:00",
+      "exit_price": 4101.3,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 125.0,
+      "trade_num": 90
+    },
+    {
+      "entry_dt": "2026-06-24 02:40:00",
+      "entry_price": 4110.0,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-24 03:25:00",
+      "exit_price": 4100.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 91
+    },
+    {
+      "entry_dt": "2026-06-24 06:15:00",
+      "entry_price": 4074.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 07:15:00",
+      "exit_price": 4063.3,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 108.0,
+      "trade_num": 92
+    },
+    {
+      "entry_dt": "2026-06-24 07:35:00",
+      "entry_price": 4065.5,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-24 07:45:00",
+      "exit_price": 4055.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 93
+    },
+    {
+      "entry_dt": "2026-06-24 08:50:00",
+      "entry_price": 4016.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 09:00:00",
+      "exit_price": 4005.2,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 116.0,
+      "trade_num": 94
+    },
+    {
+      "entry_dt": "2026-06-24 10:15:00",
+      "entry_price": 4033.9,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 10:25:00",
+      "exit_price": 4043.9,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 95
+    },
+    {
+      "entry_dt": "2026-06-24 11:05:00",
+      "entry_price": 4015.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 11:15:00",
+      "exit_price": 4025.6,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 96
+    },
+    {
+      "entry_dt": "2026-06-24 11:40:00",
+      "entry_price": 4018.7,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 11:45:00",
+      "exit_price": 4028.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 97
+    },
+    {
+      "entry_dt": "2026-06-24 11:55:00",
+      "entry_price": 4018.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 12:20:00",
+      "exit_price": 4028.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 98
+    },
+    {
+      "entry_dt": "2026-06-24 13:15:00",
+      "entry_price": 4020.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 13:25:00",
+      "exit_price": 4009.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 116.0,
+      "trade_num": 99
+    },
+    {
+      "entry_dt": "2026-06-24 13:50:00",
+      "entry_price": 3994.9,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 14:00:00",
+      "exit_price": 3977.8,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 171.0,
+      "trade_num": 100
+    },
+    {
+      "entry_dt": "2026-06-24 15:10:00",
+      "entry_price": 3992.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 15:30:00",
+      "exit_price": 4002.8,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 101
+    },
+    {
+      "entry_dt": "2026-06-24 16:00:00",
+      "entry_price": 4010.4,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-24 18:05:00",
+      "exit_price": 4022.9,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 125.0,
+      "trade_num": 102
+    },
+    {
+      "entry_dt": "2026-06-24 18:50:00",
+      "entry_price": 4013.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 19:30:00",
+      "exit_price": 4023.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 103
+    },
+    {
+      "entry_dt": "2026-06-24 20:10:00",
+      "entry_price": 4031.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-24 20:10:00",
+      "exit_price": 4022.1,
+      "exit_reason": "OPP_STOP",
+      "pnl_usd": -96.0,
+      "trade_num": 104
+    },
+    {
+      "entry_dt": "2026-06-24 20:15:00",
+      "entry_price": 4017.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 20:35:00",
+      "exit_price": 3997.1,
+      "exit_reason": "TP",
+      "pnl_usd": 200.0,
+      "trade_num": 105
+    },
+    {
+      "entry_dt": "2026-06-24 23:35:00",
+      "entry_price": 3985.0,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-24 23:45:00",
+      "exit_price": 3995.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 106
+    },
+    {
+      "entry_dt": "2026-06-25 00:45:00",
+      "entry_price": 4010.4,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-25 01:35:00",
+      "exit_price": 4000.4,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 107
+    },
+    {
+      "entry_dt": "2026-06-25 02:25:00",
+      "entry_price": 3999.3,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-25 03:00:00",
+      "exit_price": 3989.3,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 108
+    },
+    {
+      "entry_dt": "2026-06-25 06:00:00",
+      "entry_price": 4000.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-25 07:35:00",
+      "exit_price": 3990.6,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 102.0,
+      "trade_num": 109
+    },
+    {
+      "entry_dt": "2026-06-25 07:40:00",
+      "entry_price": 3999.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-25 08:30:00",
+      "exit_price": 4019.7,
+      "exit_reason": "TP",
+      "pnl_usd": 200.0,
+      "trade_num": 110
+    },
+    {
+      "entry_dt": "2026-06-25 09:40:00",
+      "entry_price": 4026.9,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-25 10:00:00",
+      "exit_price": 4017.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 98.0,
+      "trade_num": 111
+    },
+    {
+      "entry_dt": "2026-06-25 10:05:00",
+      "entry_price": 4036.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-25 10:55:00",
+      "exit_price": 4026.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 112
+    },
+    {
+      "entry_dt": "2026-06-25 12:35:00",
+      "entry_price": 4048.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-25 14:25:00",
+      "exit_price": 4058.3,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 113
+    },
+    {
+      "entry_dt": "2026-06-25 15:30:00",
+      "entry_price": 4048.9,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-25 15:50:00",
+      "exit_price": 4038.7,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 102.0,
+      "trade_num": 114
+    },
+    {
+      "entry_dt": "2026-06-25 19:20:00",
+      "entry_price": 4044.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-25 19:45:00",
+      "exit_price": 4034.8,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 115
+    },
+    {
+      "entry_dt": "2026-06-25 20:15:00",
+      "entry_price": 4036.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-25 22:15:00",
+      "exit_price": 4026.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 116
+    },
+    {
+      "entry_dt": "2026-06-25 22:35:00",
+      "entry_price": 4014.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-25 22:55:00",
+      "exit_price": 4000.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 140.0,
+      "trade_num": 117
+    },
+    {
+      "entry_dt": "2026-06-26 00:50:00",
+      "entry_price": 4025.6,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-26 01:30:00",
+      "exit_price": 4035.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 94.0,
+      "trade_num": 118
+    },
+    {
+      "entry_dt": "2026-06-26 02:45:00",
+      "entry_price": 4044.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-26 03:30:00",
+      "exit_price": 4053.5,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 94.0,
+      "trade_num": 119
+    },
+    {
+      "entry_dt": "2026-06-26 04:25:00",
+      "entry_price": 4050.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-26 05:20:00",
+      "exit_price": 4062.8,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 121.0,
+      "trade_num": 120
+    },
+    {
+      "entry_dt": "2026-06-26 07:50:00",
+      "entry_price": 4059.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-26 08:55:00",
+      "exit_price": 4069.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 121
+    },
+    {
+      "entry_dt": "2026-06-26 09:20:00",
+      "entry_price": 4070.0,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-26 09:35:00",
+      "exit_price": 4060.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 122
+    },
+    {
+      "entry_dt": "2026-06-26 11:05:00",
+      "entry_price": 4093.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-26 11:30:00",
+      "exit_price": 4103.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 123
+    },
+    {
+      "entry_dt": "2026-06-26 11:45:00",
+      "entry_price": 4111.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-26 11:50:00",
+      "exit_price": 4101.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 124
+    },
+    {
+      "entry_dt": "2026-06-26 12:20:00",
+      "entry_price": 4101.4,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-26 13:30:00",
+      "exit_price": 4093.2,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 82.0,
+      "trade_num": 125
+    },
+    {
+      "entry_dt": "2026-06-26 14:05:00",
+      "entry_price": 4093.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-26 14:45:00",
+      "exit_price": 4083.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 126
+    },
+    {
+      "entry_dt": "2026-06-26 15:00:00",
+      "entry_price": 4079.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-26 16:45:00",
+      "exit_price": 4089.8,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 127
+    },
+    {
+      "entry_dt": "2026-06-28 18:40:00",
+      "entry_price": 4079.2,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-28 19:20:00",
+      "exit_price": 4069.2,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 128
+    },
+    {
+      "entry_dt": "2026-06-28 20:00:00",
+      "entry_price": 4073.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-28 20:30:00",
+      "exit_price": 4064.3,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 90.0,
+      "trade_num": 129
+    },
+    {
+      "entry_dt": "2026-06-28 22:30:00",
+      "entry_price": 4085.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-28 22:35:00",
+      "exit_price": 4075.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 130
+    },
+    {
+      "entry_dt": "2026-06-29 01:05:00",
+      "entry_price": 4070.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-29 01:30:00",
+      "exit_price": 4060.8,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 131
+    },
+    {
+      "entry_dt": "2026-06-29 02:00:00",
+      "entry_price": 4071.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-29 03:50:00",
+      "exit_price": 4081.3,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 95.0,
+      "trade_num": 132
+    },
+    {
+      "entry_dt": "2026-06-29 04:25:00",
+      "entry_price": 4074.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 04:55:00",
+      "exit_price": 4059.6,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 147.0,
+      "trade_num": 133
+    },
+    {
+      "entry_dt": "2026-06-29 05:45:00",
+      "entry_price": 4053.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 05:55:00",
+      "exit_price": 4040.4,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 131.0,
+      "trade_num": 134
+    },
+    {
+      "entry_dt": "2026-06-29 07:10:00",
+      "entry_price": 4047.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 08:00:00",
+      "exit_price": 4057.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 135
+    },
+    {
+      "entry_dt": "2026-06-29 09:35:00",
+      "entry_price": 4048.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 10:00:00",
+      "exit_price": 4038.3,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 105.0,
+      "trade_num": 136
+    },
+    {
+      "entry_dt": "2026-06-29 10:05:00",
+      "entry_price": 4034.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 10:15:00",
+      "exit_price": 4014.3,
+      "exit_reason": "TP",
+      "pnl_usd": 200.0,
+      "trade_num": 137
+    },
+    {
+      "entry_dt": "2026-06-29 10:20:00",
+      "entry_price": 4034.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-29 11:55:00",
+      "exit_price": 4043.3,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 85.0,
+      "trade_num": 138
+    },
+    {
+      "entry_dt": "2026-06-29 12:30:00",
+      "entry_price": 4035.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 13:05:00",
+      "exit_price": 4045.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 139
+    },
+    {
+      "entry_dt": "2026-06-29 14:10:00",
+      "entry_price": 4039.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-29 14:55:00",
+      "exit_price": 4029.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 140
+    },
+    {
+      "entry_dt": "2026-06-29 15:15:00",
+      "entry_price": 4020.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 15:25:00",
+      "exit_price": 4030.2,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 141
+    },
+    {
+      "entry_dt": "2026-06-29 15:55:00",
+      "entry_price": 4027.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 18:10:00",
+      "exit_price": 4037.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 142
+    },
+    {
+      "entry_dt": "2026-06-29 18:25:00",
+      "entry_price": 4029.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 20:10:00",
+      "exit_price": 4019.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 103.0,
+      "trade_num": 143
+    },
+    {
+      "entry_dt": "2026-06-29 21:20:00",
+      "entry_price": 3987.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-29 21:45:00",
+      "exit_price": 3977.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 144
+    },
+    {
+      "entry_dt": "2026-06-29 22:05:00",
+      "entry_price": 3972.7,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-29 22:50:00",
+      "exit_price": 3982.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 145
+    },
+    {
+      "entry_dt": "2026-06-30 00:00:00",
+      "entry_price": 3986.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-30 00:30:00",
+      "exit_price": 4006.1,
+      "exit_reason": "TP",
+      "pnl_usd": 200.0,
+      "trade_num": 146
+    },
+    {
+      "entry_dt": "2026-06-30 01:30:00",
+      "entry_price": 3990.0,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-30 02:00:00",
+      "exit_price": 4000.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 147
+    },
+    {
+      "entry_dt": "2026-06-30 02:20:00",
+      "entry_price": 4004.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-30 02:25:00",
+      "exit_price": 4024.1,
+      "exit_reason": "TP",
+      "pnl_usd": 200.0,
+      "trade_num": 148
+    },
+    {
+      "entry_dt": "2026-06-30 03:20:00",
+      "entry_price": 4046.0,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-30 04:10:00",
+      "exit_price": 4036.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 149
+    },
+    {
+      "entry_dt": "2026-06-30 04:40:00",
+      "entry_price": 4031.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-30 06:25:00",
+      "exit_price": 4041.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 150
+    },
+    {
+      "entry_dt": "2026-06-30 07:05:00",
+      "entry_price": 4046.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-30 08:20:00",
+      "exit_price": 4036.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 151
+    },
+    {
+      "entry_dt": "2026-06-30 08:35:00",
+      "entry_price": 4026.4,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-30 09:05:00",
+      "exit_price": 4036.4,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 152
+    },
+    {
+      "entry_dt": "2026-06-30 09:20:00",
+      "entry_price": 4046.5,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-30 09:20:00",
+      "exit_price": 4033.6,
+      "exit_reason": "OPP_STOP",
+      "pnl_usd": -129.0,
+      "trade_num": 153
+    },
+    {
+      "entry_dt": "2026-06-30 09:35:00",
+      "entry_price": 4031.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-30 09:45:00",
+      "exit_price": 4041.2,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 154
+    },
+    {
+      "entry_dt": "2026-06-30 12:00:00",
+      "entry_price": 4041.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-30 15:55:00",
+      "exit_price": 4031.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 102.0,
+      "trade_num": 155
+    },
+    {
+      "entry_dt": "2026-06-30 16:15:00",
+      "entry_price": 4035.9,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-30 16:35:00",
+      "exit_price": 4025.9,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 156
+    },
+    {
+      "entry_dt": "2026-06-30 18:50:00",
+      "entry_price": 4025.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-30 20:20:00",
+      "exit_price": 4016.4,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 87.0,
+      "trade_num": 157
+    },
+    {
+      "entry_dt": "2026-06-30 21:00:00",
+      "entry_price": 4013.6,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-30 21:00:00",
+      "exit_price": 4004.2,
+      "exit_reason": "OPP_STOP",
+      "pnl_usd": -94.0,
+      "trade_num": 158
+    },
+    {
+      "entry_dt": "2026-06-30 21:05:00",
+      "entry_price": 4000.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-30 21:15:00",
+      "exit_price": 3990.2,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 106.0,
+      "trade_num": 159
+    },
+    {
+      "entry_dt": "2026-06-30 21:40:00",
+      "entry_price": 3987.4,
+      "entry_signal": "short",
+      "exit_dt": "2026-06-30 22:30:00",
+      "exit_price": 3997.4,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 160
+    },
+    {
+      "entry_dt": "2026-06-30 23:15:00",
+      "entry_price": 3999.9,
+      "entry_signal": "long",
+      "exit_dt": "2026-06-30 23:30:00",
+      "exit_price": 3989.9,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 161
+    },
+    {
+      "entry_dt": "2026-07-01 00:40:00",
+      "entry_price": 3985.7,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-01 03:05:00",
+      "exit_price": 3975.2,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 105.0,
+      "trade_num": 162
+    },
+    {
+      "entry_dt": "2026-07-01 03:45:00",
+      "entry_price": 3985.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-01 04:20:00",
+      "exit_price": 3995.8,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 100.0,
+      "trade_num": 163
+    },
+    {
+      "entry_dt": "2026-07-01 05:30:00",
+      "entry_price": 3994.0,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-01 06:05:00",
+      "exit_price": 4002.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 80.0,
+      "trade_num": 164
+    },
+    {
+      "entry_dt": "2026-07-01 06:25:00",
+      "entry_price": 4000.6,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-01 07:00:00",
+      "exit_price": 4020.6,
+      "exit_reason": "TP",
+      "pnl_usd": 200.0,
+      "trade_num": 165
+    },
+    {
+      "entry_dt": "2026-07-01 07:45:00",
+      "entry_price": 4048.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-01 08:00:00",
+      "exit_price": 4038.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 166
+    },
+    {
+      "entry_dt": "2026-07-01 08:10:00",
+      "entry_price": 4035.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-01 08:30:00",
+      "exit_price": 4045.2,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 167
+    },
+    {
+      "entry_dt": "2026-07-01 08:40:00",
+      "entry_price": 4037.0,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-01 09:05:00",
+      "exit_price": 4028.5,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 85.0,
+      "trade_num": 168
+    },
+    {
+      "entry_dt": "2026-07-01 10:20:00",
+      "entry_price": 4118.5,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-01 10:35:00",
+      "exit_price": 4128.8,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 103.0,
+      "trade_num": 169
+    },
+    {
+      "entry_dt": "2026-07-01 12:30:00",
+      "entry_price": 4092.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-01 13:10:00",
+      "exit_price": 4083.5,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 93.0,
+      "trade_num": 170
+    },
+    {
+      "entry_dt": "2026-07-01 13:55:00",
+      "entry_price": 4081.0,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-01 15:25:00",
+      "exit_price": 4072.4,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 86.0,
+      "trade_num": 171
+    },
+    {
+      "entry_dt": "2026-07-01 19:05:00",
+      "entry_price": 4052.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-01 20:45:00",
+      "exit_price": 4062.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 172
+    },
+    {
+      "entry_dt": "2026-07-01 22:00:00",
+      "entry_price": 4059.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-01 22:40:00",
+      "exit_price": 4069.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 173
+    },
+    {
+      "entry_dt": "2026-07-01 23:20:00",
+      "entry_price": 4074.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-01 23:55:00",
+      "exit_price": 4084.4,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 103.0,
+      "trade_num": 174
+    },
+    {
+      "entry_dt": "2026-07-02 01:00:00",
+      "entry_price": 4071.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 02:00:00",
+      "exit_price": 4081.2,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 175
+    },
+    {
+      "entry_dt": "2026-07-02 02:20:00",
+      "entry_price": 4090.0,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-02 02:40:00",
+      "exit_price": 4080.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 176
+    },
+    {
+      "entry_dt": "2026-07-02 03:15:00",
+      "entry_price": 4077.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 03:40:00",
+      "exit_price": 4087.5,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 177
+    },
+    {
+      "entry_dt": "2026-07-02 05:05:00",
+      "entry_price": 4083.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 06:50:00",
+      "exit_price": 4075.8,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 80.0,
+      "trade_num": 178
+    },
+    {
+      "entry_dt": "2026-07-02 07:40:00",
+      "entry_price": 4081.4,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-02 08:30:00",
+      "exit_price": 4101.4,
+      "exit_reason": "TP",
+      "pnl_usd": 200.0,
+      "trade_num": 179
+    },
+    {
+      "entry_dt": "2026-07-02 10:00:00",
+      "entry_price": 4143.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 10:25:00",
+      "exit_price": 4128.8,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 143.0,
+      "trade_num": 180
+    },
+    {
+      "entry_dt": "2026-07-02 12:05:00",
+      "entry_price": 4135.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 12:30:00",
+      "exit_price": 4115.5,
+      "exit_reason": "TP",
+      "pnl_usd": 200.0,
+      "trade_num": 181
+    },
+    {
+      "entry_dt": "2026-07-02 13:30:00",
+      "entry_price": 4124.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 14:05:00",
+      "exit_price": 4134.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 182
+    },
+    {
+      "entry_dt": "2026-07-02 15:10:00",
+      "entry_price": 4128.7,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 18:00:00",
+      "exit_price": 4138.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 183
+    },
+    {
+      "entry_dt": "2026-07-02 18:40:00",
+      "entry_price": 4135.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 19:30:00",
+      "exit_price": 4145.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 184
+    },
+    {
+      "entry_dt": "2026-07-02 19:35:00",
+      "entry_price": 4136.9,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-02 20:10:00",
+      "exit_price": 4146.9,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 185
+    },
+    {
+      "entry_dt": "2026-07-02 21:05:00",
+      "entry_price": 4176.6,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-02 21:10:00",
+      "exit_price": 4190.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 135.0,
+      "trade_num": 186
+    },
+    {
+      "entry_dt": "2026-07-02 21:35:00",
+      "entry_price": 4207.8,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-02 21:40:00",
+      "exit_price": 4197.5,
+      "exit_reason": "SL",
+      "pnl_usd": -103.0,
+      "trade_num": 187
+    },
+    {
+      "entry_dt": "2026-07-02 22:35:00",
+      "entry_price": 4199.3,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-02 23:45:00",
+      "exit_price": 4189.3,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 188
+    },
+    {
+      "entry_dt": "2026-07-03 00:50:00",
+      "entry_price": 4187.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-03 02:05:00",
+      "exit_price": 4179.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 86.0,
+      "trade_num": 189
+    },
+    {
+      "entry_dt": "2026-07-03 02:10:00",
+      "entry_price": 4175.0,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-03 02:35:00",
+      "exit_price": 4185.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 190
+    },
+    {
+      "entry_dt": "2026-07-03 03:20:00",
+      "entry_price": 4182.8,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-03 03:45:00",
+      "exit_price": 4192.8,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 191
+    },
+    {
+      "entry_dt": "2026-07-03 03:55:00",
+      "entry_price": 4188.0,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-03 04:05:00",
+      "exit_price": 4198.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 192
+    },
+    {
+      "entry_dt": "2026-07-03 04:45:00",
+      "entry_price": 4191.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-03 05:35:00",
+      "exit_price": 4182.7,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 86.0,
+      "trade_num": 193
+    },
+    {
+      "entry_dt": "2026-07-03 06:05:00",
+      "entry_price": 4190.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-03 09:05:00",
+      "exit_price": 4180.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 194
+    },
+    {
+      "entry_dt": "2026-07-03 10:05:00",
+      "entry_price": 4173.7,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-03 10:55:00",
+      "exit_price": 4183.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 195
+    },
+    {
+      "entry_dt": "2026-07-05 18:35:00",
+      "entry_price": 4202.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-05 19:30:00",
+      "exit_price": 4212.3,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 96.0,
+      "trade_num": 196
+    },
+    {
+      "entry_dt": "2026-07-05 20:55:00",
+      "entry_price": 4192.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-05 21:00:00",
+      "exit_price": 4202.6,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 197
+    },
+    {
+      "entry_dt": "2026-07-05 21:30:00",
+      "entry_price": 4206.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-05 22:00:00",
+      "exit_price": 4196.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 198
+    },
+    {
+      "entry_dt": "2026-07-05 22:30:00",
+      "entry_price": 4185.9,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-05 23:25:00",
+      "exit_price": 4176.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 98.0,
+      "trade_num": 199
+    },
+    {
+      "entry_dt": "2026-07-05 23:35:00",
+      "entry_price": 4180.6,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-06 00:30:00",
+      "exit_price": 4170.6,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 200
+    },
+    {
+      "entry_dt": "2026-07-06 01:00:00",
+      "entry_price": 4168.0,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 01:55:00",
+      "exit_price": 4158.2,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 98.0,
+      "trade_num": 201
+    },
+    {
+      "entry_dt": "2026-07-06 02:25:00",
+      "entry_price": 4165.9,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-06 03:45:00",
+      "exit_price": 4174.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 82.0,
+      "trade_num": 202
+    },
+    {
+      "entry_dt": "2026-07-06 04:10:00",
+      "entry_price": 4170.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 04:40:00",
+      "exit_price": 4161.9,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 84.0,
+      "trade_num": 203
+    },
+    {
+      "entry_dt": "2026-07-06 05:25:00",
+      "entry_price": 4157.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 06:30:00",
+      "exit_price": 4167.1,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 204
+    },
+    {
+      "entry_dt": "2026-07-06 07:15:00",
+      "entry_price": 4171.0,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-06 08:20:00",
+      "exit_price": 4161.0,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 205
+    },
+    {
+      "entry_dt": "2026-07-06 08:30:00",
+      "entry_price": 4156.4,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 08:40:00",
+      "exit_price": 4145.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 114.0,
+      "trade_num": 206
+    },
+    {
+      "entry_dt": "2026-07-06 09:15:00",
+      "entry_price": 4150.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 09:20:00",
+      "exit_price": 4160.6,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 207
+    },
+    {
+      "entry_dt": "2026-07-06 09:55:00",
+      "entry_price": 4151.9,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 10:45:00",
+      "exit_price": 4142.5,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 94.0,
+      "trade_num": 208
+    },
+    {
+      "entry_dt": "2026-07-06 11:25:00",
+      "entry_price": 4159.1,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-06 13:25:00",
+      "exit_price": 4169.4,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 103.0,
+      "trade_num": 209
+    },
+    {
+      "entry_dt": "2026-07-06 13:55:00",
+      "entry_price": 4173.7,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-06 20:15:00",
+      "exit_price": 4163.7,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 210
+    },
+    {
+      "entry_dt": "2026-07-06 20:35:00",
+      "entry_price": 4166.1,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 21:00:00",
+      "exit_price": 4154.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 121.0,
+      "trade_num": 211
+    },
+    {
+      "entry_dt": "2026-07-06 21:15:00",
+      "entry_price": 4149.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 21:25:00",
+      "exit_price": 4139.6,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 96.0,
+      "trade_num": 212
+    },
+    {
+      "entry_dt": "2026-07-06 22:05:00",
+      "entry_price": 4150.3,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-06 23:25:00",
+      "exit_price": 4142.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 82.0,
+      "trade_num": 213
+    },
+    {
+      "entry_dt": "2026-07-07 00:55:00",
+      "entry_price": 4137.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-07 04:10:00",
+      "exit_price": 4147.6,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 214
+    },
+    {
+      "entry_dt": "2026-07-07 04:35:00",
+      "entry_price": 4142.5,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-07 05:30:00",
+      "exit_price": 4132.5,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 100.0,
+      "trade_num": 215
+    },
+    {
+      "entry_dt": "2026-07-07 06:25:00",
+      "entry_price": 4150.4,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-07 07:45:00",
+      "exit_price": 4159.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 86.0,
+      "trade_num": 216
+    },
+    {
+      "entry_dt": "2026-07-07 09:05:00",
+      "entry_price": 4174.4,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-07 09:35:00",
+      "exit_price": 4184.4,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 217
+    },
+    {
+      "entry_dt": "2026-07-07 10:45:00",
+      "entry_price": 4165.9,
+      "entry_signal": "long",
+      "exit_dt": "2026-07-07 11:15:00",
+      "exit_price": 4155.9,
+      "exit_reason": "SL",
+      "pnl_usd": -100.0,
+      "trade_num": 218
+    },
+    {
+      "entry_dt": "2026-07-07 14:30:00",
+      "entry_price": 4150.6,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-07 14:50:00",
+      "exit_price": 4138.0,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 126.0,
+      "trade_num": 219
+    },
+    {
+      "entry_dt": "2026-07-07 16:15:00",
+      "entry_price": 4121.2,
+      "entry_signal": "short",
+      "exit_dt": "2026-07-07 18:00:00",
+      "exit_price": 4106.1,
+      "exit_reason": "TRAIL",
+      "pnl_usd": 151.0,
+      "trade_num": 220
     }
   ],
-  "backtest_timestamp": "2026-06-25T07:46:34.527461",
-  "notes": "Liquidity Sweep \u2014 Leg Break Gate | 2 closed trades"
+  "backtest_timestamp": "2026-07-09T21:45:16.673356",
+  "notes": "Liquidity Sweep Strategy (previous-bar sweep, stop entries) | 156 trades in parity window 2026-06-22 00:00:00..2026-07-07 19:20:00 ET"
 }

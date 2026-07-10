@@ -1,640 +1,1117 @@
 {
   "payload": "backtest_payload.json",
-  "pine_truth": "pine_truth_122_trades.csv",
+  "pine_truth": "pine_truth_157_trades.csv",
   "instrument": "MGC",
   "summary": {
-    "total_python_trades": 2,
-    "total_pine_trades": 122,
-    "matched_trades": 0,
-    "unmatched_python": 2,
-    "unmatched_pine": 122,
-    "pass_count": 0,
+    "total_python_trades": 156,
+    "total_pine_trades": 157,
+    "matched_trades": 156,
+    "unmatched_python": 0,
+    "unmatched_pine": 1,
+    "pass_count": 156,
     "fail_count": 0,
     "overall_status": "FAIL"
   },
-  "matched_trades": [],
-  "unmatched_python_trades": [
+  "matched_trades": [
     {
-      "num": 1,
-      "entry": "2026-06-22T17:17:00+00:00",
-      "signal": "brk#3"
+      "trade_num": 64,
+      "entry_dt": "2026-06-22 01:15:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
     },
     {
-      "num": 2,
-      "entry": "2026-06-22T22:00:00+00:00",
-      "signal": "brk#3"
+      "trade_num": 65,
+      "entry_dt": "2026-06-22 02:45:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 66,
+      "entry_dt": "2026-06-22 03:50:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 67,
+      "entry_dt": "2026-06-22 06:10:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 68,
+      "entry_dt": "2026-06-22 08:50:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 69,
+      "entry_dt": "2026-06-22 10:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 70,
+      "entry_dt": "2026-06-22 11:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 72,
+      "entry_dt": "2026-06-22 14:00:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 73,
+      "entry_dt": "2026-06-22 20:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 74,
+      "entry_dt": "2026-06-22 21:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 75,
+      "entry_dt": "2026-06-23 00:00:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 76,
+      "entry_dt": "2026-06-23 01:35:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 77,
+      "entry_dt": "2026-06-23 02:15:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 78,
+      "entry_dt": "2026-06-23 02:55:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 79,
+      "entry_dt": "2026-06-23 06:00:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 80,
+      "entry_dt": "2026-06-23 09:25:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 81,
+      "entry_dt": "2026-06-23 10:25:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 82,
+      "entry_dt": "2026-06-23 12:30:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 83,
+      "entry_dt": "2026-06-23 14:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 84,
+      "entry_dt": "2026-06-23 18:00:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 85,
+      "entry_dt": "2026-06-23 20:05:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 86,
+      "entry_dt": "2026-06-23 22:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 87,
+      "entry_dt": "2026-06-23 23:30:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 88,
+      "entry_dt": "2026-06-24 00:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 89,
+      "entry_dt": "2026-06-24 01:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 90,
+      "entry_dt": "2026-06-24 01:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 91,
+      "entry_dt": "2026-06-24 02:40:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 92,
+      "entry_dt": "2026-06-24 06:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 93,
+      "entry_dt": "2026-06-24 07:35:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 94,
+      "entry_dt": "2026-06-24 08:50:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 95,
+      "entry_dt": "2026-06-24 10:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 96,
+      "entry_dt": "2026-06-24 11:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 97,
+      "entry_dt": "2026-06-24 11:40:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 98,
+      "entry_dt": "2026-06-24 11:55:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 99,
+      "entry_dt": "2026-06-24 13:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 100,
+      "entry_dt": "2026-06-24 13:50:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 101,
+      "entry_dt": "2026-06-24 15:10:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 102,
+      "entry_dt": "2026-06-24 16:00:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 103,
+      "entry_dt": "2026-06-24 18:50:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 104,
+      "entry_dt": "2026-06-24 20:10:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 105,
+      "entry_dt": "2026-06-24 20:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 106,
+      "entry_dt": "2026-06-24 23:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 107,
+      "entry_dt": "2026-06-25 00:45:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 108,
+      "entry_dt": "2026-06-25 02:25:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 109,
+      "entry_dt": "2026-06-25 06:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 110,
+      "entry_dt": "2026-06-25 07:40:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 111,
+      "entry_dt": "2026-06-25 09:40:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 112,
+      "entry_dt": "2026-06-25 10:05:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 113,
+      "entry_dt": "2026-06-25 12:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 114,
+      "entry_dt": "2026-06-25 15:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 115,
+      "entry_dt": "2026-06-25 19:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 116,
+      "entry_dt": "2026-06-25 20:15:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 117,
+      "entry_dt": "2026-06-25 22:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 118,
+      "entry_dt": "2026-06-26 00:50:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 119,
+      "entry_dt": "2026-06-26 02:45:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 120,
+      "entry_dt": "2026-06-26 04:25:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 121,
+      "entry_dt": "2026-06-26 07:50:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 122,
+      "entry_dt": "2026-06-26 09:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 123,
+      "entry_dt": "2026-06-26 11:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 124,
+      "entry_dt": "2026-06-26 11:45:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 125,
+      "entry_dt": "2026-06-26 12:20:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 126,
+      "entry_dt": "2026-06-26 14:05:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 127,
+      "entry_dt": "2026-06-26 15:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 128,
+      "entry_dt": "2026-06-28 18:40:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 129,
+      "entry_dt": "2026-06-28 20:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 130,
+      "entry_dt": "2026-06-28 22:30:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 131,
+      "entry_dt": "2026-06-29 01:05:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 132,
+      "entry_dt": "2026-06-29 02:00:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 133,
+      "entry_dt": "2026-06-29 04:25:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 134,
+      "entry_dt": "2026-06-29 05:45:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 135,
+      "entry_dt": "2026-06-29 07:10:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 136,
+      "entry_dt": "2026-06-29 09:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 137,
+      "entry_dt": "2026-06-29 10:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 138,
+      "entry_dt": "2026-06-29 10:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 139,
+      "entry_dt": "2026-06-29 12:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 140,
+      "entry_dt": "2026-06-29 14:10:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 141,
+      "entry_dt": "2026-06-29 15:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 142,
+      "entry_dt": "2026-06-29 15:55:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 143,
+      "entry_dt": "2026-06-29 18:25:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 144,
+      "entry_dt": "2026-06-29 21:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 145,
+      "entry_dt": "2026-06-29 22:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 146,
+      "entry_dt": "2026-06-30 00:00:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 147,
+      "entry_dt": "2026-06-30 01:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 148,
+      "entry_dt": "2026-06-30 02:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 149,
+      "entry_dt": "2026-06-30 03:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 150,
+      "entry_dt": "2026-06-30 04:40:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 151,
+      "entry_dt": "2026-06-30 07:05:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 152,
+      "entry_dt": "2026-06-30 08:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 153,
+      "entry_dt": "2026-06-30 09:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 154,
+      "entry_dt": "2026-06-30 09:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 155,
+      "entry_dt": "2026-06-30 12:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 156,
+      "entry_dt": "2026-06-30 16:15:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 157,
+      "entry_dt": "2026-06-30 18:50:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 158,
+      "entry_dt": "2026-06-30 21:00:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 159,
+      "entry_dt": "2026-06-30 21:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 160,
+      "entry_dt": "2026-06-30 21:40:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 161,
+      "entry_dt": "2026-06-30 23:15:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 162,
+      "entry_dt": "2026-07-01 00:40:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 163,
+      "entry_dt": "2026-07-01 03:45:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 164,
+      "entry_dt": "2026-07-01 05:30:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 165,
+      "entry_dt": "2026-07-01 06:25:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 166,
+      "entry_dt": "2026-07-01 07:45:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 167,
+      "entry_dt": "2026-07-01 08:10:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 168,
+      "entry_dt": "2026-07-01 08:40:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 169,
+      "entry_dt": "2026-07-01 10:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 170,
+      "entry_dt": "2026-07-01 12:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 171,
+      "entry_dt": "2026-07-01 13:55:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 172,
+      "entry_dt": "2026-07-01 19:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 173,
+      "entry_dt": "2026-07-01 22:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 174,
+      "entry_dt": "2026-07-01 23:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 175,
+      "entry_dt": "2026-07-02 01:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 176,
+      "entry_dt": "2026-07-02 02:20:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 177,
+      "entry_dt": "2026-07-02 03:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 178,
+      "entry_dt": "2026-07-02 05:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 179,
+      "entry_dt": "2026-07-02 07:40:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 180,
+      "entry_dt": "2026-07-02 10:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 181,
+      "entry_dt": "2026-07-02 12:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 182,
+      "entry_dt": "2026-07-02 13:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 183,
+      "entry_dt": "2026-07-02 15:10:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 184,
+      "entry_dt": "2026-07-02 18:40:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 185,
+      "entry_dt": "2026-07-02 19:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 186,
+      "entry_dt": "2026-07-02 21:05:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 187,
+      "entry_dt": "2026-07-02 21:35:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 188,
+      "entry_dt": "2026-07-02 22:35:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 189,
+      "entry_dt": "2026-07-03 00:50:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 190,
+      "entry_dt": "2026-07-03 02:10:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 191,
+      "entry_dt": "2026-07-03 03:20:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 192,
+      "entry_dt": "2026-07-03 03:55:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 193,
+      "entry_dt": "2026-07-03 04:45:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 194,
+      "entry_dt": "2026-07-03 06:05:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 195,
+      "entry_dt": "2026-07-03 10:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 196,
+      "entry_dt": "2026-07-05 18:35:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 197,
+      "entry_dt": "2026-07-05 20:55:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 198,
+      "entry_dt": "2026-07-05 21:30:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 199,
+      "entry_dt": "2026-07-05 22:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 200,
+      "entry_dt": "2026-07-05 23:35:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 201,
+      "entry_dt": "2026-07-06 01:00:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 202,
+      "entry_dt": "2026-07-06 02:25:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 203,
+      "entry_dt": "2026-07-06 04:10:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 204,
+      "entry_dt": "2026-07-06 05:25:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 205,
+      "entry_dt": "2026-07-06 07:15:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 206,
+      "entry_dt": "2026-07-06 08:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 207,
+      "entry_dt": "2026-07-06 09:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 208,
+      "entry_dt": "2026-07-06 09:55:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 209,
+      "entry_dt": "2026-07-06 11:25:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 210,
+      "entry_dt": "2026-07-06 13:55:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 211,
+      "entry_dt": "2026-07-06 20:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 212,
+      "entry_dt": "2026-07-06 21:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 213,
+      "entry_dt": "2026-07-06 22:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 214,
+      "entry_dt": "2026-07-07 00:55:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 215,
+      "entry_dt": "2026-07-07 04:35:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 216,
+      "entry_dt": "2026-07-07 06:25:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 217,
+      "entry_dt": "2026-07-07 09:05:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 218,
+      "entry_dt": "2026-07-07 10:45:00",
+      "entry_signal": "long",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 219,
+      "entry_dt": "2026-07-07 14:30:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
+    },
+    {
+      "trade_num": 220,
+      "entry_dt": "2026-07-07 16:15:00",
+      "entry_signal": "short",
+      "status": "PASS",
+      "divergences": []
     }
   ],
+  "unmatched_python_trades": [],
   "unmatched_pine_trades": [
     {
-      "num": 1,
-      "entry": "2026-02-09T07:05:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 2,
-      "entry": "2026-02-11T19:49:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 3,
-      "entry": "2026-02-12T18:05:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 4,
-      "entry": "2026-02-12T18:57:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 5,
-      "entry": "2026-02-16T00:22:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 6,
-      "entry": "2026-02-16T02:58:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 7,
-      "entry": "2026-02-16T10:20:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 8,
-      "entry": "2026-02-16T20:15:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 9,
-      "entry": "2026-02-17T01:53:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 10,
-      "entry": "2026-02-17T03:50:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 11,
-      "entry": "2026-02-18T21:33:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 12,
-      "entry": "2026-02-24T09:41:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 13,
-      "entry": "2026-02-24T10:59:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 14,
-      "entry": "2026-02-26T09:41:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 15,
-      "entry": "2026-02-27T05:47:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 16,
-      "entry": "2026-03-02T11:25:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 17,
-      "entry": "2026-03-03T12:04:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 18,
-      "entry": "2026-03-03T17:13:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 19,
-      "entry": "2026-03-03T18:31:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 20,
-      "entry": "2026-03-04T12:43:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 21,
-      "entry": "2026-03-04T17:00:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 22,
-      "entry": "2026-03-05T14:14:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 23,
-      "entry": "2026-03-05T17:00:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 24,
-      "entry": "2026-03-09T09:28:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 25,
-      "entry": "2026-03-09T13:22:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 26,
-      "entry": "2026-03-11T09:15:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 27,
-      "entry": "2026-03-11T11:38:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 28,
-      "entry": "2026-03-11T17:00:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 29,
-      "entry": "2026-03-11T20:41:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 30,
-      "entry": "2026-03-12T00:35:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 31,
-      "entry": "2026-03-12T17:13:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 32,
-      "entry": "2026-03-13T05:47:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 33,
-      "entry": "2026-03-15T18:57:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 34,
-      "entry": "2026-03-15T22:51:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 35,
-      "entry": "2026-03-16T01:01:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 36,
-      "entry": "2026-03-17T18:57:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 37,
-      "entry": "2026-03-18T11:12:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 38,
-      "entry": "2026-03-18T18:18:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 39,
-      "entry": "2026-03-18T20:28:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 40,
-      "entry": "2026-03-18T22:12:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 41,
-      "entry": "2026-03-19T04:29:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 42,
-      "entry": "2026-03-19T08:49:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 43,
-      "entry": "2026-03-19T12:17:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 44,
-      "entry": "2026-03-22T17:13:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 45,
-      "entry": "2026-03-23T03:11:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 46,
-      "entry": "2026-03-23T06:00:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 47,
-      "entry": "2026-03-26T15:06:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 48,
-      "entry": "2026-03-26T17:13:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 49,
-      "entry": "2026-03-26T17:39:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 50,
-      "entry": "2026-03-30T18:31:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 51,
-      "entry": "2026-03-30T19:36:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 52,
-      "entry": "2026-04-02T02:06:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 53,
-      "entry": "2026-04-02T08:36:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 54,
-      "entry": "2026-04-08T14:27:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 55,
-      "entry": "2026-04-08T17:00:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 56,
-      "entry": "2026-04-08T20:41:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 57,
-      "entry": "2026-04-08T23:04:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 58,
-      "entry": "2026-04-09T02:06:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 59,
-      "entry": "2026-04-09T20:02:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 60,
-      "entry": "2026-04-09T22:38:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 61,
-      "entry": "2026-04-10T05:21:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 62,
-      "entry": "2026-04-15T03:50:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 63,
-      "entry": "2026-04-15T06:13:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 64,
-      "entry": "2026-04-16T14:40:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 65,
-      "entry": "2026-04-19T20:02:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 66,
-      "entry": "2026-04-21T15:32:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 67,
-      "entry": "2026-04-22T08:36:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 68,
-      "entry": "2026-04-22T13:35:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 69,
-      "entry": "2026-04-23T06:13:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 70,
-      "entry": "2026-04-27T12:30:00Z",
-      "signal": "brk#2"
-    },
-    {
       "num": 71,
-      "entry": "2026-04-28T01:53:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 72,
-      "entry": "2026-04-28T08:36:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 73,
-      "entry": "2026-04-28T09:54:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 74,
-      "entry": "2026-04-28T10:33:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 75,
-      "entry": "2026-04-28T12:30:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 76,
-      "entry": "2026-04-29T13:48:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 77,
-      "entry": "2026-04-29T17:26:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 78,
-      "entry": "2026-05-03T22:51:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 79,
-      "entry": "2026-05-04T05:34:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 80,
-      "entry": "2026-05-05T17:52:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 81,
-      "entry": "2026-05-07T18:44:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 82,
-      "entry": "2026-05-07T19:49:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 83,
-      "entry": "2026-05-13T09:28:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 84,
-      "entry": "2026-05-14T17:00:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 85,
-      "entry": "2026-05-15T05:47:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 86,
-      "entry": "2026-05-15T09:15:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 87,
-      "entry": "2026-05-15T12:04:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 88,
-      "entry": "2026-05-17T17:00:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 89,
-      "entry": "2026-05-19T18:18:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 90,
-      "entry": "2026-05-19T23:04:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 91,
-      "entry": "2026-05-21T01:01:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 92,
-      "entry": "2026-05-21T02:58:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 93,
-      "entry": "2026-05-21T08:49:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 94,
-      "entry": "2026-05-21T10:07:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 95,
-      "entry": "2026-05-21T11:51:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 96,
-      "entry": "2026-05-22T04:42:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 97,
-      "entry": "2026-05-22T10:07:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 98,
-      "entry": "2026-05-22T11:25:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 99,
-      "entry": "2026-05-24T17:00:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 100,
-      "entry": "2026-05-26T00:22:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 101,
-      "entry": "2026-05-26T08:36:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 102,
-      "entry": "2026-05-26T18:31:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 103,
-      "entry": "2026-05-27T08:49:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 104,
-      "entry": "2026-05-27T13:09:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 105,
-      "entry": "2026-06-01T05:47:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 106,
-      "entry": "2026-06-02T20:41:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 107,
-      "entry": "2026-06-03T12:04:00Z",
-      "signal": "brk#5"
-    },
-    {
-      "num": 108,
-      "entry": "2026-06-03T17:52:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 109,
-      "entry": "2026-06-03T18:44:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 110,
-      "entry": "2026-06-04T23:56:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 111,
-      "entry": "2026-06-05T01:27:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 112,
-      "entry": "2026-06-07T18:44:00Z",
-      "signal": "brk#3"
-    },
-    {
-      "num": 113,
-      "entry": "2026-06-09T23:56:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 114,
-      "entry": "2026-06-10T08:36:00Z",
-      "signal": "brk#4"
-    },
-    {
-      "num": 115,
-      "entry": "2026-06-10T12:56:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 116,
-      "entry": "2026-06-10T19:23:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 117,
-      "entry": "2026-06-11T00:35:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 118,
-      "entry": "2026-06-11T02:19:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 119,
-      "entry": "2026-06-15T18:31:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 120,
-      "entry": "2026-06-18T14:40:00Z",
-      "signal": "brk#6"
-    },
-    {
-      "num": 121,
-      "entry": "2026-06-23T06:13:00Z",
-      "signal": "brk#2"
-    },
-    {
-      "num": 122,
-      "entry": "2026-06-24T00:09:00Z",
-      "signal": "brk#2"
+      "entry": "2026-06-22 12:50:00",
+      "signal": "long"
     }
   ]
 }

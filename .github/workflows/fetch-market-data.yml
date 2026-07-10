@@ -1,0 +1,26 @@
+name: Fetch MGC market data
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/pine-parity-validator-tn1yfd
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    if: contains(github.event.head_commit.message, '[fetch-data]') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Yahoo Finance MGC=F bars
+        run: python3 .github/scripts/fetch_yahoo_mgc.py
+      - name: Commit data back to branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git commit -m "data: MGC=F 1m/5m bars 2026-06-21..2026-07-08 from Yahoo Finance [skip-fetch]"
+          git push
