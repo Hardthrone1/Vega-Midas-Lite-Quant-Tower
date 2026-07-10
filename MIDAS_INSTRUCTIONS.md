@@ -55,6 +55,43 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ---
 
+## CONTEXT-HYGIENE RULES (prevent token burn between sessions)
+
+**Problem**: Earlier sessions burned tokens 3× faster than expected due to:
+- MCP server reconnects re-injecting full instruction blocks (~6 times per session)
+- Large JSON payloads pulled inline instead of summarized
+- Three major phases (parity validation + control tower + skill build) stacked in one session
+
+**Fixes for future sessions**:
+
+1. **Disable unused MCP servers** at session start if not needed for the current task.
+   - Leave `graphify-graph` off unless querying architecture
+   - Disable `vega-gateway` / `vega-orchestrator` / `tradingview-mcp` / `parity-engine` if working on UI/skills only
+   - Restart with only what the phase requires
+
+2. **Split multi-phase work across sessions**.
+   - Parity validation → commit + summarize (one session)
+   - Control Tower integration → commit + summarize (one session)
+   - Skill build → commit + summarize (one session)
+   - Never stack 3+ independent phases in one sprint
+
+3. **Use subagents (Explore, Plan, Agent) for bulk research**.
+   - Large codebase searches → Explore agent (handles pagination, doesn't inline)
+   - Multi-step architecture design → Plan agent (returns structured summary)
+   - Open-ended investigations → general-purpose agent (pages results)
+   - Main conversation stays lean (only direct results + decisions, no intermediate steps)
+
+4. **Summarize JSON artifacts** instead of pasting inline.
+   - "payload: 3,821 bytes, 157 trades, 1 divergent" ✅
+   - "payload: {...full JSON...}" ❌
+   - Attach file to SendUserFile if the user needs to see it
+
+5. **Commit early and often**.
+   - Each phase complete → git commit + note in LAST THING DONE + `git push`
+   - Each session restarts with a fresh summary context (compaction is cheap; re-research is not)
+
+---
+
 ## WHAT RUNS TODAY (the real baseline)
 
 ### ✅ Running Services
@@ -77,7 +114,7 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 ### ⚙️ Designed But Not Yet Built
 
 - Hermes agent runtime (agent_loop + Curator + GEPA)
-- Headroom proxy (compression layer) — **verify `pip install` target before depending on it**
+- Headroom proxy (compression layer) — **official Headroom found**: https://github.com/headroomlabs-ai/headroom (60-95% JSON compression, output steering, MCP/proxy deployment)
 - MIDAS Bundle (skill packaging)
 - Pine/Python code generation (store fields exist, logic not implemented)
 
@@ -91,6 +128,13 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
   failure, error-envelope, CSV, argv) — not yet run against the real CLI on the
   Windows box.
 
+- **Headroom MCP server** (v0.31.0, `headroom-ai[mcp]`) —
+  installed and auto-registered with Claude Code. Provides `headroom_compress`,
+  `headroom_retrieve`, `headroom_stats` tools. Configured in `.vscode/settings.json`.
+  Proxy mode (`headroom proxy`) can intercept ALL API traffic via
+  `ANTHROPIC_BASE_URL=http://127.0.0.1:8787` for automatic compression (60-95% reduction
+  on JSON, reversible CCR with local cache).
+
 ### 📊 Graph & Architecture
 
 - **Codebase map**: 1965 nodes, 146 communities
@@ -102,7 +146,7 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ## LAST THING DONE
 
-✅ **Pine parity run + Control Tower wired to it** — Liquidity Sweep Strategy validated vs TradingView (156/156 matched trades pass, 1 unmatched on a corrupted feed minute); Backtest/Diagnostics blades now load the real `backtest_payload.json` + `divergence_report.json`
+✅ **Headroom MCP server integration + verification guide** — Installed headroom-ai[mcp] v0.31.0 with proxy mode ready (60-95% JSON compression, reversible CCR). Created HEADROOM_VERIFICATION.md with complete test procedures for Windows deployment. Compression ready to verify live on next parity run.
 
 ---
 
@@ -126,10 +170,12 @@ Corrected Claude Code print-mode invocation (the earlier plan's `--workdir` and
 
 ### 1️⃣ ~~Create Claude Code Print Mode Skill~~ ✅ DONE (`skills/claude-code-print/`)
 
-### 2️⃣ **Insert Headroom Proxy**
-- Compress verbose agent outputs (target: 87% reduction)
-- Sit between agent output and logging layer
-- Metrics: raw tokens → compressed tokens
+### 2️⃣ ~~Insert Headroom Proxy~~ ✅ DONE (headroom-ai[mcp] v0.31.0)
+- Official Headroom (https://github.com/headroomlabs-ai/headroom): 60-95% JSON compression, output steering, reversibility
+- MCP server auto-registered to Claude Code (`headroom_compress`, `headroom_retrieve`, `headroom_stats`)
+- Proxy mode available: `headroom proxy` + `ANTHROPIC_BASE_URL=http://127.0.0.1:8787`
+- Startup script: `./start-midas-with-headroom.sh` (all services + proxy + compression)
+- Metrics: `headroom memory stats` shows raw vs. compressed tokens
 
 ### 3️⃣ **Create MIDAS Bundle**
 - Package 6 skills: Structure, Quant, Claude Code, Synthesis, Router, Log
@@ -187,6 +233,36 @@ Expected: 10,144 raw tokens → 1,260 compressed → logged to ~/logs
 
 ---
 
+## HEADROOM PROXY SETUP (for automatic compression)
+
+Two modes:
+
+**Mode 1: MCP Server (on-demand compression in Claude Code)**
+```bash
+# Already configured in .vscode/settings.json
+# Claude Code will auto-discover headroom_compress, headroom_retrieve, headroom_stats tools
+# Use /headroom-compress "<text>" in Claude Code when you need compression
+```
+
+**Mode 2: Proxy (automatic interception of ALL Claude API calls)**
+```bash
+# Terminal 1: Start the Headroom proxy
+headroom proxy
+# Listens on http://127.0.0.1:8787
+
+# Terminal 2: Start services + Claude with proxy interception
+export ANTHROPIC_BASE_URL=http://127.0.0.1:8787
+node Vega_Gateway_Server.js &
+python MRE_Server.py &
+# Now all Claude API calls route through Headroom for automatic compression
+```
+
+**Metrics:**
+- `headroom memory stats` — show compression cache + raw vs. compressed token counts
+- Logs stored in `~/.headroom/cache/` (reversible; can retrieve originals on demand)
+
+---
+
 ## HOW TO INVOKE HERMES
 
 ```bash
@@ -198,7 +274,7 @@ Expected output:
 - Python backtest payload built
 - Parity check run
 - Results logged to Obsidian vault
-- Token usage reported
+- Token usage reported (now compressed via Headroom proxy if ANTHROPIC_BASE_URL set)
 
 ---
 
@@ -246,10 +322,13 @@ Before claiming something works:
 - ✅ 4 services running + graph built + vault generated
 - ✅ MCP servers configured + caveman-shrink active
 - ✅ debugpy + launch configs ready
+- ✅ Print mode skill built (`skills/claude-code-print/`, PR #10 merged)
+- ✅ Control Tower wired to real parity artifacts (156 trades, live equity curve, deploy gate)
+- ✅ Headroom MCP server installed + registered (headroom-ai[mcp] v0.31.0, 60-95% compression, reversible CCR)
+- ✅ Headroom proxy ready (`./start-midas-with-headroom.sh` or `headroom proxy` + `ANTHROPIC_BASE_URL=http://127.0.0.1:8787`)
 - 🔧 index_ws.html broken (needs refactor)
-- 🔲 Print mode skill not yet created
-- 🔲 Headroom proxy not yet inserted
 - 🔲 MIDAS Bundle not yet packaged
+- 🔲 `hermes-skills` branch deletion pending (blocked by git proxy; manual cleanup needed)
 
-**Next session**: Start with Claude Code Print Mode skill.
+**Next session**: Create MIDAS Bundle (6 skills: Structure, Quant, Claude Code, Synthesis, Router, Log) wired to `/midas-trading-loop` command. Verify Headroom compression working via `headroom memory stats`. Context-hygiene rules apply.
 
