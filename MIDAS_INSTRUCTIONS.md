@@ -71,7 +71,7 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 | Component | Status | Notes |
 |-----------|--------|-------|
 | **index_ws.html + Vega-theme.css** | 🔧 Broken post-update | Golden backup exists; needs internal refactor |
-| **Vite/React Control Tower** | ✅ Built | Runs on demo data; not yet wired to live backend |
+| **Vite/React Control Tower** | ✅ Built | Backtest + Diagnostics blades wired to real parity artifacts (`public/data` sync); intake/replay/lint/risk still demo |
 | **Lightweight Charts** | ✅ Integrated | 4.2.0; price/volume rendering |
 
 ### ⚙️ Designed But Not Yet Built
@@ -93,7 +93,7 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ## LAST THING DONE
 
-✅ **Connected Hermes Agent to NVIDIA NIM** — Gateway routing to free endpoints, fallback chains configured
+✅ **Pine parity run + Control Tower wired to it** — Liquidity Sweep Strategy validated vs TradingView (156/156 matched trades pass, 1 unmatched on a corrupted feed minute); Backtest/Diagnostics blades now load the real `backtest_payload.json` + `divergence_report.json`
 
 ---
 

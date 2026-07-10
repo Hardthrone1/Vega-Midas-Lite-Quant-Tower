@@ -10,7 +10,10 @@
     "dev:all": "concurrently -n react,vite -c cyan,green \"react-devtools\" \"vite --mode standalone\"",
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview --port 5173 --host 127.0.0.1"
+    "preview": "vite preview --port 5173 --host 127.0.0.1",
+    "sync-data": "node scripts/sync-parity-data.mjs",
+    "predev": "node scripts/sync-parity-data.mjs",
+    "prebuild": "node scripts/sync-parity-data.mjs"
   },
   "dependencies": {
     "@fluentui/react-components": "^9.74.3",

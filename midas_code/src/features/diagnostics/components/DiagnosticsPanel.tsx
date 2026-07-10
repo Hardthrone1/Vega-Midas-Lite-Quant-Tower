@@ -3,6 +3,7 @@ import { Card, Badge, Button, StatusDot } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 import { deployLabel, deployStatusKind, deployProgress, DEPLOY_PIPELINE } from '../../../shared/deployStatus'
+import { loadDivergenceReport, toParityResult } from '../../../shared/adapters/parityReportAdapter'
 
 export function DiagnosticsPanel() {
   const {
@@ -10,15 +11,27 @@ export function DiagnosticsPanel() {
     canonicalSpec, setLintResult, setParityResult, setRiskResult, addAgentMessage,
   } = useStrategyStore()
 
-  // Demo "run checks" — in the full system these come from the agent pipeline.
-  const runChecks = () => {
+  // Parity comes from the real divergence report; lint and risk remain demo
+  // values until their pipeline stages exist.
+  const runChecks = async () => {
     if (!canonicalSpec) return
     setLintResult({ passed: true, violations: [], warnings: ['No session filter on intrabar mode'] })
-    setParityResult({ passed: true, mismatchCount: 0, mismatches: [] })
     setRiskResult({ score: 84, var: 0.021, kelly: 0.18, sharpe: 1.32, drawdown: 0.094 })
-    addAgentMessage({ agent: 'Lint', level: 'success', message: 'Lint passed (1 warning)' })
-    addAgentMessage({ agent: 'Parity', level: 'success', message: 'Pine/Python parity within tolerance' })
-    addAgentMessage({ agent: 'Risk', level: 'success', message: 'Risk score 84 — above threshold' })
+    addAgentMessage({ agent: 'Lint', level: 'success', message: 'Lint passed (1 warning) [demo]' })
+    addAgentMessage({ agent: 'Risk', level: 'success', message: 'Risk score 84 — above threshold [demo]' })
+    const report = await loadDivergenceReport()
+    if (!report) {
+      addAgentMessage({ agent: 'Parity', level: 'error', message: 'divergence_report.json not found — run parity_validator.py and sync-parity-data' })
+      return
+    }
+    const parity = toParityResult(report)
+    setParityResult(parity)
+    const s = report.summary
+    addAgentMessage({
+      agent: 'Parity',
+      level: parity.passed ? 'success' : 'warn',
+      message: `Parity ${s.overall_status}: ${s.pass_count}/${s.matched_trades} matched trades pass, ${s.fail_count} divergent, ${s.unmatched_python + s.unmatched_pine} unmatched`,
+    })
   }
 
   const kind = deployStatusKind(deployStatus)
@@ -65,7 +78,8 @@ export function DiagnosticsPanel() {
           </Card>
           <Card>
             <div className="spread"><span className="eyebrow">Parity health</span>
-              <Badge status={parityResult.passed ? 'ok' : 'idle'}>{parityResult.passed ? 'aligned' : 'pending'}</Badge></div>
+              <Badge status={parityResult.passed ? 'ok' : parityResult.mismatchCount > 0 ? 'err' : 'idle'}>
+                {parityResult.passed ? 'aligned' : parityResult.mismatchCount > 0 ? 'mismatch' : 'pending'}</Badge></div>
             <div className="mono big">{parityResult.mismatchCount}</div>
             <div className="sub">Pine vs Python mismatches</div>
           </Card>

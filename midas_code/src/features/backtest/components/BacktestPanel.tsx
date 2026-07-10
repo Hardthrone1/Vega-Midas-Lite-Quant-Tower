@@ -1,38 +1,47 @@
 // src/features/backtest/components/BacktestPanel.tsx
-import { useMemo, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Card, Button, Empty, MetricCard, type Status } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
+import {
+  loadBacktestArtifact,
+  loadDivergenceReport,
+  toBacktestResult,
+  toParityResult,
+} from '../../../shared/adapters/parityReportAdapter'
 
 export function BacktestPanel() {
-  const { backtestResult, canonicalSpec, setBacktestResult, addAgentMessage } = useStrategyStore()
+  const { backtestResult, setBacktestResult, setParityResult, addAgentMessage } = useStrategyStore()
+  const [loading, setLoading] = useState(false)
 
-  const runBacktest = () => {
-    if (!canonicalSpec) return
-    // Demo synthetic curve — replaced by the Python backtester payload in the full system.
-    const curve: Array<Record<string, unknown>> = []
-    let equity = canonicalSpec.properties.initialCapital
-    const trades: Array<Record<string, unknown>> = []
-    for (let i = 0; i < 60; i++) {
-      const pnl = (Math.sin(i / 5) + (i % 7 === 0 ? -1.4 : 0.6)) * 18
-      equity += pnl
-      curve.push({ i, equity: Math.round(equity) })
-      if (i % 3 === 0) trades.push({ i, pnl: Math.round(pnl) })
+  // Loads the real parity-run artifacts (Python backtest of the Pine strategy
+  // plus the Pine-vs-Python divergence report) synced from the repo root.
+  const runBacktest = async () => {
+    setLoading(true)
+    try {
+      const [payload, report] = await Promise.all([
+        loadBacktestArtifact(),
+        loadDivergenceReport(),
+      ])
+      if (!payload) {
+        addAgentMessage({ agent: 'Backtest', level: 'error', message: 'backtest_payload.json not found — run pine_sweep_backtest.py and sync-parity-data' })
+        return
+      }
+      setBacktestResult(toBacktestResult(payload))
+      addAgentMessage({ agent: 'Backtest', level: 'success', message: `Loaded ${payload.instrument} parity run — ${payload.trades.length} trades (${payload.bars_csv_path})` })
+      if (report) {
+        const parity = toParityResult(report)
+        setParityResult(parity)
+        const s = report.summary
+        addAgentMessage({
+          agent: 'Parity',
+          level: parity.passed ? 'success' : 'warn',
+          message: `Parity ${s.overall_status}: ${s.pass_count}/${s.matched_trades} matched trades pass, ${parity.mismatchCount} mismatch(es)`,
+        })
+      }
+    } finally {
+      setLoading(false)
     }
-    const wins = trades.filter((t) => (t.pnl as number) > 0).length
-    setBacktestResult({
-      trades,
-      equityCurve: curve,
-      metrics: {
-        netProfit: Math.round(equity - canonicalSpec.properties.initialCapital),
-        winRate: +(wins / trades.length * 100).toFixed(1),
-        profitFactor: 1.74,
-        expectancy: 0.42,
-        maxDrawdown: -312,
-        trades: trades.length,
-      },
-    })
-    addAgentMessage({ agent: 'Backtest', level: 'success', message: `Backtest complete — ${trades.length} trades` })
   }
 
   const points = useMemo(() => {
@@ -54,8 +63,8 @@ export function BacktestPanel() {
   const metricCards: Array<{ label: string; value: string; status: Status; hint?: string }> = [
     { label: 'Net P&L', value: `$${m.netProfit}`, status: (m.netProfit as number) >= 0 ? 'ok' : 'err' },
     { label: 'Win rate', value: `${m.winRate}%`, status: 'info' },
-    { label: 'Profit factor', value: String(m.profitFactor), status: (m.profitFactor as number) >= 1.5 ? 'ok' : 'warn', hint: 'gate ≥ 1.5' },
-    { label: 'Expectancy', value: `${m.expectancy}R`, status: 'info' },
+    { label: 'Profit factor', value: m.profitFactor == null ? '—' : String(m.profitFactor), status: (m.profitFactor as number) >= 1.5 ? 'ok' : 'warn', hint: 'gate ≥ 1.5' },
+    { label: 'Expectancy', value: m.expectancy == null ? '—' : `${m.expectancy}R`, status: 'info' },
     { label: 'Max DD', value: `$${m.maxDrawdown}`, status: 'err' },
     { label: 'Trades', value: String(m.trades), status: 'idle' },
   ]
@@ -63,10 +72,10 @@ export function BacktestPanel() {
   return (
     <section className="backtest-panel">
       <BladeHeaderActions>
-        <Button variant="primary" onClick={runBacktest} disabled={!canonicalSpec}>Run backtest</Button>
+        <Button variant="primary" onClick={runBacktest} disabled={loading}>{loading ? 'Loading…' : 'Load parity run'}</Button>
       </BladeHeaderActions>
       {!has ? (
-        <Empty>No backtest yet. Run one to preview the equity curve and<br />edge metrics before the live-readiness gate.</Empty>
+        <Empty>No backtest loaded. Load the parity run to see the real equity<br />curve and edge metrics from the Python backtest.</Empty>
       ) : (
         <div className="col">
           <Card>

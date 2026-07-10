@@ -1,0 +1,117 @@
+// src/shared/adapters/parityReportAdapter.ts
+//
+// Loads the real parity-run artifacts (produced by pine_sweep_backtest.py and
+// parity_validator.py at the repo root, synced into public/data by
+// scripts/sync-parity-data.mjs) and adapts them to the store's BacktestResult
+// and ParityResult shapes. Pure adaptation after fetch: no synthesis, no
+// smoothing — the dashboard shows exactly what the validator reported.
+
+export type PythonBacktestArtifact = {
+  instrument: string
+  initial_capital: number
+  bars_csv_path: string
+  notes: string
+  trades: Array<{
+    trade_num: number
+    entry_dt: string
+    entry_price: number
+    entry_signal: string
+    exit_dt: string
+    exit_price: number
+    exit_reason: string
+    pnl_usd: number
+  }>
+}
+
+export type DivergenceReportArtifact = {
+  instrument: string
+  summary: {
+    total_python_trades: number
+    total_pine_trades: number
+    matched_trades: number
+    unmatched_python: number
+    unmatched_pine: number
+    pass_count: number
+    fail_count: number
+    overall_status: 'PASS' | 'FAIL'
+  }
+  matched_trades: Array<{
+    trade_num: number
+    entry_dt: string
+    entry_signal: string
+    status: 'PASS' | 'FAIL'
+    divergences: string[]
+  }>
+  unmatched_python_trades: Array<Record<string, unknown>>
+  unmatched_pine_trades: Array<Record<string, unknown>>
+}
+
+async function fetchJson<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(path)
+    if (!res.ok) return null
+    return (await res.json()) as T
+  } catch {
+    return null
+  }
+}
+
+export const loadBacktestArtifact = () =>
+  fetchJson<PythonBacktestArtifact>('/data/backtest_payload.json')
+
+export const loadDivergenceReport = () =>
+  fetchJson<DivergenceReportArtifact>('/data/divergence_report.json')
+
+/** Real trades -> equity curve + edge metrics (store BacktestResult shape). */
+export function toBacktestResult(payload: PythonBacktestArtifact) {
+  const trades = payload.trades
+  let equity = payload.initial_capital
+  let peak = equity
+  let maxDrawdown = 0
+  const equityCurve: Array<Record<string, unknown>> = [
+    { i: 0, dt: trades[0]?.entry_dt ?? '', equity },
+  ]
+  trades.forEach((t, i) => {
+    equity += t.pnl_usd
+    peak = Math.max(peak, equity)
+    maxDrawdown = Math.min(maxDrawdown, equity - peak)
+    equityCurve.push({ i: i + 1, dt: t.exit_dt, equity: Math.round(equity * 100) / 100 })
+  })
+
+  const wins = trades.filter((t) => t.pnl_usd > 0)
+  const losses = trades.filter((t) => t.pnl_usd < 0)
+  const grossWin = wins.reduce((s, t) => s + t.pnl_usd, 0)
+  const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl_usd, 0))
+  const netProfit = grossWin - grossLoss
+  const avgLoss = losses.length ? grossLoss / losses.length : 0
+
+  return {
+    trades: trades as unknown as Array<Record<string, unknown>>,
+    equityCurve,
+    metrics: {
+      netProfit: Math.round(netProfit),
+      winRate: trades.length ? +((wins.length / trades.length) * 100).toFixed(1) : 0,
+      profitFactor: grossLoss > 0 ? +(grossWin / grossLoss).toFixed(2) : null,
+      expectancy: avgLoss > 0 ? +(netProfit / trades.length / avgLoss).toFixed(2) : null,
+      maxDrawdown: Math.round(maxDrawdown),
+      trades: trades.length,
+    },
+  }
+}
+
+/** Validator report -> store ParityResult shape. Nothing is softened: an
+ *  unmatched trade counts as a mismatch and blocks the deploy gate. */
+export function toParityResult(report: DivergenceReportArtifact) {
+  const s = report.summary
+  const failed = report.matched_trades.filter((m) => m.status === 'FAIL')
+  const mismatches: Array<Record<string, unknown>> = [
+    ...failed.map((m) => ({ kind: 'divergent', ...m })),
+    ...report.unmatched_python_trades.map((t) => ({ kind: 'unmatched_python', ...t })),
+    ...report.unmatched_pine_trades.map((t) => ({ kind: 'unmatched_pine', ...t })),
+  ]
+  return {
+    passed: s.overall_status === 'PASS',
+    mismatchCount: s.fail_count + s.unmatched_python + s.unmatched_pine,
+    mismatches,
+  }
+}
