@@ -77,10 +77,19 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 ### ⚙️ Designed But Not Yet Built
 
 - Hermes agent runtime (agent_loop + Curator + GEPA)
-- Claude Code Print Mode skill
-- Headroom proxy (compression layer)
+- Headroom proxy (compression layer) — **verify `pip install` target before depending on it**
 - MIDAS Bundle (skill packaging)
 - Pine/Python code generation (store fields exist, logic not implemented)
+
+### ✅ Built This Session
+
+- **Claude Code Print Mode skill** (`skills/claude-code-print/`, id `AGT-CCP-001`) —
+  real `claude -p ... --output-format json` driver + `SKILL.md` in the hermes
+  schema. Bounded (max-turns/timeout), strict `ok` contract, native token
+  accounting, opt-in `--log-csv`. Sandbox (PLT-005) and registry (AGT-011) are
+  stable-signature seams, not built. Verified against a stub CLI (success,
+  failure, error-envelope, CSV, argv) — not yet run against the real CLI on the
+  Windows box.
 
 ### 📊 Graph & Architecture
 
@@ -97,12 +106,25 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ---
 
+## HERMES SKILL FORMAT (verified from real in-repo skills)
+
+A hermes skill is a **directory** containing a `SKILL.md`:
+- YAML frontmatter: `name`, `description` (include a `Trigger:` line), `version`,
+  `author`, `license`, `dependencies`, `platforms`, `metadata.hermes.tags`.
+- Markdown body tells the agent *when* and *how* to use it.
+- If it runs code, the body instructs the agent to shell out to an adjacent
+  script (pattern taken from the in-repo `caveman-compress` skill:
+  "from the directory containing this SKILL.md, run `python -m ...`").
+- Discovery is via hermes's `build_skills_system_prompt` (in the installed
+  package, not in this repo — mechanism inferred from schema + `caveman-*`).
+
+Corrected Claude Code print-mode invocation (the earlier plan's `--workdir` and
+`--effort` flags do NOT exist):
+`claude -p "<prompt>" --output-format json --max-turns 8 --allowedTools "Read,Write" --permission-mode acceptEdits`
+
 ## WHAT'S NEXT (in order)
 
-### 1️⃣ **Create Claude Code Print Mode Skill**
-- Print mode = sandboxed stdout capture (no tool calls)
-- Use for inline code generation without spawning subagents
-- Integrate with Hermes skill registry
+### 1️⃣ ~~Create Claude Code Print Mode Skill~~ ✅ DONE (`skills/claude-code-print/`)
 
 ### 2️⃣ **Insert Headroom Proxy**
 - Compress verbose agent outputs (target: 87% reduction)
