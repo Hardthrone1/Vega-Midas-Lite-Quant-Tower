@@ -146,7 +146,7 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ## LAST THING DONE
 
-✅ **Headroom MCP server integration + verification guide** — Installed headroom-ai[mcp] v0.31.0 with proxy mode ready (60-95% JSON compression, reversible CCR). Created HEADROOM_VERIFICATION.md with complete test procedures for Windows deployment. Compression ready to verify live on next parity run.
+✅ **MIDAS Bundle complete** — All 6 Hermes skills built + orchestrator wired. End-to-end verified on mgc_5m_et.csv: Structure (brk#2, gate open) → Quant (engine runs) → Synthesis (GO/NO-GO verdict) → Log (MEMORY.md appended). Pipeline runs in ~112ms.
 
 ---
 
@@ -177,10 +177,12 @@ Corrected Claude Code print-mode invocation (the earlier plan's `--workdir` and
 - Startup script: `./start-midas-with-headroom.sh` (all services + proxy + compression)
 - Metrics: `headroom memory stats` shows raw vs. compressed tokens
 
-### 3️⃣ **Create MIDAS Bundle**
-- Package 6 skills: Structure, Quant, Claude Code, Synthesis, Router, Log
-- Wire to `/midas-trading-loop` command
-- Output: Obsidian + MEMORY.md logging
+### 3️⃣ ~~Create MIDAS Bundle~~ ✅ DONE (`skills/midas-*`)
+- 6 skills built: Structure (AGT-STR-001), Quant (AGT-QNT-001), Claude Code (AGT-CCP-001), Synthesis (AGT-SYN-001), Router (AGT-RTR-001), Log (AGT-LOG-001)
+- Orchestrator: `skills/midas-trading-loop/midas_trading_loop.py` (AGT-LOOP-001)
+- Wired to `/midas-trading-loop` command via Hermes skill discovery
+- Output: Obsidian vault notes + MEMORY.md cross-session decision log
+- Verified end-to-end on mgc_5m_et.csv (structure/quant/synthesis/log all pass)
 
 ### 4️⃣ **What Happens After These Steps**
 
@@ -327,7 +329,7 @@ Before claiming something works:
 - ✅ Headroom MCP server installed + registered (headroom-ai[mcp] v0.31.0, 60-95% compression, reversible CCR)
 - ✅ Headroom proxy ready (`./start-midas-with-headroom.sh` or `headroom proxy` + `ANTHROPIC_BASE_URL=http://127.0.0.1:8787`)
 - 🔧 index_ws.html broken (needs refactor)
-- 🔲 MIDAS Bundle not yet packaged
+- ✅ MIDAS Bundle built (6 skills + orchestrator, verified end-to-end)
 - 🔲 `hermes-skills` branch deletion pending (blocked by git proxy; manual cleanup needed)
 
 **Next session**: Create MIDAS Bundle (6 skills: Structure, Quant, Claude Code, Synthesis, Router, Log) wired to `/midas-trading-loop` command. Verify Headroom compression working via `headroom memory stats`. Context-hygiene rules apply.
