@@ -143,7 +143,13 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ## LAST THING DONE
 
-✅ **Pine/Python codegen built** — `codegen/` package + `skills/midas-codegen/` (AGT-CDG-001). One `StrategySpec` → Pine v5 code + BacktestPayload JSON + sim CONFIG. Anti-cheat lint (Python port of swarm_orchestrator.js `validatePineScriptRules`). MGC + MNQ presets. Both outputs pass lint. 8 skills now auto-discovered by Hermes registry.
+✅ **Dashboard caught up to the backend** — added two new blades to the Control Tower so the codegen + Hermes runtime work is no longer invisible in the UI:
+- **03 · Codegen** (`midas_code/src/features/codegen/`) — one `StrategySpec` → Pine v5 + Python payload, both carrying the same `spec_hash` (parity proof, cannot drift). Instrument toggle (MGC/MNQ), Pine|payload viewer, anti-cheat lint tiles + trap-check. Deterministic counterpart to the LLM-driven Swarm blade.
+- **09 · Hermes** (`midas_code/src/features/hermes/`) — runtime introspection: skill registry (8 skills), Curator failure policy (TRANSIENT/PARAMETER/HARD + backoff), GEPA search space + seed population table.
+- Both are **artifact-backed** (real data, not demo): `gen_runtime_artifacts.py` emits `codegen_output.json` + `hermes_state.json` from the actual `codegen/`+`hermes/` modules; `scripts/sync-parity-data.mjs` syncs them into `public/data`. Verified end-to-end (build + Playwright drive, zero console errors).
+- Blades renumbered 01–09; `Tab` type + nav auto-render from `blades.tsx`.
+
+**Prior:** Pine/Python codegen built — `codegen/` package + `skills/midas-codegen/` (AGT-CDG-001). One `StrategySpec` → Pine v5 code + BacktestPayload JSON + sim CONFIG. Anti-cheat lint (Python port of swarm_orchestrator.js `validatePineScriptRules`). MGC + MNQ presets. Both outputs pass lint. 8 skills now auto-discovered by Hermes registry.
 
 ---
 
@@ -329,7 +335,8 @@ Before claiming something works:
 - ✅ MIDAS Bundle built (6 skills + orchestrator, verified end-to-end)
 - ✅ Hermes runtime built (`hermes/` package: agent_loop + Curator + GEPA + skill_registry)
 - ✅ Pine/Python codegen built (`codegen/` + `skills/midas-codegen/`, AGT-CDG-001)
+- ✅ Dashboard blades added: **03 Codegen** + **09 Hermes** (artifact-backed, verified end-to-end)
 - 🔲 `hermes-skills` branch deletion pending (blocked by git proxy; manual cleanup needed)
 
-**Next session**: Test Headroom compression on Windows via `headroom memory stats`. Run GEPA evolution across multiple bar datasets. Paste generated Pine into TradingView for visual parity validation.
+**Next session**: Test Headroom compression on Windows via `headroom memory stats`. Run GEPA evolution across multiple bar datasets (the Hermes blade population table will then show non-zero fitness). Paste generated Pine (from the Codegen blade "Use this build") into TradingView for visual parity validation.
 

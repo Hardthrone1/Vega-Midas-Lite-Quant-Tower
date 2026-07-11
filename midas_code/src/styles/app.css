@@ -828,3 +828,128 @@ select#instrument-select {
     animation: none;
   }
 }
+
+/* ============================================================= *
+ *  Codegen blade (AGT-CDG-001) — one spec → Pine + Python       *
+ * ============================================================= */
+.codegen-parity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 8px 0 4px;
+}
+.codegen-parity-node {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.codegen-parity-label { font-size: var(--fs-xs); color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+.codegen-hash {
+  font-size: var(--fs-sm);
+  color: var(--gold);
+  background: rgba(0,0,0,0.28);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
+}
+.codegen-parity-arrow { color: var(--ink-3); font-size: 1.25rem; }
+.codegen-parity-outputs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.codegen-lint-row {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  padding: 3px 0;
+  line-height: 1.5;
+}
+.codegen-lint-row--fail { color: var(--err); }
+.codegen-lint-row--warn { color: var(--warn); }
+.codegen-trap { margin-top: 8px; }
+
+.codegen-output-card { display: flex; flex-direction: column; }
+.codegen-output-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.codegen-json { color: var(--ink-2); }
+
+/* ============================================================= *
+ *  Hermes blade — skills · Curator · GEPA                       *
+ * ============================================================= */
+.hermes-skill-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.hermes-skill-row {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.18);
+}
+.hermes-skill-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hermes-skill-id { color: var(--gold); font-size: var(--fs-sm); }
+.hermes-skill-name { color: var(--ink-1); font-weight: 600; }
+.hermes-skill-phase { color: var(--ink-3); font-size: var(--fs-xs); }
+.hermes-skill-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.hermes-tag {
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.hermes-curator-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); margin: 8px 0; }
+.hermes-ftype {
+  display: flex; flex-direction: column; gap: 4px;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.18);
+}
+.hermes-ftype--transient { border-left-color: var(--info); }
+.hermes-ftype--parameter { border-left-color: var(--warn); }
+.hermes-ftype--hard { border-left-color: var(--err); }
+.hermes-ftype-name { font-weight: 600; color: var(--ink-1); font-size: var(--fs-sm); }
+.hermes-ftype-action { color: var(--ink-3); font-size: var(--fs-xs); }
+
+.hermes-backoff { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.hermes-backoff-step {
+  font-size: var(--fs-sm); color: var(--ink-2);
+  background: rgba(0,0,0,0.24); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 3px 10px;
+}
+.hermes-pattern-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+.hermes-patterns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.hermes-pat {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  color: var(--ink-2); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--r-sm); padding: 2px 7px;
+}
+
+.hermes-bounds { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.hermes-bound-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 0.7fr; gap: 10px; align-items: center; font-size: var(--fs-sm); }
+.hermes-bound-name { color: var(--ink-1); }
+.hermes-bound-range { color: var(--gold); }
+.hermes-bound-default { color: var(--ink-3); }
+.hermes-bound-type { color: var(--ink-3); font-size: var(--fs-xs); text-align: right; }
+
+.hermes-pop-table { display: flex; flex-direction: column; margin-top: 8px; overflow-x: auto; }
+.hermes-pop-row {
+  display: grid;
+  grid-template-columns: 32px repeat(4, 1fr) 0.8fr 0.6fr;
+  gap: 8px; padding: 5px 6px; align-items: center;
+  font-size: var(--fs-sm); border-bottom: 1px solid var(--line);
+}
+.hermes-pop-head { color: var(--ink-3); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .05em; }
+.hermes-pop-best { background: rgba(212,175,55,0.10); border-radius: var(--r-sm); }
+.hermes-weights { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.hermes-weight { font-size: var(--fs-sm); color: var(--ink-2); }
+.hermes-weight b { color: var(--ink-1); font-weight: 600; }
+
+@media (max-width: 720px) {
+  .hermes-curator-grid { grid-template-columns: 1fr; }
+  .hermes-pattern-cols { grid-template-columns: 1fr; }
+}

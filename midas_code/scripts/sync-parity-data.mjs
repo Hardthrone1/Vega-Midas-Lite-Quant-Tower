@@ -10,7 +10,12 @@ const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(here, '..', '..')
 const outDir = join(here, '..', 'public', 'data')
 
-const artifacts = ['backtest_payload.json', 'divergence_report.json']
+const artifacts = [
+  'backtest_payload.json',
+  'divergence_report.json',
+  'codegen_output.json',
+  'hermes_state.json',
+]
 
 mkdirSync(outDir, { recursive: true })
 for (const name of artifacts) {

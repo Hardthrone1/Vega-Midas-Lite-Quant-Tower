@@ -10,9 +10,9 @@ import {
 import { buildPythonBacktestPayload } from '../shared/adapters/pythonBacktestAdapter'
 import { hasReduxDevtoolsExtension } from '../dev/setupDevtools'
 
-export type Tab = 'intake' | 'spec' | 'replay' | 'swarm' | 'diagnostics' | 'backtest' | 'vault'
+export type Tab = 'intake' | 'spec' | 'codegen' | 'replay' | 'swarm' | 'diagnostics' | 'backtest' | 'vault' | 'hermes'
 
-const VALID_TABS: Tab[] = ['intake', 'spec', 'replay', 'swarm', 'diagnostics', 'backtest', 'vault']
+const VALID_TABS: Tab[] = ['intake', 'spec', 'codegen', 'replay', 'swarm', 'diagnostics', 'backtest', 'vault', 'hermes']
 
 type DeployStatus =
   | 'draft'

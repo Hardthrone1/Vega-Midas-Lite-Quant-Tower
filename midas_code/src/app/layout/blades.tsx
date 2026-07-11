@@ -8,6 +8,8 @@ import { createContext, lazy, useContext, type ComponentType, type LazyExoticCom
 import type { FluentIcon } from '@fluentui/react-icons'
 import {
   Bot20Regular,
+  BrainCircuit20Regular,
+  Code20Regular,
   DataTrending20Regular,
   DocumentBulletList20Regular,
   History20Regular,
@@ -52,8 +54,20 @@ export const BLADES: BladeDefinition[] = [
     ),
   },
   {
-    id: 'replay',
+    id: 'codegen',
     step: '03',
+    label: 'Codegen',
+    description: 'One spec → Pine v5 + Python payload (cannot drift)',
+    icon: Code20Regular,
+    Component: lazy(() =>
+      import('../../features/codegen/components/CodegenPanel').then((m) => ({
+        default: m.CodegenPanel,
+      }))
+    ),
+  },
+  {
+    id: 'replay',
+    step: '04',
     label: 'Replay',
     description: 'Bar-by-bar replay with diagnostics overlay',
     icon: History20Regular,
@@ -65,7 +79,7 @@ export const BLADES: BladeDefinition[] = [
   },
   {
     id: 'swarm',
-    step: '04',
+    step: '05',
     label: 'Swarm',
     description: 'Agent swarm orchestration',
     icon: Bot20Regular,
@@ -77,7 +91,7 @@ export const BLADES: BladeDefinition[] = [
   },
   {
     id: 'diagnostics',
-    step: '05',
+    step: '06',
     label: 'Diagnostics',
     description: 'Deploy gate, signal integrity, parity, risk',
     icon: Stethoscope20Regular,
@@ -89,7 +103,7 @@ export const BLADES: BladeDefinition[] = [
   },
   {
     id: 'backtest',
-    step: '06',
+    step: '07',
     label: 'Backtest',
     description: 'Equity curve + edge metrics',
     icon: DataTrending20Regular,
@@ -101,13 +115,25 @@ export const BLADES: BladeDefinition[] = [
   },
   {
     id: 'vault',
-    step: '07',
+    step: '08',
     label: 'Vault',
     description: 'Versioned strategy registry',
     icon: Vault20Regular,
     Component: lazy(() =>
       import('../../features/vault/components/VaultPanel').then((m) => ({
         default: m.VaultPanel,
+      }))
+    ),
+  },
+  {
+    id: 'hermes',
+    step: '09',
+    label: 'Hermes',
+    description: 'Runtime: skills, Curator policy, GEPA population',
+    icon: BrainCircuit20Regular,
+    Component: lazy(() =>
+      import('../../features/hermes/components/HermesPanel').then((m) => ({
+        default: m.HermesPanel,
       }))
     ),
   },

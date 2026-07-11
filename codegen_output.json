@@ -1,0 +1,264 @@
+{
+  "generatedBy": "AGT-CDG-001",
+  "note": "Pine and Python emitted from one StrategySpec \u2014 spec_hash is shared, so the two cannot drift.",
+  "variants": [
+    {
+      "preset": "MGC",
+      "spec": {
+        "name": "MIDAS Liquidity Sweep",
+        "version": "1.0",
+        "symbol": "MGC",
+        "exchange": "COMEX",
+        "timeframe": "5",
+        "tick_size": 0.1,
+        "point_value": 10.0,
+        "entry_type": "liquidity_sweep",
+        "entry_offset": 2.0,
+        "entry_side": "both",
+        "confirm_on_bar_close": true,
+        "tp_points": 20.0,
+        "sl_points": 10.0,
+        "use_trailing": true,
+        "trail_activation": 10.0,
+        "trail_offset": 2.0,
+        "pivot_len": 3,
+        "min_opp_breaks": 2,
+        "max_opp_breaks": 2,
+        "retrace_threshold": 0.665,
+        "commission": 0.0,
+        "slippage": 0,
+        "initial_capital": 50000.0,
+        "qty": 1.0,
+        "pyramiding": 0,
+        "window_start": "",
+        "window_end": "",
+        "description": "Liquidity sweep strategy on Micro Gold 5m bars",
+        "tags": [
+          "MGC",
+          "liquidity_sweep",
+          "5m"
+        ]
+      },
+      "spec_hash": "22426015c7bb",
+      "pine_code": "//@version=5\nstrategy(\"MIDAS Liquidity Sweep\",\n         overlay=true,\n         initial_capital=50000.0,\n         default_qty_type=strategy.fixed,\n         default_qty_value=1.0,\n         commission_type=strategy.commission.cash_per_contract,\n         commission_value=0.0,\n         slippage=0,\n         pyramiding=0,\n         process_orders_on_close=true)\n\n// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n// Generated from canonical spec: MIDAS Liquidity Sweep v1.0\n// DO NOT EDIT \u2014 regenerate from StrategySpec to keep parity\n// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n// --- Parameters ---\nentryOffset  = input.float(2.0, 'Entry Offset (points)')\ntpPoints     = input.float(20.0, 'Take Profit (points)')\nslPoints     = input.float(10.0, 'Stop Loss (points)')\nuseTrail     = input.bool(true, 'Use Trailing Stop')\ntrailAct     = input.float(10.0, 'Trail Activation (points)')\ntrailOff     = input.float(2.0, 'Trail Offset (points)')\npivotLen     = input.int(3, 'Pivot Length')\n\n\n// --- Pivot Detection ---\nph = ta.pivothigh(high, pivotLen, pivotLen)\npl = ta.pivotlow(low, pivotLen, pivotLen)\n\nvar float swingHigh = na\nvar float swingLow  = na\n\nif not na(ph)\n    swingHigh := ph\nif not na(pl)\n    swingLow := pl\n\n// --- Liquidity Sweep Entry ---\nvar float buyLevel  = na\nvar float sellLevel = na\n\nif barstate.isconfirmed\n    if not na(swingHigh)\n        buyLevel  := swingHigh + entryOffset\n    if not na(swingLow)\n        sellLevel := swingLow - entryOffset\n\n    if strategy.position_size == 0 and not na(buyLevel)\n        strategy.entry('Long', strategy.long, stop=buyLevel)\n    if strategy.position_size == 0 and not na(sellLevel)\n        strategy.entry('Short', strategy.short, stop=sellLevel)\n\n// --- Exit Bracket ---\nvar float tpLevel = na\nvar float slLevel = na\n\nif strategy.position_size > 0\n    tpLevel := strategy.position_avg_price + tpPoints\n    slLevel := strategy.position_avg_price - slPoints\nif strategy.position_size < 0\n    tpLevel := strategy.position_avg_price - tpPoints\n    slLevel := strategy.position_avg_price + slPoints\n\nif strategy.position_size > 0\n    strategy.exit('Exit Long', 'Long',\n                  limit=tpLevel, stop=slLevel,\n                  trail_points=trailAct, trail_offset=trailOff)\nif strategy.position_size < 0\n    strategy.exit('Exit Short', 'Short',\n                  limit=tpLevel, stop=slLevel,\n                  trail_points=trailAct, trail_offset=trailOff)\n\n",
+      "pine_chars": 2429,
+      "payload": {
+        "schemaVersion": 1,
+        "strategyId": "midas_liquidity_sweep",
+        "generatedFrom": "codegen/StrategySpec v1.0",
+        "asset": {
+          "symbol": "MGC",
+          "exchange": "COMEX",
+          "timeframe": "5",
+          "tickSize": 0.1,
+          "pointValue": 10.0
+        },
+        "session": {
+          "name": "ETH",
+          "timezone": "America/New_York",
+          "rthOnly": false
+        },
+        "execution": {
+          "confirmOnBarClose": true,
+          "recalcMode": "close_only",
+          "fillMode": "on_close",
+          "slippageTicks": 0,
+          "commissionType": "cash_per_contract",
+          "commissionValue": 0.0,
+          "useBarMagnifier": false,
+          "processOrdersOnClose": true
+        },
+        "sizing": {
+          "initialCapital": 50000.0,
+          "baseCurrency": "USD",
+          "qtyType": "fixed",
+          "qtyValue": 1.0,
+          "pyramiding": 0
+        },
+        "entry": {
+          "side": "both",
+          "orderType": "stop",
+          "conditions": [
+            {
+              "id": "liq_sweep_long",
+              "expression": "close > swingHigh + 2.0"
+            },
+            {
+              "id": "liq_sweep_short",
+              "expression": "close < swingLow - 2.0"
+            }
+          ]
+        },
+        "exit": {
+          "stop": {
+            "points": 10.0
+          },
+          "target": {
+            "points": 20.0
+          },
+          "trailing": {
+            "enabled": true,
+            "activationPoints": 10.0,
+            "offsetPoints": 2.0
+          }
+        },
+        "structureFilters": {
+          "pivotLen": 3,
+          "minOppBreaks": 2,
+          "maxOppBreaks": 2,
+          "retraceThreshold": 0.665
+        }
+      },
+      "sim_config": {
+        "entry_offset": 2.0,
+        "point_mult": 1.0,
+        "tp_points": 20.0,
+        "sl_points": 10.0,
+        "use_trail": true,
+        "trail_act": 10.0,
+        "trail_off": 2.0,
+        "point_value": 10.0
+      },
+      "lint": {
+        "passed": true,
+        "violations": [],
+        "warnings": [
+          "TRAP-CHECK: trailing stop detected \u2014 exit-time SL differs from entry-time SL; intra-bar trap detection is UNRELIABLE"
+        ],
+        "trapCheck": {
+          "status": "unreliable",
+          "message": "TRAP-CHECK: intra-bar trap detection UNRELIABLE \u2014 trailing stop; exit-time SL differs from entry-time SL. Route to manual replay, not the static-bracket resolver."
+        }
+      }
+    },
+    {
+      "preset": "MNQ",
+      "spec": {
+        "name": "MIDAS Liquidity Sweep MNQ",
+        "version": "1.0",
+        "symbol": "MNQ",
+        "exchange": "CME",
+        "timeframe": "5",
+        "tick_size": 0.25,
+        "point_value": 2.0,
+        "entry_type": "liquidity_sweep",
+        "entry_offset": 5.0,
+        "entry_side": "both",
+        "confirm_on_bar_close": true,
+        "tp_points": 50.0,
+        "sl_points": 25.0,
+        "use_trailing": true,
+        "trail_activation": 25.0,
+        "trail_offset": 5.0,
+        "pivot_len": 3,
+        "min_opp_breaks": 2,
+        "max_opp_breaks": 2,
+        "retrace_threshold": 0.665,
+        "commission": 0.0,
+        "slippage": 0,
+        "initial_capital": 50000.0,
+        "qty": 1.0,
+        "pyramiding": 0,
+        "window_start": "",
+        "window_end": "",
+        "description": "Liquidity sweep strategy on Micro Nasdaq 5m bars",
+        "tags": [
+          "MNQ",
+          "liquidity_sweep",
+          "5m"
+        ]
+      },
+      "spec_hash": "b910ee934b57",
+      "pine_code": "//@version=5\nstrategy(\"MIDAS Liquidity Sweep MNQ\",\n         overlay=true,\n         initial_capital=50000.0,\n         default_qty_type=strategy.fixed,\n         default_qty_value=1.0,\n         commission_type=strategy.commission.cash_per_contract,\n         commission_value=0.0,\n         slippage=0,\n         pyramiding=0,\n         process_orders_on_close=true)\n\n// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n// Generated from canonical spec: MIDAS Liquidity Sweep MNQ v1.0\n// DO NOT EDIT \u2014 regenerate from StrategySpec to keep parity\n// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n// --- Parameters ---\nentryOffset  = input.float(5.0, 'Entry Offset (points)')\ntpPoints     = input.float(50.0, 'Take Profit (points)')\nslPoints     = input.float(25.0, 'Stop Loss (points)')\nuseTrail     = input.bool(true, 'Use Trailing Stop')\ntrailAct     = input.float(25.0, 'Trail Activation (points)')\ntrailOff     = input.float(5.0, 'Trail Offset (points)')\npivotLen     = input.int(3, 'Pivot Length')\n\n\n// --- Pivot Detection ---\nph = ta.pivothigh(high, pivotLen, pivotLen)\npl = ta.pivotlow(low, pivotLen, pivotLen)\n\nvar float swingHigh = na\nvar float swingLow  = na\n\nif not na(ph)\n    swingHigh := ph\nif not na(pl)\n    swingLow := pl\n\n// --- Liquidity Sweep Entry ---\nvar float buyLevel  = na\nvar float sellLevel = na\n\nif barstate.isconfirmed\n    if not na(swingHigh)\n        buyLevel  := swingHigh + entryOffset\n    if not na(swingLow)\n        sellLevel := swingLow - entryOffset\n\n    if strategy.position_size == 0 and not na(buyLevel)\n        strategy.entry('Long', strategy.long, stop=buyLevel)\n    if strategy.position_size == 0 and not na(sellLevel)\n        strategy.entry('Short', strategy.short, stop=sellLevel)\n\n// --- Exit Bracket ---\nvar float tpLevel = na\nvar float slLevel = na\n\nif strategy.position_size > 0\n    tpLevel := strategy.position_avg_price + tpPoints\n    slLevel := strategy.position_avg_price - slPoints\nif strategy.position_size < 0\n    tpLevel := strategy.position_avg_price - tpPoints\n    slLevel := strategy.position_avg_price + slPoints\n\nif strategy.position_size > 0\n    strategy.exit('Exit Long', 'Long',\n                  limit=tpLevel, stop=slLevel,\n                  trail_points=trailAct, trail_offset=trailOff)\nif strategy.position_size < 0\n    strategy.exit('Exit Short', 'Short',\n                  limit=tpLevel, stop=slLevel,\n                  trail_points=trailAct, trail_offset=trailOff)\n\n",
+      "pine_chars": 2437,
+      "payload": {
+        "schemaVersion": 1,
+        "strategyId": "midas_liquidity_sweep_mnq",
+        "generatedFrom": "codegen/StrategySpec v1.0",
+        "asset": {
+          "symbol": "MNQ",
+          "exchange": "CME",
+          "timeframe": "5",
+          "tickSize": 0.25,
+          "pointValue": 2.0
+        },
+        "session": {
+          "name": "ETH",
+          "timezone": "America/New_York",
+          "rthOnly": false
+        },
+        "execution": {
+          "confirmOnBarClose": true,
+          "recalcMode": "close_only",
+          "fillMode": "on_close",
+          "slippageTicks": 0,
+          "commissionType": "cash_per_contract",
+          "commissionValue": 0.0,
+          "useBarMagnifier": false,
+          "processOrdersOnClose": true
+        },
+        "sizing": {
+          "initialCapital": 50000.0,
+          "baseCurrency": "USD",
+          "qtyType": "fixed",
+          "qtyValue": 1.0,
+          "pyramiding": 0
+        },
+        "entry": {
+          "side": "both",
+          "orderType": "stop",
+          "conditions": [
+            {
+              "id": "liq_sweep_long",
+              "expression": "close > swingHigh + 5.0"
+            },
+            {
+              "id": "liq_sweep_short",
+              "expression": "close < swingLow - 5.0"
+            }
+          ]
+        },
+        "exit": {
+          "stop": {
+            "points": 25.0
+          },
+          "target": {
+            "points": 50.0
+          },
+          "trailing": {
+            "enabled": true,
+            "activationPoints": 25.0,
+            "offsetPoints": 5.0
+          }
+        },
+        "structureFilters": {
+          "pivotLen": 3,
+          "minOppBreaks": 2,
+          "maxOppBreaks": 2,
+          "retraceThreshold": 0.665
+        }
+      },
+      "sim_config": {
+        "entry_offset": 5.0,
+        "point_mult": 1.0,
+        "tp_points": 50.0,
+        "sl_points": 25.0,
+        "use_trail": true,
+        "trail_act": 25.0,
+        "trail_off": 5.0,
+        "point_value": 2.0
+      },
+      "lint": {
+        "passed": true,
+        "violations": [],
+        "warnings": [
+          "TRAP-CHECK: trailing stop detected \u2014 exit-time SL differs from entry-time SL; intra-bar trap detection is UNRELIABLE"
+        ],
+        "trapCheck": {
+          "status": "unreliable",
+          "message": "TRAP-CHECK: intra-bar trap detection UNRELIABLE \u2014 trailing stop; exit-time SL differs from entry-time SL. Route to manual replay, not the static-bracket resolver."
+        }
+      }
+    }
+  ]
+}

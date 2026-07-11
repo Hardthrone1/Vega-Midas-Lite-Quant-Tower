@@ -1,0 +1,294 @@
+{
+  "generatedBy": "hermes-runtime",
+  "spine": "custom Hermes loop (agent_loop + Curator + GEPA) \u2014 not LangGraph",
+  "skills": [
+    {
+      "skill_id": "AGT-CCP-001",
+      "name": "claude-code-print",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Code Generation",
+        "Claude Code",
+        "Pine Script",
+        "Python",
+        "Headless",
+        "Runtime Skill"
+      ]
+    },
+    {
+      "skill_id": "AGT-CDG-001",
+      "name": "midas-codegen",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Code Generation",
+        "Pine Script",
+        "Python",
+        "Parity",
+        "Strategy Spec",
+        "Runtime Skill"
+      ]
+    },
+    {
+      "skill_id": "AGT-LOG-001",
+      "name": "midas-log",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Logging",
+        "Obsidian",
+        "Memory",
+        "Persistence",
+        "Runtime Skill"
+      ]
+    },
+    {
+      "skill_id": "AGT-LOOP-001",
+      "name": "midas-trading-loop",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Orchestrator",
+        "Trading Loop",
+        "MIDAS Bundle",
+        "Runtime Skill"
+      ]
+    },
+    {
+      "skill_id": "AGT-QNT-001",
+      "name": "midas-quant",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Backtest",
+        "Quant",
+        "Parity",
+        "Metrics",
+        "Edge Analysis",
+        "Runtime Skill"
+      ]
+    },
+    {
+      "skill_id": "AGT-RTR-001",
+      "name": "midas-router",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Router",
+        "Model Selection",
+        "Tier System",
+        "LLM Gateway",
+        "Runtime Skill"
+      ]
+    },
+    {
+      "skill_id": "AGT-STR-001",
+      "name": "midas-structure",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Market Structure",
+        "Pivot Detection",
+        "Break Analysis",
+        "Retrace Filter",
+        "Runtime Skill"
+      ]
+    },
+    {
+      "skill_id": "AGT-SYN-001",
+      "name": "midas-synthesis",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Synthesis",
+        "Decision Aggregation",
+        "Trade Decision",
+        "Runtime Skill"
+      ]
+    }
+  ],
+  "curator": {
+    "failure_types": [
+      "TRANSIENT",
+      "PARAMETER",
+      "HARD"
+    ],
+    "decisions": [
+      "RETRY",
+      "ADJUST",
+      "SKIP"
+    ],
+    "transient_patterns": [
+      "timeout",
+      "timed out",
+      "connection",
+      "rate limit",
+      "429",
+      "503",
+      "502",
+      "500",
+      "temporarily",
+      "unavailable",
+      "retry",
+      "ECONNREFUSED",
+      "ECONNRESET",
+      "network"
+    ],
+    "parameter_patterns": [
+      "no bars",
+      "empty",
+      "not enough",
+      "insufficient",
+      "pivot_len",
+      "threshold",
+      "out of range",
+      "zero trades",
+      "no trades",
+      "trade_count.*0"
+    ],
+    "backoff": {
+      "base_seconds": 2,
+      "schedule": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "note": "TRANSIENT -> retry with exponential backoff; PARAMETER -> adjust params; HARD -> skip."
+    }
+  },
+  "gepa": {
+    "generation": 0,
+    "best_fitness": 0.0,
+    "total_runs": 0,
+    "size": 8,
+    "default_params": {
+      "pivot_len": 3,
+      "min_opp_breaks": 2,
+      "max_opp_breaks": 2,
+      "retrace_threshold": 0.665
+    },
+    "bounds": {
+      "pivot_len": {
+        "min": 2,
+        "max": 8,
+        "type": "int"
+      },
+      "min_opp_breaks": {
+        "min": 1,
+        "max": 4,
+        "type": "int"
+      },
+      "max_opp_breaks": {
+        "min": 2,
+        "max": 5,
+        "type": "int"
+      },
+      "retrace_threshold": {
+        "min": 0.5,
+        "max": 0.8,
+        "type": "float"
+      }
+    },
+    "individuals": [
+      {
+        "params": {
+          "pivot_len": 3,
+          "min_opp_breaks": 2,
+          "max_opp_breaks": 2,
+          "retrace_threshold": 0.665
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 3,
+          "min_opp_breaks": 2,
+          "max_opp_breaks": 4,
+          "retrace_threshold": 0.687
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 2,
+          "min_opp_breaks": 2,
+          "max_opp_breaks": 4,
+          "retrace_threshold": 0.793
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 3,
+          "min_opp_breaks": 4,
+          "max_opp_breaks": 3,
+          "retrace_threshold": 0.517
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 2,
+          "min_opp_breaks": 3,
+          "max_opp_breaks": 5,
+          "retrace_threshold": 0.645
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 4,
+          "min_opp_breaks": 2,
+          "max_opp_breaks": 3,
+          "retrace_threshold": 0.781
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 4,
+          "min_opp_breaks": 2,
+          "max_opp_breaks": 3,
+          "retrace_threshold": 0.756
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 6,
+          "min_opp_breaks": 1,
+          "max_opp_breaks": 5,
+          "retrace_threshold": 0.557
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      }
+    ],
+    "fitness_weights": {
+      "pnl": 0.3,
+      "win_rate": 0.2,
+      "profit_factor": 0.25,
+      "drawdown_penalty": 0.15,
+      "volume_bonus": 0.1,
+      "parity_bonus": 0.1
+    },
+    "note": "Seed population (generation 0, no runs yet). Evolves once GEPA runs on real datasets."
+  }
+}
