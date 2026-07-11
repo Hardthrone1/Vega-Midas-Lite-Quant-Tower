@@ -13,7 +13,7 @@ $VegaPorts = 5173, 8001, 8002
 
 # Free a set of TCP ports by killing whatever is listening on them. This is the
 # key to a clean start: if a stale Vite server is still holding 5173, Vite would
-# silently bump to 5174/5175 — and the gateway CORS origin would no longer match,
+# silently bump to 5174/5175 -- and the gateway CORS origin would no longer match,
 # so the health check fails and the Gateway shows offline. Reclaiming 5173 first
 # keeps the frontend origin stable and in sync with the backend.
 function Clear-VegaPorts {
@@ -40,7 +40,7 @@ Clear-VegaPorts -Ports $VegaPorts
 # gen_runtime_artifacts.py emits codegen_output.json + hermes_state.json from the
 # live codegen/ and hermes/ modules, so those panels reflect the CURRENT spec and
 # GEPA state instead of a stale snapshot. Best-effort: if Python isn't on PATH or
-# the script errors, we warn and continue — the committed artifacts (synced into
+# the script errors, we warn and continue -- the committed artifacts (synced into
 # public/data by npm's predev/prebuild hook) remain a working fallback.
 Write-Host "[VEGA Tower] Pre-flight: regenerating runtime artifacts (codegen + hermes)..." -ForegroundColor Cyan
 try {
@@ -48,10 +48,10 @@ try {
   if ($LASTEXITCODE -eq 0) {
     Write-Host "    codegen_output.json + hermes_state.json refreshed" -ForegroundColor DarkGreen
   } else {
-    Write-Host "    gen_runtime_artifacts.py exited $LASTEXITCODE — using committed artifacts" -ForegroundColor DarkYellow
+    Write-Host "    gen_runtime_artifacts.py exited $LASTEXITCODE -- using committed artifacts" -ForegroundColor DarkYellow
   }
 } catch {
-  Write-Host "    skipped ($_) — using committed artifacts" -ForegroundColor DarkYellow
+  Write-Host "    skipped ($_) -- using committed artifacts" -ForegroundColor DarkYellow
 }
 
 Write-Host "[VEGA Tower] Launching services in parallel..." -ForegroundColor Cyan
@@ -64,7 +64,7 @@ try {
   Write-Host "[VEGA Tower] Starting Gateway..." -ForegroundColor Green
   $jobs += Start-Job -ScriptBlock { cd $using:PSScriptRoot; node Vega_Gateway_Server.js } -Name "Vega-Gateway" -ErrorAction Stop
 
-  # NOTE: Vega_Orchestrator was removed from the launch set — it's a class
+  # NOTE: Vega_Orchestrator was removed from the launch set -- it's a class
   # library with no Node entry point (see archive/Vega_Orchestrator.legacy.js),
   # so running it as a service did nothing. Re-add a job here only if it's
   # revived as a real standalone service.
