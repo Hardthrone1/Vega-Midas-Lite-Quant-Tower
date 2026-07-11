@@ -65,7 +65,6 @@ export function HermesPanel() {
   return (
     <section className="hermes-panel">
       <BladeHeaderActions>
-        <Badge status="info">{artifact.spine.split('—')[0].trim()}</Badge>
         <div className="seg">
           <button className={`seg-btn ${section === 'skills' ? 'seg-on' : ''}`} onClick={() => setSection('skills')}>Skills</button>
           <button className={`seg-btn ${section === 'curator' ? 'seg-on' : ''}`} onClick={() => setSection('curator')}>Curator</button>

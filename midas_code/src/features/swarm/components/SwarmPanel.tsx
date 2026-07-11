@@ -120,7 +120,15 @@ export function SwarmPanel() {
       if (r.ok) {
         setGatewayStatus('online')
         const ts = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()
-        setGatewayMeta(`v${d.version || '?'} · ${d.openrouter || '?'} · ${ts}`)
+        // Show only the fields /api/health actually returns — no '?' placeholders.
+        // Gateway health = { status, activeProvider, circuitState } (+ optional version/timestamp).
+        const parts = [
+          d.version ? `v${d.version}` : null,
+          d.activeProvider || null,
+          d.circuitState ? `circuit ${d.circuitState}` : null,
+          ts,
+        ].filter(Boolean)
+        setGatewayMeta(parts.join(' · '))
       } else {
         setGatewayStatus('offline')
         setGatewayMeta('Gateway not reachable — run: node Vega_Gateway_Server.js')

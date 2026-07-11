@@ -60,8 +60,11 @@ export function PortalNav({
               )}
             </Tab>
           )
-          // Description is fed from the same blades.tsx config that drives the
-          // blade subtitle — one source of truth for the step's meaning.
+          // When the rail is expanded, the step + label are already visible, so
+          // the hover tooltip is redundant noise — only show it in the collapsed
+          // (icon-only) rail. Description is fed from the same blades.tsx config
+          // that drives the blade subtitle — one source of truth for the step.
+          if (expanded) return tab
           return (
             <Tooltip
               key={blade.id}

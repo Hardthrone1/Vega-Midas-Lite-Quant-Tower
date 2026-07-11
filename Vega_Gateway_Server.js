@@ -17,6 +17,7 @@ const { createSwarmOrchestrator } = require('./swarm_orchestrator');
 
 const app = express();
 const PORT = 8001;
+const GATEWAY_VERSION = '1.4';
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -659,8 +660,10 @@ app.get('/api/providers', (_req, res) => {
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ONLINE',
+    version: GATEWAY_VERSION,
     activeProvider: DEFAULT_PROVIDER,
     circuitState: getCircuitBreaker(DEFAULT_PROVIDER).state,
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -673,7 +676,7 @@ app.get('/metrics', async (_req, res) => {
 // Start Server
 // ---------------------------------------------------------------------------
 app.listen(PORT, '127.0.0.1', () => {
-  console.log(`\n=== Vega Gateway Server v1.4 ===`);
+  console.log(`\n=== Vega Gateway Server v${GATEWAY_VERSION} ===`);
   console.log(`Default Provider : ${DEFAULT_PROVIDER}`);
   console.log(`http://127.0.0.1:${PORT}`);
   console.log(`Rate limiting + Retry + Circuit Breaker + Tracing + Prometheus enabled\n`);
