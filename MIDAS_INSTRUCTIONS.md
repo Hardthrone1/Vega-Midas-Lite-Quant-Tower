@@ -113,9 +113,6 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ### ⚙️ Designed But Not Yet Built
 
-- Hermes agent runtime (agent_loop + Curator + GEPA)
-- Headroom proxy (compression layer) — **official Headroom found**: https://github.com/headroomlabs-ai/headroom (60-95% JSON compression, output steering, MCP/proxy deployment)
-- MIDAS Bundle (skill packaging)
 - Pine/Python code generation (store fields exist, logic not implemented)
 
 ### ✅ Built This Session
@@ -146,7 +143,7 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ## LAST THING DONE
 
-✅ **MIDAS Bundle complete** — All 6 Hermes skills built + orchestrator wired. End-to-end verified on mgc_5m_et.csv: Structure (brk#2, gate open) → Quant (engine runs) → Synthesis (GO/NO-GO verdict) → Log (MEMORY.md appended). Pipeline runs in ~112ms.
+✅ **Hermes runtime built** — `hermes/` package: agent_loop + Curator + GEPA + skill_registry. End-to-end verified on mgc_5m_et.csv via `python -m hermes --bars mgc_5m_et.csv`. Full pipeline (discover → structure → quant → synthesis → log) in ~104ms. Curator classifies failures (transient/parameter/hard) with retry+backoff. GEPA maintains 8-individual population with tournament select, crossover, mutation; persists to JSON. All 7 skills auto-discovered and loaded.
 
 ---
 
@@ -330,7 +327,8 @@ Before claiming something works:
 - ✅ Headroom proxy ready (`./start-midas-with-headroom.sh` or `headroom proxy` + `ANTHROPIC_BASE_URL=http://127.0.0.1:8787`)
 - 🔧 index_ws.html broken (needs refactor)
 - ✅ MIDAS Bundle built (6 skills + orchestrator, verified end-to-end)
+- ✅ Hermes runtime built (`hermes/` package: agent_loop + Curator + GEPA + skill_registry)
 - 🔲 `hermes-skills` branch deletion pending (blocked by git proxy; manual cleanup needed)
 
-**Next session**: Create MIDAS Bundle (6 skills: Structure, Quant, Claude Code, Synthesis, Router, Log) wired to `/midas-trading-loop` command. Verify Headroom compression working via `headroom memory stats`. Context-hygiene rules apply.
+**Next session**: Pine/Python code generation from canonical spec. Test Headroom compression on Windows via `headroom memory stats`. Run GEPA evolution across multiple bar datasets to find winning parameter sets.
 
