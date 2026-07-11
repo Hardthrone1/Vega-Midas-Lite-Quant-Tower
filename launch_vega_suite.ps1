@@ -36,6 +36,24 @@ function Clear-VegaPorts {
 Write-Host "[VEGA Tower] Pre-flight: freeing suite ports (5173, 8001, 8002)..." -ForegroundColor Cyan
 Clear-VegaPorts -Ports $VegaPorts
 
+# Regenerate the runtime artifacts the Codegen (03) and Hermes (09) blades read.
+# gen_runtime_artifacts.py emits codegen_output.json + hermes_state.json from the
+# live codegen/ and hermes/ modules, so those panels reflect the CURRENT spec and
+# GEPA state instead of a stale snapshot. Best-effort: if Python isn't on PATH or
+# the script errors, we warn and continue — the committed artifacts (synced into
+# public/data by npm's predev/prebuild hook) remain a working fallback.
+Write-Host "[VEGA Tower] Pre-flight: regenerating runtime artifacts (codegen + hermes)..." -ForegroundColor Cyan
+try {
+  python gen_runtime_artifacts.py
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host "    codegen_output.json + hermes_state.json refreshed" -ForegroundColor DarkGreen
+  } else {
+    Write-Host "    gen_runtime_artifacts.py exited $LASTEXITCODE — using committed artifacts" -ForegroundColor DarkYellow
+  }
+} catch {
+  Write-Host "    skipped ($_) — using committed artifacts" -ForegroundColor DarkYellow
+}
+
 Write-Host "[VEGA Tower] Launching services in parallel..." -ForegroundColor Cyan
 
 # Start all backend services as background jobs (truly parallel, no wait)
