@@ -1,11 +1,11 @@
-# Graph Report - TradingView-Suite  (2026-07-06)
+# Graph Report - TradingView-Suite  (2026-07-11)
 
 ## Corpus Check
-- 245 files · ~97,115 words
+- 260+ files · ~102,000 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2076 nodes · 4750 edges · 127 communities (80 shown, 47 thin omitted)
+- 2159 nodes · 4833 edges · 130 communities (83 shown, 47 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 41 edges (avg confidence: 0.73)
 - Token cost: 0 input · 0 output
 
@@ -153,7 +153,19 @@
 ## Import Cycles
 - None detected.
 
-## Communities (127 total, 47 thin omitted)
+### Community 200 - "Hermes Agent Runtime"
+Cohesion: AST-extracted
+Nodes: hermes/__init__.py, hermes/__main__.py, hermes/agent_loop.py, hermes/curator.py, hermes/gepa.py, hermes/skill_registry.py + classes/functions
+
+### Community 201 - "Strategy Codegen"
+Cohesion: AST-extracted
+Nodes: codegen/__init__.py, codegen/strategy_spec.py, codegen/pine_gen.py, codegen/python_gen.py, codegen/lint.py, skills/midas-codegen/midas_codegen.py + classes/functions
+
+### Community 202 - "MIDAS Skills (New)"
+Cohesion: AST-extracted
+Nodes: Additional skill modules discovered via AST scan
+
+## Communities (130 total, 47 thin omitted)
 
 ### Community 0 - "Backtest Payload Models"
 Cohesion: 0.05

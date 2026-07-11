@@ -1,17 +1,18 @@
 ---
-source_file: "Vega_code/src/store/useStrategyStore.ts"
-type: "code"
-community: "Strategy Store State"
-location: "L33"
-tags:
-  - graphify/code
-  - graphify/EXTRACTED
-  - community/Strategy_Store_State
+id: codegen_lint_lintresult
+type: class
+source: codegen/lint.py
+community: 201
 ---
 
 # LintResult
 
-## Connections
-- [[useStrategyStore.ts]] - `contains` [EXTRACTED]
+**Type**: class
+**Source**: `codegen/lint.py` (L16)
 
-#graphify/code #graphify/EXTRACTED #community/Strategy_Store_State
+## Contains / References
+- [[LintResult.to_dict]] (contains)
+
+## Referenced By
+- [[codegen/lint.py]] (contains)
+

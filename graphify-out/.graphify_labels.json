@@ -125,5 +125,8 @@
   "123": "Community 123",
   "130": "Linux Debug Script",
   "131": "macOS Debug Script",
-  "140": "Pine Analysis Testing"
+  "140": "Pine Analysis Testing",
+  "200": "Hermes Agent Runtime",
+  "201": "Strategy Codegen",
+  "202": "MIDAS Skills (New)"
 }
