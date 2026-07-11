@@ -113,7 +113,7 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ### ⚙️ Designed But Not Yet Built
 
-- Pine/Python code generation (store fields exist, logic not implemented)
+- (All major components now built — remaining work is integration testing + production hardening)
 
 ### ✅ Built This Session
 
@@ -143,7 +143,7 @@ Before proposing architecture, check these docs. Do not re-derive or re-litigate
 
 ## LAST THING DONE
 
-✅ **Hermes runtime built** — `hermes/` package: agent_loop + Curator + GEPA + skill_registry. End-to-end verified on mgc_5m_et.csv via `python -m hermes --bars mgc_5m_et.csv`. Full pipeline (discover → structure → quant → synthesis → log) in ~104ms. Curator classifies failures (transient/parameter/hard) with retry+backoff. GEPA maintains 8-individual population with tournament select, crossover, mutation; persists to JSON. All 7 skills auto-discovered and loaded.
+✅ **Pine/Python codegen built** — `codegen/` package + `skills/midas-codegen/` (AGT-CDG-001). One `StrategySpec` → Pine v5 code + BacktestPayload JSON + sim CONFIG. Anti-cheat lint (Python port of swarm_orchestrator.js `validatePineScriptRules`). MGC + MNQ presets. Both outputs pass lint. 8 skills now auto-discovered by Hermes registry.
 
 ---
 
@@ -328,7 +328,8 @@ Before claiming something works:
 - 🔧 index_ws.html broken (needs refactor)
 - ✅ MIDAS Bundle built (6 skills + orchestrator, verified end-to-end)
 - ✅ Hermes runtime built (`hermes/` package: agent_loop + Curator + GEPA + skill_registry)
+- ✅ Pine/Python codegen built (`codegen/` + `skills/midas-codegen/`, AGT-CDG-001)
 - 🔲 `hermes-skills` branch deletion pending (blocked by git proxy; manual cleanup needed)
 
-**Next session**: Pine/Python code generation from canonical spec. Test Headroom compression on Windows via `headroom memory stats`. Run GEPA evolution across multiple bar datasets to find winning parameter sets.
+**Next session**: Test Headroom compression on Windows via `headroom memory stats`. Run GEPA evolution across multiple bar datasets. Paste generated Pine into TradingView for visual parity validation.
 
