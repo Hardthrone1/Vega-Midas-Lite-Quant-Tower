@@ -372,12 +372,9 @@
 .swarm-gw-label { font-size: var(--fs-sm); font-weight: 600; color: var(--ink-1); }
 .swarm-gw-meta  { font-size: var(--fs-xs); color: var(--ink-3); margin: 8px 0 10px; }
 /* Single column — 280px left panel is not wide enough for 2 cols without overflow */
-.swarm-agent-grid { display: grid; grid-template-columns: 1fr; gap: 5px; margin-top: 8px; }
-.swarm-agent-card  { padding: 7px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: var(--r-md); display: flex; align-items: center; gap: 8px; min-width: 0; }
-.swarm-agent-name  { font-size: var(--fs-xs); font-weight: 600; color: var(--ink-1); white-space: nowrap; }
-.swarm-agent-role  { font-size: 10px; color: var(--ink-3); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.swarm-agent-model { display: none; /* hidden in compact row layout */ }
-.swarm-agent-tier  { font-size: 9px; padding: 2px 5px; border-radius: 4px; background: rgba(70,192,138,0.12); color: var(--ok); flex-shrink: 0; }
+/* Agent roster — cards are now interactive Prism command consoles.
+   Full suite lives in the VEGA Prism section at the end of this file. */
+.swarm-agent-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
 .swarm-msgs-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .swarm-clear-btn { font-size: 9px; padding: 3px 8px; border-radius: 5px; background: transparent; border: 1px solid var(--line-strong); color: var(--ink-3); cursor: pointer; font-family: var(--font-mono); text-transform: uppercase; }
 .swarm-clear-btn:hover { border-color: var(--gold); color: var(--gold); }
@@ -1069,4 +1066,267 @@ select#instrument-select {
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none !important; }
+}
+
+/* ── VEGA Prism — agent command cards ───────────────────────────────── */
+/* The four Prism layers keep their canonical names (--bg, --surface-1/2/3)
+   but are SCOPED to .vega-prism: outside this suite the global Fluent token
+   remap in portal.css keeps owning those names, so the rest of the app —
+   including light mode — is untouched. Layer 1 (the void) paints on the
+   scope wrapper itself so the glass panels have something to distort. */
+.vega-prism {
+  /* LAYER 1: the void */
+  --bg: radial-gradient(circle at 80% 20%, rgba(0, 229, 255, 0.04), transparent 40%), #0d101d;
+  /* LAYER 2: base glass panels */
+  --surface-1: rgba(22, 28, 45, 0.45);
+  /* LAYER 3: neumorphic insets */
+  --surface-2: rgba(10, 14, 24, 0.5);
+  /* LAYER 4: highest elevation */
+  --surface-3: rgba(35, 45, 75, 0.65);
+  --prism-accent: #00e5ff;
+  --prism-accent-soft: rgba(0, 229, 255, 0.3);
+  --prism-accent-bg: rgba(0, 229, 255, 0.1);
+  --prism-ink: #e8ecf8;
+  --prism-ink-dim: #8b96b4;
+  --prism-inset: inset 3px 3px 6px rgba(0, 0, 0, 0.4), inset -2px -2px 5px rgba(255, 255, 255, 0.02);
+
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 10px;
+}
+
+/* Prism keeps its layered flow in light mode, rebuilt on light glass. */
+[data-theme="light"] .vega-prism {
+  --bg: radial-gradient(circle at 80% 20%, rgba(0, 134, 163, 0.06), transparent 40%), #e6e9f2;
+  --surface-1: rgba(255, 255, 255, 0.55);
+  --surface-2: rgba(219, 226, 240, 0.6);
+  --surface-3: rgba(255, 255, 255, 0.85);
+  --prism-accent: #007a99;
+  --prism-accent-soft: rgba(0, 122, 153, 0.35);
+  --prism-accent-bg: rgba(0, 122, 153, 0.1);
+  --prism-ink: #131c33;
+  --prism-ink-dim: #5b6684;
+  --prism-inset: inset 2px 2px 5px rgba(90, 102, 132, 0.25), inset -2px -2px 4px rgba(255, 255, 255, 0.7);
+}
+
+/* Base glassmorphism panel (gradient border via padding-box/border-box clip) */
+.vega-glass-panel {
+  background: var(--surface-1);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid transparent;
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  background-image:
+    linear-gradient(var(--surface-1), var(--surface-1)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ── Card shell: hover lift = "this is clickable" ── */
+.agent-card {
+  border-radius: 14px;
+  overflow: hidden;
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s var(--ease);
+}
+.agent-card:hover:not(.agent-card--open) {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px var(--prism-accent-soft);
+}
+/* Executing: 2s pulsating ring. More specific than the shared .status-live
+   scale pulse above, so cards get the ring treatment instead. */
+.agent-card.status-live {
+  animation: prism-pulsate 2s infinite ease-in-out;
+  border-color: rgba(0, 229, 255, 0.4);
+}
+@keyframes prism-pulsate {
+  0%   { box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 0 0 rgba(0, 229, 255, 0.2); }
+  70%  { box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 0 12px rgba(0, 229, 255, 0); }
+  100% { box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 0 0 rgba(0, 229, 255, 0); }
+}
+
+/* ── Header (the click target) ── */
+.agent-header {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 10px 12px;
+  background: transparent; border: none; color: inherit;
+  cursor: pointer; text-align: left;
+}
+.agent-header:focus-visible {
+  outline: 2px solid var(--prism-accent);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
+.agent-identity { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; }
+.agent-id-text  { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.agent-name {
+  display: flex; align-items: center; gap: 6px;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--prism-ink); white-space: nowrap;
+}
+.agent-meta {
+  font-size: 10px; color: var(--prism-ink-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Avatar: initials at rest; spinning orbit ring + breathing glow when live */
+.agent-avatar {
+  position: relative; width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+  background: var(--surface-3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.04em; color: var(--prism-accent);
+}
+.agent-avatar::before {
+  content: ""; position: absolute; inset: -10px; border-radius: 50%;
+  background: radial-gradient(circle, var(--prism-accent-soft), transparent 70%);
+  filter: blur(6px); opacity: 0; pointer-events: none;
+}
+.agent-avatar::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 12px; padding: 2px;
+  background: conic-gradient(var(--prism-accent) 0 25%, transparent 25% 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: exclude;
+  opacity: 0; pointer-events: none;
+}
+.agent-avatar.avatar-spin::before { opacity: 1; animation: avatar-breathe 2.4s ease-in-out infinite; }
+.agent-avatar.avatar-spin::after  { opacity: 1; animation: avatar-orbit 1.1s linear infinite; }
+@keyframes avatar-orbit { to { transform: rotate(360deg); } }
+@keyframes avatar-breathe {
+  0%, 100% { transform: scale(0.8);  opacity: 0.35; }
+  50%      { transform: scale(1.35); opacity: 0.8; }
+}
+
+/* Skill lane pill */
+.skill-tag-pill {
+  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 9px; font-weight: 600; letter-spacing: 0.08em;
+  color: var(--prism-accent);
+  background: var(--prism-accent-bg);
+  border: 1px solid var(--prism-accent-soft);
+  padding: 3px 8px; border-radius: 99px;
+}
+
+/* "›_" cue slides in on hover/focus — the card announces it takes commands */
+.agent-cta-hint {
+  flex-shrink: 0; font-size: 10px; color: var(--prism-accent);
+  opacity: 0; transform: translateX(-4px);
+  transition: opacity 0.2s var(--ease), transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.agent-card:hover .agent-cta-hint,
+.agent-card--open .agent-cta-hint,
+.agent-header:focus-visible .agent-cta-hint { opacity: 1; transform: translateX(0); }
+
+/* ── Console reveal: 0fr → 1fr grid spring ── */
+.agent-console-zone {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.agent-card--open .agent-console-zone { grid-template-rows: 1fr; }
+.agent-console-inner {
+  overflow: hidden; min-height: 0;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 0 10px;
+  transition: padding 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.agent-card--open .agent-console-inner { padding: 0 10px 10px; }
+
+/* Command line resting on surface-2 with the neumorphic inset */
+.agent-console-input {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 9px 11px;
+  display: flex; align-items: center; gap: 7px;
+  box-shadow: var(--prism-inset);
+  transition: box-shadow 0.2s var(--ease);
+}
+.agent-console-input:focus-within {
+  box-shadow: var(--prism-inset), 0 0 0 1px var(--prism-accent-soft);
+}
+.console-prefix { color: var(--prism-accent); font-size: 10px; flex-shrink: 0; }
+.agent-console-input input {
+  background: transparent; border: none; outline: none; width: 100%;
+  color: var(--prism-ink); font-family: var(--font-mono); font-size: 11px;
+}
+.agent-console-input input::placeholder { color: var(--prism-ink-dim); }
+.agent-console-input input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Streamed response: token fade-up + terminal cursor ── */
+.agent-response {
+  background: var(--surface-2); border-radius: 10px;
+  padding: 10px 11px; max-height: 180px; overflow-y: auto;
+}
+.agent-response::-webkit-scrollbar { width: 4px; }
+.agent-response::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 99px; }
+.stream-output { color: var(--prism-ink); font-size: 11px; line-height: 1.7; }
+.stream-output::after {
+  content: ""; display: inline-block; width: 6px; height: 11px;
+  background: var(--prism-accent); vertical-align: middle; margin-left: 2px;
+  border-radius: 2px; box-shadow: 0 0 8px var(--prism-accent);
+  animation: stream-blink 0.8s infinite; opacity: 0;
+}
+.stream-output.is-streaming::after { opacity: 1; animation: none; }
+@keyframes stream-blink { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+.token-word {
+  opacity: 0; display: inline-block; transform: translateY(4px);
+  margin-right: 0.3em;
+}
+/* Tokens mount already-revealed, so fade up via a mount animation */
+.token-word.visible { animation: token-in 0.14s ease-out forwards; }
+@keyframes token-in { to { opacity: 1; transform: translateY(0); } }
+.agent-response-err { color: var(--err); font-size: 11px; line-height: 1.6; }
+
+/* ── Execute button: idle / hover / pressed / locked / playing ── */
+.agent-footer-toolbar { display: flex; justify-content: flex-end; }
+.prism-btn-primary {
+  min-width: 128px; min-height: 33px;
+  background: var(--prism-accent-bg);
+  color: var(--prism-accent);
+  border: 1px solid var(--prism-accent-soft);
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.prism-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.15);
+  box-shadow: 0 0 14px var(--prism-accent-soft);
+}
+.prism-btn-primary:active:not(:disabled) { transform: scale(0.96); }
+.prism-btn-primary:focus-visible { outline: 2px solid var(--prism-accent); outline-offset: 2px; }
+.prism-btn-primary:disabled {
+  opacity: 0.4; cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #888;
+}
+/* Locked-because-running stays lit (distinct from locked-because-empty) */
+.prism-btn-primary.is-playing:disabled {
+  opacity: 1; cursor: progress;
+  background: var(--prism-accent-bg);
+  border-color: var(--prism-accent-soft);
+  color: var(--prism-accent);
+}
+/* Reuse the shared .ac-typing dots, recentered for the button */
+.prism-btn-primary .ac-typing { padding: 0; justify-content: center; }
+.prism-btn-primary .ac-typing span {
+  background: currentColor;
+  box-shadow: 0 0 6px var(--prism-accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-card,
+  .agent-card.status-live,
+  .agent-avatar.avatar-spin::before,
+  .agent-avatar.avatar-spin::after,
+  .stream-output::after { animation: none !important; }
+  .agent-card:hover:not(.agent-card--open) { transform: none; }
+  .agent-console-zone, .agent-console-inner, .agent-cta-hint { transition: none; }
+  .token-word, .token-word.visible { animation: none !important; opacity: 1; transform: none; }
 }

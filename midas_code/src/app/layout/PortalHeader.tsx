@@ -53,10 +53,11 @@ export function PortalHeader({
   const handleThemeToggle = useCallback((e: React.MouseEvent) => {
     document.documentElement.style.setProperty('--cx', e.clientX + 'px')
     document.documentElement.style.setProperty('--cy', e.clientY + 'px')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const vt = (document as any).startViewTransition
-    if (typeof vt === 'function') {
-      vt(() => { flushSync(toggleMode) })
+    // Must be invoked ON document — detaching the method loses its native
+    // receiver and throws "Illegal invocation", silently killing the toggle.
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown }
+    if (typeof doc.startViewTransition === 'function') {
+      doc.startViewTransition(() => { flushSync(toggleMode) })
     } else {
       toggleMode()
     }

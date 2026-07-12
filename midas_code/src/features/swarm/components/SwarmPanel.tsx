@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Card, Badge, SwipeToConfirm } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
+import { AgentCard } from './AgentCard'
 
 const GW_URL = 'http://127.0.0.1:8001'
 const GW_POLL_MS = 8000
@@ -74,6 +75,7 @@ export function SwarmPanel() {
 
   const [gatewayStatus, setGatewayStatus] = useState<GatewayStatus>('checking')
   const [gatewayMeta, setGatewayMeta] = useState('—')
+  const [activeAgent, setActiveAgent] = useState<string | null>(null)
   const [mode, setMode] = useState<SwarmMode>('swarm')
   const [busy, setBusy] = useState(false)
   const [agentMsgs, setAgentMsgs] = useState<AgentMsg[]>([
@@ -163,6 +165,41 @@ export function SwarmPanel() {
     if (!resp.ok) throw new Error(data?.error?.message || `Gateway HTTP ${resp.status}`)
     return data?.choices?.[0]?.message?.content || ''
   }
+
+  // Direct agent interaction: clicking a roster card opens its console, and
+  // Execute routes the command to that agent's own gateway provider lane.
+  const runAgentCommand = useCallback(async (agent: typeof AGENTS[number], cmd: string) => {
+    addMsg(agent.name.toUpperCase(), `» ${cmd}`, 'route')
+    try {
+      const resp = await fetch(`${GW_URL}/api/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: agent.model,
+          messages: [
+            {
+              role: 'system',
+              content: `You are ${agent.name}, the ${agent.role} agent (${agent.tier} lane) of the VEGA trading swarm. Current context: ${symbol} ${timeframe}. Answer the operator directly and concisely.`,
+            },
+            { role: 'user', content: cmd },
+          ],
+          max_tokens: 1200,
+          temperature: 0.6,
+        }),
+        signal: AbortSignal.timeout(60000),
+      })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data?.error?.message || `Gateway HTTP ${resp.status}`)
+      const content: string = data?.choices?.[0]?.message?.content || ''
+      if (!content) throw new Error('Agent returned an empty response')
+      addMsg(agent.name.toUpperCase(), `${content.slice(0, 140)}${content.length > 140 ? '…' : ''}`, 'work')
+      return content
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      addMsg(agent.name.toUpperCase(), msg, 'err')
+      throw err
+    }
+  }, [addMsg, symbol, timeframe])
 
   function applyLintResult(lint: ReturnType<typeof lintPine>, label: string) {
     setLintResult(lint)
@@ -349,14 +386,19 @@ export function SwarmPanel() {
           <Card className="swarm-card">
             <span className="eyebrow">Gateway · Port 8001</span>
             <div className="swarm-gw-meta">{gatewayMeta}</div>
-            <div className="swarm-agent-grid">
+            <div className="swarm-agent-grid vega-prism">
               {AGENTS.map(a => (
-                <div key={a.name} className="swarm-agent-card">
-                  <div className="swarm-agent-name">{a.name}</div>
-                  <div className="swarm-agent-role">{a.role}</div>
-                  <div className="swarm-agent-model">{a.model}</div>
-                  <span className="swarm-agent-tier">{a.tier}</span>
-                </div>
+                <AgentCard
+                  key={a.name}
+                  agentName={a.name}
+                  role={a.role}
+                  model={a.model}
+                  skillTag={a.tier}
+                  agentStatus={gatewayStatus}
+                  open={activeAgent === a.name}
+                  onToggle={() => setActiveAgent(cur => (cur === a.name ? null : a.name))}
+                  onExecute={cmd => runAgentCommand(a, cmd)}
+                />
               ))}
             </div>
           </Card>
