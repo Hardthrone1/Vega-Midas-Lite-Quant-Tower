@@ -665,17 +665,8 @@ canvas {
   padding: 8px 10px; margin: 0; white-space: pre-wrap; overflow-x: auto;
   max-height: 120px; overflow-y: auto; border-bottom: 1px solid var(--line);
 }
-.ac-action-btns { display: flex; gap: 6px; padding: 8px 10px; }
-.ac-action-btn {
-  padding: 5px 14px; border-radius: var(--r-sm); font-size: var(--fs-xs);
-  font-family: var(--font-mono); font-weight: 600; cursor: pointer; border: 1px solid;
-  text-transform: uppercase; letter-spacing: 0.06em;
-  transition: background var(--fast) var(--ease);
-}
-.ac-action-btn--accept { background: rgba(70,192,138,0.12); border-color: rgba(70,192,138,0.4); color: var(--ok); }
-.ac-action-btn--accept:hover { background: rgba(70,192,138,0.22); }
-.ac-action-btn--reject { background: rgba(224,96,79,0.08); border-color: rgba(224,96,79,0.3); color: var(--err); }
-.ac-action-btn--reject:hover { background: rgba(224,96,79,0.16); }
+.ac-action-btns { display: flex; flex-direction: column; gap: 8px; padding: 10px; }
+.ac-action-btns .stc { max-width: 100%; }
 
 /* Input row */
 .ac-input-row {

@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { RotateCcw, X, Zap } from 'lucide-react'
 import { useStrategyStore } from '../../../store/useStrategyStore'
+import { SwipeToConfirm } from '../../../shared/ui'
 
 const GW_URL = 'http://127.0.0.1:8001'
 
@@ -269,8 +270,20 @@ export function AgentConsole({ open, onClose }: { open: boolean; onClose: () => 
                   <pre className="ac-action-payload">{JSON.stringify(proposal.payload, null, 2)}</pre>
                   {state === 'pending' && (
                     <div className="ac-action-btns">
-                      <button className="ac-action-btn ac-action-btn--accept" onClick={() => { executeAction(proposal); setActionState(msg.id, idx, 'accepted') }}>Accept</button>
-                      <button className="ac-action-btn ac-action-btn--reject" onClick={() => setActionState(msg.id, idx, 'rejected')}>Reject</button>
+                      <SwipeToConfirm
+                        key={`${msg.id}-${idx}-accept`}
+                        variant="approve"
+                        text="Swipe to Accept"
+                        successText="Accepted"
+                        onConfirm={() => { executeAction(proposal); setActionState(msg.id, idx, 'accepted') }}
+                      />
+                      <SwipeToConfirm
+                        key={`${msg.id}-${idx}-reject`}
+                        variant="deny"
+                        text="Swipe to Reject"
+                        successText="Rejected"
+                        onConfirm={() => setActionState(msg.id, idx, 'rejected')}
+                      />
                     </div>
                   )}
                 </div>
