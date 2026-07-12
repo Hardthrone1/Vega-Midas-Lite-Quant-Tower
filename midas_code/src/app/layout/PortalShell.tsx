@@ -56,6 +56,7 @@ export function PortalShell() {
       </a>
 
       <PortalHeader
+        navExpanded={navExpanded}
         onToggleNav={() => setNavExpanded((v) => !v)}
         timelineOpen={timelineOpen}
         onToggleTimeline={() => setTimelineOpen((v) => !v)}

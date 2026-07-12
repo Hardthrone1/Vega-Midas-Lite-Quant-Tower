@@ -13,7 +13,6 @@ import {
 } from '@fluentui/react-components'
 import {
   Alert24Regular,
-  Navigation24Regular,
   WeatherMoon24Regular,
   WeatherSunny24Regular,
   WindowConsole20Regular,
@@ -38,10 +37,12 @@ const BADGE_COLOR: Record<Status, 'success' | 'warning' | 'danger' | 'informativ
 }
 
 export function PortalHeader({
+  navExpanded,
   onToggleNav,
   timelineOpen,
   onToggleTimeline,
 }: {
+  navExpanded: boolean
   onToggleNav: () => void
   timelineOpen: boolean
   onToggleTimeline: () => void
@@ -69,13 +70,19 @@ export function PortalHeader({
   return (
     <header className="portal-header">
       <div className="portal-header-left">
-        <Button
-          appearance="transparent"
-          className="portal-header-iconbtn"
-          icon={<Navigation24Regular />}
+        {/* Animated hamburger — bars morph to an X while the rail is open.
+            React state drives the morph (no hidden checkbox needed). */}
+        <button
+          type="button"
+          className={`hamburger${navExpanded ? ' hamburger--open' : ''}`}
           onClick={onToggleNav}
           aria-label="Toggle navigation sidebar"
-        />
+          aria-expanded={navExpanded}
+        >
+          <span className="bar top" />
+          <span className="bar mid" />
+          <span className="bar bot" />
+        </button>
         <span className="portal-header-brand">
           <span className="portal-header-product">VEGA</span>
           <span className="portal-header-sub">Strategy Control Tower</span>

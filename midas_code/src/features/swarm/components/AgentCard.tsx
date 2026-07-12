@@ -131,18 +131,20 @@ export function AgentCard({
       {/* CONSOLE — 0fr → 1fr grid reveal, no height measuring needed */}
       <div className="agent-console-zone">
         <div className="agent-console-inner">
-          <div className="agent-console-input">
-            <span className="console-prefix mono">~ $</span>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={agentStatus === 'online' ? 'Awaiting command…' : 'Agent offline — start the gateway'}
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') void handleAgentExecution() }}
-              disabled={isExecuting || agentStatus !== 'online'}
-              aria-label={`Command for ${agentName}`}
-            />
+          <div className="glow-wrapper glow-wrapper--console">
+            <div className="agent-console-input">
+              <span className="console-prefix mono">~ $</span>
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={agentStatus === 'online' ? 'Awaiting command…' : 'Agent offline — start the gateway'}
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void handleAgentExecution() }}
+                disabled={isExecuting || agentStatus !== 'online'}
+                aria-label={`Command for ${agentName}`}
+              />
+            </div>
           </div>
 
           {showResponse && (

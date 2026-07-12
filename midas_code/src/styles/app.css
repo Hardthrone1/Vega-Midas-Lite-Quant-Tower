@@ -665,29 +665,29 @@ canvas {
 .ac-action-btns { display: flex; flex-direction: column; gap: 8px; padding: 10px; }
 .ac-action-btns .stc { max-width: 100%; }
 
-/* Input row */
+/* Input row — glow-wrapper prompt box (see the Glow Prompt section below) */
 .ac-input-row {
-  display: flex; gap: 8px; padding: 10px 14px;
+  padding: 10px 14px;
   border-top: 1px solid var(--line); flex-shrink: 0;
   background: var(--surface-2);
 }
 .ac-input {
-  flex: 1; background: var(--surface-3); border: 1px solid var(--line-strong);
-  border-radius: var(--r-md); color: var(--ink-1); font-family: var(--font-mono);
-  font-size: var(--fs-sm); padding: 8px 10px; resize: none;
-  line-height: 1.5; transition: border-color var(--fast) var(--ease);
+  background: transparent; border: none; outline: none;
+  color: var(--ink-1); font-family: var(--font-mono);
+  font-size: var(--fs-sm); padding: 6px 8px; resize: none;
+  line-height: 1.5; min-height: 40px; max-height: 160px; overflow-y: auto;
 }
-.ac-input:focus-visible { border-color: var(--gold); }
 .ac-input::placeholder { color: var(--ink-3); }
 .ac-input:disabled { opacity: 0.45; cursor: not-allowed; }
+.ac-input-hint { font-size: 9.5px; color: var(--ink-3); letter-spacing: 0.04em; }
 .ac-send-btn {
-  width: 36px; flex-shrink: 0; border-radius: var(--r-md);
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%;
   background: var(--gold); border: none; color: var(--ink-inv);
-  font-size: 16px; font-weight: 700; cursor: pointer;
-  transition: background var(--fast) var(--ease);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: background var(--fast) var(--ease), transform var(--fast) var(--ease);
   display: flex; align-items: center; justify-content: center;
 }
-.ac-send-btn:hover:not(:disabled) { background: var(--gold-dim); }
+.ac-send-btn:hover:not(:disabled) { background: var(--gold-dim); transform: scale(1.06); }
 .ac-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ===== VEGA REBRANDING & GLOBAL POLISH ========================= */
@@ -1329,4 +1329,95 @@ select#instrument-select {
   .agent-card:hover:not(.agent-card--open) { transform: none; }
   .agent-console-zone, .agent-console-inner, .agent-cta-hint { transition: none; }
   .token-word, .token-word.visible { animation: none !important; opacity: 1; transform: none; }
+}
+
+/* ── Animated hamburger (portal header nav toggle) ──────────────────── */
+/* Bars morph to an X while the rail is open. React state drives the
+   .hamburger--open class, so no hidden checkbox is needed. Scaled to the
+   56px header; bars pick up the header icon color via currentColor. */
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  color: inherit;
+  transition: background var(--fast) var(--ease);
+}
+.hamburger:hover { background: rgba(255, 255, 255, 0.12); }
+.hamburger:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.bar {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 4px;
+  transition: transform 0.4s, opacity 0.4s;
+}
+.hamburger--open .top { transform: translateY(6px) rotate(45deg); }
+.hamburger--open .mid { opacity: 0; }
+.hamburger--open .bot { transform: translateY(-6px) rotate(-45deg); }
+
+/* ── Glow prompt box (every agent console) ──────────────────────────── */
+/* Animated gradient border + soft bloom around the command inputs, cycling
+   through the existing accents: vega blue → prism cyan → gold. */
+.glow-wrapper {
+  position: relative;
+  border-radius: 14px;
+  padding: 1.5px;
+  background: linear-gradient(90deg,
+    var(--vega-blue, #3b82f6), #00e5ff, var(--gold, #e7b75f), var(--vega-blue, #3b82f6));
+  background-size: 300% 300%;
+  animation: gradientGlow 4s ease infinite;
+  z-index: 1;
+}
+.glow-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 18px;
+  background: inherit;
+  background-size: 300% 300%;
+  filter: blur(12px);
+  opacity: 0.45;
+  z-index: -1;
+  animation: gradientGlow 4s ease infinite;
+}
+@keyframes gradientGlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Orchestrator console: textarea over an actions strip, on surface-3 */
+.input-box {
+  background: var(--surface-3);
+  border-radius: 12.5px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+
+/* Slimmer variant around each Prism agent card's command line */
+.glow-wrapper--console { border-radius: 13px; padding: 1.5px; }
+.glow-wrapper--console::before { inset: -3px; border-radius: 15px; filter: blur(8px); opacity: 0.3; }
+.glow-wrapper--console .agent-console-input { border-radius: 11.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-wrapper, .glow-wrapper::before { animation: none !important; }
+  .bar { transition: none; }
 }

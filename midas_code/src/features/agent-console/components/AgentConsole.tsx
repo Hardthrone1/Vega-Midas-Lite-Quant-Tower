@@ -304,28 +304,35 @@ export function AgentConsole({ open, onClose }: { open: boolean; onClose: () => 
 
       <div className="ac-input-row">
         <label htmlFor="ac-message-input" className="sr-only">Message to VEGA Orchestrator</label>
-        <textarea
-          id="ac-message-input"
-          ref={inputRef}
-          className="ac-input"
-          rows={2}
-          placeholder={gatewayOk === false ? 'Gateway offline — run: node Vega_Gateway_Server.js' : 'Ask the Orchestrator… (Enter to send, Shift+Enter for newline)'}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          disabled={busy || gatewayOk === false}
-          aria-describedby={busy ? 'ac-busy-status' : undefined}
-        />
-        {busy && <span id="ac-busy-status" className="sr-only">Sending message…</span>}
-        <button
-          type="button"
-          className="ac-send-btn"
-          onClick={send}
-          disabled={busy || !input.trim() || gatewayOk === false}
-          aria-label={busy ? 'Sending message' : 'Send message'}
-        >
-          {busy ? '…' : '↑'}
-        </button>
+        <div className="glow-wrapper">
+          <div className="input-box">
+            <textarea
+              id="ac-message-input"
+              ref={inputRef}
+              className="ac-input"
+              rows={2}
+              placeholder={gatewayOk === false ? 'Gateway offline — run: node Vega_Gateway_Server.js' : 'Ask the Orchestrator…'}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              disabled={busy || gatewayOk === false}
+              aria-describedby={busy ? 'ac-busy-status' : undefined}
+            />
+            <div className="actions">
+              <span className="ac-input-hint mono" aria-hidden>↵ send · shift+↵ newline</span>
+              {busy && <span id="ac-busy-status" className="sr-only">Sending message…</span>}
+              <button
+                type="button"
+                className="ac-send-btn"
+                onClick={send}
+                disabled={busy || !input.trim() || gatewayOk === false}
+                aria-label={busy ? 'Sending message' : 'Send message'}
+              >
+                {busy ? '…' : '↑'}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
