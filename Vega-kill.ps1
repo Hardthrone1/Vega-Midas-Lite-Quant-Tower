@@ -1,16 +1,19 @@
-# Vega-kill.ps1 — stop Vega services (hidden launcher; no CMD windows required)
+# Vega-kill.ps1 -- stop Vega services (hidden launcher; no CMD windows required)
 # Set execution policy for this scope to avoid prompts
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
 $ErrorActionPreference = 'SilentlyContinue'
 
+# Current suite fingerprints first, legacy names kept for stale processes
+# left over from older builds.
 $patterns = @(
-    'MIDAS_Gateway_Server.js',
-    'midas-proxy.js',
-    'http.server 8000',
+    'Vega_Gateway_Server.js',
     'MRE_Server.py',
     'vite',
-    'midas_code'
+    'midas_code',
+    'MIDAS_Gateway_Server.js',
+    'midas-proxy.js',
+    'http.server 8000'
 )
 
 Write-Host "[1] Stopping MIDAS processes..."

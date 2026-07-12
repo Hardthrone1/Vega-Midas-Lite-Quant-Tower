@@ -91,7 +91,7 @@ export function Button({
   return (
     <FluentButton
       appearance={variant === 'primary' ? 'primary' : variant === 'danger' ? 'outline' : 'secondary'}
-      className={variant === 'danger' ? 'vega-btn-danger' : undefined}
+      className={variant === 'danger' ? 'vega-btn-danger' : variant === 'primary' ? 'vega-btn-glow' : undefined}
       type={type}
       title={title}
       aria-label={ariaLabel}

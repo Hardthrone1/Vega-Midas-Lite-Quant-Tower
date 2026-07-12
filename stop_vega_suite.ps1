@@ -9,7 +9,7 @@ Write-Host "[VEGA Tower] Stopping all services..." -ForegroundColor Yellow
 $VegaPorts = 5173, 8001, 8002
 
 # Command-line fingerprints of suite processes. We match on these instead of
-# blindly killing every node/python process — that would take down VS Code's
+# blindly killing every node/python process -- that would take down VS Code's
 # node, other dev servers, and any unrelated Python you have running.
 $Patterns = @(
   'Vega_Gateway_Server.js',

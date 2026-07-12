@@ -453,3 +453,14 @@
 .blade-body .card:hover {
   box-shadow: var(--elev-4), var(--brand-glow-subtle);
 }
+
+/* Blue (primary) Fluent buttons carry the brand glow at rest; hover deepens
+   it instead of falling back to the subtle variant above. */
+#root .fui-Button.vega-btn-glow {
+  box-shadow: var(--brand-glow);
+}
+#root .fui-Button.vega-btn-glow:hover:not(:disabled) {
+  box-shadow:
+    var(--brand-glow),
+    0 6px 24px -8px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 80%, transparent);
+}

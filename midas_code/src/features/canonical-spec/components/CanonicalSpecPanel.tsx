@@ -41,8 +41,8 @@ export function CanonicalSpecPanel() {
       <BladeHeaderActions>
         {validBadge}
         <div className="seg">
-          <button className={`seg-btn ${view === 'summary' ? 'seg-on' : ''}`} onClick={() => setView('summary')}>summary</button>
-          <button className={`seg-btn ${view === 'json' ? 'seg-on' : ''}`} onClick={() => setView('json')}>json</button>
+          <button className={`seg-btn ${view === 'summary' ? 'seg-on' : ''}`} onClick={() => setView('summary')}>Summary</button>
+          <button className={`seg-btn ${view === 'json' ? 'seg-on' : ''}`} onClick={() => setView('json')}>JSON</button>
         </div>
       </BladeHeaderActions>
       {!specValidation.valid && specValidation.issues.length > 0 && (
@@ -63,19 +63,19 @@ export function CanonicalSpecPanel() {
           </div>
           <Card>
             <span className="eyebrow">Properties</span>
-            <div className="kv mono">
-              <div><span>capital</span>{canonicalSpec.properties.initialCapital} {canonicalSpec.properties.baseCurrency}</div>
-              <div><span>qty</span>{canonicalSpec.properties.qtyValue} ({canonicalSpec.properties.qtyType})</div>
-              <div><span>commission</span>{canonicalSpec.properties.commissionValue} ({canonicalSpec.properties.commissionType})</div>
-              <div><span>slippage</span>{canonicalSpec.properties.slippageTicks} ticks</div>
-              <div><span>fill</span>{canonicalSpec.properties.fillMode}</div>
-              <div><span>recalc</span>{canonicalSpec.properties.recalcMode}</div>
+            <div className="spec-props">
+              <div><span>Capital</span><strong>{canonicalSpec.properties.initialCapital} {canonicalSpec.properties.baseCurrency}</strong></div>
+              <div><span>Quantity</span><strong>{canonicalSpec.properties.qtyValue} · {canonicalSpec.properties.qtyType}</strong></div>
+              <div><span>Commission</span><strong>{canonicalSpec.properties.commissionValue} · {canonicalSpec.properties.commissionType}</strong></div>
+              <div><span>Slippage</span><strong>{canonicalSpec.properties.slippageTicks} ticks</strong></div>
+              <div><span>Fill</span><strong>{canonicalSpec.properties.fillMode}</strong></div>
+              <div><span>Recalc</span><strong>{canonicalSpec.properties.recalcMode}</strong></div>
             </div>
             {!propertyValidation.valid && propertyValidation.issues.length > 0 &&
               <div className="sub err-text">{propertyValidation.issues.length} property issue(s)</div>}
           </Card>
-          <div className="spread">
-            <span className="sub">Python payload: {pythonPayload ? <Badge status="ok">ready</Badge> : <Badge>not built</Badge>}</span>
+          <div className="spread spec-footer">
+            <span className="sub">Python payload {pythonPayload ? <Badge status="ok">ready</Badge> : <Badge>not built</Badge>}</span>
             <Button onClick={regen}>Regenerate Python payload</Button>
           </div>
         </div>

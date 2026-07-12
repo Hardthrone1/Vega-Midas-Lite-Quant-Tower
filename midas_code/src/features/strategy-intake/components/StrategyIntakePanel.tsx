@@ -470,6 +470,7 @@ export function StrategyIntakePanel() {
 
         <Button
           appearance="primary"
+          className="vega-btn-glow"
           type="submit"
           disabled={loading}
           icon={loading ? <Spinner size="tiny" /> : undefined}
