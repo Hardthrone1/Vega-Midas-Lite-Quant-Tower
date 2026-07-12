@@ -1,6 +1,6 @@
 // src/features/swarm/components/SwarmPanel.tsx
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button, Card, Badge } from '../../../shared/ui'
+import { Button, Card, Badge, SwipeToConfirm } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 
@@ -454,6 +454,32 @@ export function SwarmPanel() {
               // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: pineCode ? highlightPine(pineCode) : '<span class="swarm-pine-placeholder">Awaiting generation or repair…</span>' }}
             />
+            {pineCode && (
+              <div className="swarm-confirm-zone">
+                <SwipeToConfirm
+                  key={`approve-${pineCode.length}`}
+                  variant="approve"
+                  text="Swipe to Deploy"
+                  successText="Deployed"
+                  onConfirm={() => {
+                    addAgentMessage({ agent: 'Swarm', level: 'success', message: 'Pine accepted — deployed to strategy store' })
+                    addMsg('DEPLOY', 'Pine accepted and ready for backtesting', 'ok')
+                  }}
+                />
+                <SwipeToConfirm
+                  key={`deny-${pineCode.length}`}
+                  variant="deny"
+                  text="Swipe to Discard"
+                  successText="Discarded"
+                  onConfirm={() => {
+                    setPineCode('')
+                    setLintDisplay(null)
+                    addMsg('DISCARD', 'Pine discarded', 'sys')
+                    addAgentMessage({ agent: 'Swarm', level: 'warn', message: 'Pine discarded' })
+                  }}
+                />
+              </div>
+            )}
           </Card>
         </div>
       </div>

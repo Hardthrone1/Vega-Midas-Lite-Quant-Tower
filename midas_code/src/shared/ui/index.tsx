@@ -165,3 +165,4 @@ export function MetricCard({
 export { Portal } from './Portal'
 export { AnimatedPopover } from './AnimatedPopover'
 export { RangeSlider } from './RangeSlider'
+export { SwipeToConfirm } from './SwipeToConfirm'
