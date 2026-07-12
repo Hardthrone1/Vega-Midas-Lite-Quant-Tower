@@ -1035,3 +1035,38 @@ select#instrument-select {
   border-top: 1px solid var(--line);
   margin-top: 12px;
 }
+
+/* ── View Transitions — theme toggle ripple ─────────────────────────── */
+@keyframes vt-circle-expand {
+  from { clip-path: circle(0%   at var(--cx, 50%) var(--cy, 50%)); }
+  to   { clip-path: circle(150% at var(--cx, 50%) var(--cy, 50%)); }
+}
+@keyframes vt-circle-shrink {
+  from { clip-path: circle(150% at var(--cx, 50%) var(--cy, 50%)); }
+  to   { clip-path: circle(0%   at var(--cx, 50%) var(--cy, 50%)); }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Going → light: new (light) layer expands in from the click point */
+[data-theme="light"]::view-transition-new(root) {
+  z-index: 9999;
+  animation: vt-circle-expand 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+[data-theme="light"]::view-transition-old(root) { z-index: 1; }
+
+/* Going → dark: old (light) layer shrinks away from the click point */
+[data-theme="dark"]::view-transition-old(root) {
+  z-index: 9999;
+  animation: vt-circle-shrink 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+[data-theme="dark"]::view-transition-new(root) { z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
+}

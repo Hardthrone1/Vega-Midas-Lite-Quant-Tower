@@ -2,7 +2,8 @@
 // Azure Portal-style top command bar: hamburger, product brand, global search,
 // trading context, deploy status, and utility buttons (agent console, agent
 // activity pane, theme toggle, account).
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, useCallback } from 'react'
+import { flushSync } from 'react-dom'
 import {
   Avatar,
   Badge,
@@ -48,6 +49,18 @@ export function PortalHeader({
   const { symbol, session, executionMode, strategyId, deployStatus } = useStrategyStore()
   const { mode, toggleMode } = useThemeMode()
   const [consoleOpen, setConsoleOpen] = useState(false)
+
+  const handleThemeToggle = useCallback((e: React.MouseEvent) => {
+    document.documentElement.style.setProperty('--cx', e.clientX + 'px')
+    document.documentElement.style.setProperty('--cy', e.clientY + 'px')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const vt = (document as any).startViewTransition
+    if (typeof vt === 'function') {
+      vt(() => { flushSync(toggleMode) })
+    } else {
+      toggleMode()
+    }
+  }, [toggleMode])
 
   const kind = deployStatusKind(deployStatus)
   const deployText = deployLabel(deployStatus)
@@ -118,7 +131,7 @@ export function PortalHeader({
             appearance="transparent"
             className="portal-header-iconbtn"
             icon={mode === 'dark' ? <WeatherSunny24Regular /> : <WeatherMoon24Regular />}
-            onClick={toggleMode}
+            onClick={handleThemeToggle}
           />
         </Tooltip>
 

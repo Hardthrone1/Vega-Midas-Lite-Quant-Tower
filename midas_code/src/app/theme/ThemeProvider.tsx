@@ -29,6 +29,7 @@ export function VegaThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, mode)
+    document.documentElement.setAttribute('data-theme', mode)
   }, [mode])
 
   const value = useMemo(
