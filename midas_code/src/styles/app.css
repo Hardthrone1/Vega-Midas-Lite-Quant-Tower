@@ -360,17 +360,29 @@
 
 .swarm-panel .panel-body { min-height: 0; }
 .swarm-workspace { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--gap); height: 100%; min-height: 0; }
-.swarm-left  { display: flex; flex-direction: column; gap: var(--gap); min-height: 0; }
+/* Column scrolls when a Prism console expands, instead of crushing the
+   messages card below it. */
+.swarm-left  { display: flex; flex-direction: column; gap: var(--gap); min-height: 0; overflow-y: auto; }
+.swarm-left > .swarm-card:first-child { flex-shrink: 0; }
 .swarm-right { display: flex; flex-direction: column; gap: var(--gap); min-height: 0; }
 .swarm-card  { padding: 14px; }
-.swarm-msgs-card   { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.swarm-msgs-card   { flex: 1; display: flex; flex-direction: column; min-height: 190px; }
 .swarm-output-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .swarm-gw-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; }
 .swarm-gw-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--idle); flex-shrink: 0; transition: background .3s; }
 .swarm-gw-dot--online  { background: var(--ok);  box-shadow: 0 0 6px rgba(70,192,138,0.5); }
 .swarm-gw-dot--offline { background: var(--err); }
 .swarm-gw-label { font-size: var(--fs-sm); font-weight: 600; color: var(--ink-1); }
-.swarm-gw-meta  { font-size: var(--fs-xs); color: var(--ink-3); margin: 8px 0 10px; }
+.swarm-gw-meta  {
+  font-size: var(--fs-xs); color: var(--ink-3); margin: 8px 0 10px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+}
+.gw-ver      { color: var(--colorBrandForeground1, #479ef5); font-weight: 600; }
+.gw-provider { color: var(--gold); font-weight: 600; }
+.gw-circuit--ok   { color: var(--ok); }
+.gw-circuit--err  { color: var(--err); }
+.gw-circuit--warn { color: var(--warn); }
+.gw-sep, .gw-ts   { color: var(--ink-3); }
 /* Single column — 280px left panel is not wide enough for 2 cols without overflow */
 /* Agent roster — cards are now interactive Prism command consoles.
    Full suite lives in the VEGA Prism section at the end of this file. */

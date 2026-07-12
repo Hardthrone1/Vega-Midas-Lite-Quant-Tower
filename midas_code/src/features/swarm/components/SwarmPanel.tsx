@@ -75,6 +75,7 @@ export function SwarmPanel() {
 
   const [gatewayStatus, setGatewayStatus] = useState<GatewayStatus>('checking')
   const [gatewayMeta, setGatewayMeta] = useState('—')
+  const [gwInfo, setGwInfo] = useState<{ version?: string; provider?: string; circuit?: string; ts?: string } | null>(null)
   const [activeAgent, setActiveAgent] = useState<string | null>(null)
   const [mode, setMode] = useState<SwarmMode>('swarm')
   const [busy, setBusy] = useState(false)
@@ -122,21 +123,22 @@ export function SwarmPanel() {
       if (r.ok) {
         setGatewayStatus('online')
         const ts = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()
-        // Show only the fields /api/health actually returns — no '?' placeholders.
-        // Gateway health = { status, activeProvider, circuitState } (+ optional version/timestamp).
-        const parts = [
-          d.version ? `v${d.version}` : null,
-          d.activeProvider || null,
-          d.circuitState ? `circuit ${d.circuitState}` : null,
+        // Structured segments render color-coded: version brand, provider gold,
+        // circuit state semantic (CLOSED = healthy for a circuit breaker).
+        setGwInfo({
+          version: d.version || undefined,
+          provider: d.activeProvider || undefined,
+          circuit: d.circuitState || undefined,
           ts,
-        ].filter(Boolean)
-        setGatewayMeta(parts.join(' · '))
+        })
       } else {
         setGatewayStatus('offline')
+        setGwInfo(null)
         setGatewayMeta('Gateway not reachable — run: node Vega_Gateway_Server.js')
       }
     } catch {
       setGatewayStatus('offline')
+      setGwInfo(null)
       setGatewayMeta('Gateway offline — run: node Vega_Gateway_Server.js')
     }
   }, [])
@@ -385,7 +387,23 @@ export function SwarmPanel() {
         <div className="swarm-left">
           <Card className="swarm-card">
             <span className="eyebrow">Gateway · Port 8001</span>
-            <div className="swarm-gw-meta">{gatewayMeta}</div>
+            <div className="swarm-gw-meta mono">
+              {gwInfo ? (
+                <>
+                  {gwInfo.version && <span className="gw-ver">v{gwInfo.version}</span>}
+                  {gwInfo.provider && <><span className="gw-sep">·</span><span className="gw-provider">{gwInfo.provider}</span></>}
+                  {gwInfo.circuit && (
+                    <>
+                      <span className="gw-sep">·</span>
+                      <span className={`gw-circuit gw-circuit--${gwInfo.circuit === 'CLOSED' ? 'ok' : gwInfo.circuit === 'OPEN' ? 'err' : 'warn'}`}>
+                        circuit {gwInfo.circuit}
+                      </span>
+                    </>
+                  )}
+                  {gwInfo.ts && <><span className="gw-sep">·</span><span className="gw-ts">{gwInfo.ts}</span></>}
+                </>
+              ) : gatewayMeta}
+            </div>
             <div className="swarm-agent-grid vega-prism">
               {AGENTS.map(a => (
                 <AgentCard
