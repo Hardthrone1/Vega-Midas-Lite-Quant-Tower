@@ -397,3 +397,59 @@
   transform: translateY(-2px);
   box-shadow: var(--elev-4);
 }
+
+/* ============================================================= *
+ *  Fit & finish — unified brand glow, pills, hover affordance   *
+ * ============================================================= */
+
+/* Glow recipes (brand-keyed). Fallback #479ef5 = colorBrandForeground1. */
+.portal-fluent-root {
+  --brand-glow:
+    inset 0 0 0 1px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 22%, transparent),
+    0 4px 18px -8px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 70%, transparent);
+  --brand-glow-subtle:
+    inset 0 0 0 1px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 12%, transparent),
+    0 4px 14px -9px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 40%, transparent);
+}
+
+/* Pills — same recipe as the main panel, keyed to each pill's own color
+   so status pills (ok/warn/err/info) glow in their semantic hue. */
+.diag-pill,
+.sss-badge,
+.ac-ctx-badge,
+.skill-tag-pill,
+#root .fui-Badge {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent),
+    0 4px 18px -10px color-mix(in srgb, currentColor 60%, transparent);
+}
+
+/* Shape consistency: one radius family for Fluent buttons app-wide. */
+#root .fui-Button {
+  border-radius: 8px;
+}
+
+/* Subtle glow on every hover target. Elements with their own stronger
+   hover shadow (.blade-icon-btn, .agent-card, .prism-btn-primary, .stc,
+   active seg) are excluded so this never fights them. */
+#root .fui-Button:hover:not(:disabled),
+#root .fui-Tab:hover,
+.seg-btn:hover:not(.seg-on),
+.swarm-copy-btn:hover,
+.swarm-clear-btn:hover,
+.replay-hud-btn:hover,
+.ac-icon-btn:hover,
+.ac-suggestion:hover,
+.rail-collapse-btn-inner:hover,
+.intake-drawer-toggle:hover,
+.rail-open-tab:hover,
+.hamburger:hover,
+.metric-card:hover,
+.tab:hover {
+  box-shadow: var(--brand-glow-subtle);
+}
+
+/* Card lift keeps its elevation and gains the subtle brand ring. */
+.blade-body .card:hover {
+  box-shadow: var(--elev-4), var(--brand-glow-subtle);
+}

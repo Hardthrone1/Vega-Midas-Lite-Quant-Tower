@@ -376,8 +376,14 @@
    Full suite lives in the VEGA Prism section at the end of this file. */
 .swarm-agent-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
 .swarm-msgs-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.swarm-clear-btn { font-size: 9px; padding: 3px 8px; border-radius: 5px; background: transparent; border: 1px solid var(--line-strong); color: var(--ink-3); cursor: pointer; font-family: var(--font-mono); text-transform: uppercase; }
-.swarm-clear-btn:hover { border-color: var(--gold); color: var(--gold); }
+.swarm-clear-btn {
+  font-size: var(--fs-xs); padding: 3px 9px; border-radius: 6px; letter-spacing: 0.05em;
+  background: color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 22%, transparent);
+  color: var(--ink-3); cursor: pointer; font-family: var(--font-mono); text-transform: uppercase;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.swarm-clear-btn:hover { color: var(--colorBrandForeground1, #479ef5); background: color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 13%, transparent); }
 .swarm-msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; max-height: 200px; padding: 4px 0; }
 .swarm-msg { display: flex; gap: 10px; font-size: var(--fs-sm); line-height: 1.55; padding: 2px 0; }
 .swarm-msg-who { flex-shrink: 0; width: 70px; font-weight: 600; font-family: var(--font-mono); font-size: var(--fs-xs); }
@@ -394,8 +400,14 @@
 .swarm-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: var(--r-md); padding: 9px 12px; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink-1); transition: border-color var(--fast) var(--ease); box-sizing: border-box; }
 .swarm-input:focus-visible { border-color: var(--gold); }
 .swarm-output-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.swarm-copy-btn { font-size: var(--fs-xs); padding: 4px 10px; border-radius: var(--r-sm); background: rgba(110,168,254,0.10); border: 1px solid var(--info); color: var(--info); cursor: pointer; font-family: var(--font-mono); text-transform: uppercase; }
-.swarm-copy-btn:hover { background: rgba(110,168,254,0.2); }
+.swarm-copy-btn {
+  font-size: var(--fs-xs); padding: 4px 10px; border-radius: 6px; letter-spacing: 0.05em;
+  background: color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 35%, transparent);
+  color: var(--colorBrandForeground1, #479ef5); cursor: pointer; font-family: var(--font-mono); text-transform: uppercase;
+  transition: background var(--fast) var(--ease);
+}
+.swarm-copy-btn:hover { background: color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 18%, transparent); }
 .swarm-lint { font-size: var(--fs-sm); padding: 8px 12px; border-radius: var(--r-md); margin-bottom: 8px; }
 .swarm-lint--pass { background: rgba(70,192,138,0.08); border: 1px solid rgba(70,192,138,0.25); color: var(--ok); }
 .swarm-lint--warn { background: rgba(224,166,75,0.08);  border: 1px solid rgba(224,166,75,0.25);  color: var(--warn); }
@@ -448,9 +460,12 @@ canvas {
   object-fit: contain;
 }
 
-/* Unified HUD — 3-zone grid: left info | center diag pills | right controls */
+/* Unified HUD — 3-zone grid: left info | center diag pills | right controls.
+   A static flex footer (not an overlay): the chart's ResizeObserver shrinks
+   the canvas above it, so the HUD sits exactly at the chart's bottom edge
+   without covering the time axis. */
 .replay-hud {
-  position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+  position: relative; z-index: 2; flex-shrink: 0;
   display: grid; grid-template-columns: 1fr auto 1fr;
   align-items: center; gap: 8px; padding: 7px 12px;
   background: rgba(11,14,19,0.88); backdrop-filter: blur(12px);
@@ -465,13 +480,17 @@ canvas {
 .replay-hud-btns { display: flex; gap: 5px; justify-content: flex-end; }
 
 .replay-hud-btn {
-  background: rgba(255,255,255,0.06); border: 1px solid var(--line-strong);
-  border-radius: var(--r-sm); color: var(--ink-2); cursor: pointer;
+  background: color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 25%, transparent);
+  border-radius: 6px; color: var(--ink-2); cursor: pointer;
   font-size: 13px; width: 28px; height: 26px;
   display: flex; align-items: center; justify-content: center;
-  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
-.replay-hud-btn:hover { color: var(--ink-1); background: rgba(255,255,255,0.10); }
+.replay-hud-btn:hover {
+  color: var(--colorBrandForeground1, #479ef5);
+  background: color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 14%, transparent);
+}
 .replay-hud-btn--primary { border-color: var(--gold-dim); color: var(--gold); }
 .replay-hud-btn--primary:hover { background: rgba(231,183,95,0.20); }
 .replay-hud-btn--fs { color: var(--ink-3); }
@@ -752,10 +771,10 @@ canvas {
 
 .seg {
   display: inline-flex;
-  background-color: #0d1117;
-  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 5%, #0d1117);
+  border-radius: 8px;
   padding: 2px;
-  border: 1px solid var(--vega-border);
+  border: 1px solid color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 24%, transparent);
   overflow: hidden;
 }
 
@@ -766,29 +785,32 @@ canvas {
 
 .seg-btn {
   flex: 1;
-  padding: 8px 11px;
+  padding: 7px 11px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
+  border-radius: 6px;
   color: var(--ink-2);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
-  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.seg-btn:hover { color: var(--ink-1); }
+.seg-btn:hover:not(.seg-on) { color: var(--colorBrandForeground1, #479ef5); }
 
 .seg-btn.seg-on {
-  background-color: var(--vega-blue) !important;
-  color: white !important;
-  transform: scale(1.08) translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  background-color: var(--vega-blue);
+  color: white;
+  transform: scale(1.04);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent),
+    0 4px 18px -8px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 70%, transparent);
   z-index: 10;
 }
 

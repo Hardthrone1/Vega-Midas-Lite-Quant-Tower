@@ -252,6 +252,13 @@
 .portal-nav-tabs {
   width: 100%;
 }
+/* Denser rail: roughly half the vertical footprint per tab, label bumped
+   a size so readability doesn't pay for the density. */
+.portal-nav-tabs .fui-Tab {
+  min-height: 30px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
 .portal-nav-item {
   display: inline-flex;
   align-items: baseline;
@@ -259,11 +266,11 @@
   white-space: nowrap;
 }
 .portal-nav-step {
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--colorNeutralForeground3);
 }
 .portal-nav-label {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .portal-main {
