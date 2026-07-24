@@ -3,15 +3,23 @@ midas_regime_slicer.py — Regime-Conditional Backtest Slicer, as a Hermes runti
 
 Skill ID:   QBT-003
 Phase:      5
-Status:     LIVE — classifies every bar into one of four regimes using
-            trailing-only indicators (no lookahead), then slices backtest
-            trades by the regime in force at ENTRY.
+Status:     LIVE — faithful Python port of MIDAS_Regime_Filter.pine (v6, in
+            this directory). Classifies every bar with trailing-only
+            indicators (no lookahead), then slices backtest trades by the
+            confirmed regime in force at ENTRY.
 
-Regimes (trend gate first, volatility split inside range):
-  TREND_UP        efficiency ratio >= threshold, net drift up
-  TREND_DOWN      efficiency ratio >= threshold, net drift down
-  RANGE_QUIET     below threshold, ATR percentile < 0.5
-  RANGE_VOLATILE  below threshold, ATR percentile >= 0.5
+Regime taxonomy (matches the Pine filter's confirmedRegime codes):
+  1 TRENDING_EXPANDING   ER >= erTrendMin & ADX >= adxTrendMin & volRatio >= volExpandMin
+  2 TRENDING_QUIET       trending, contracting or neither-expand-nor-contract
+  3 RANGING_VOLATILE     ER <= erRangeMax & ADX < adxTrendMin & volRatio >= volExpandMin
+  4 RANGING_QUIET        ranging, contracting or neither
+  0 UNCONFIRMED          dead zone between thresholds, or warmup
+
+Trend gate = Kaufman efficiency ratio AND Wilder ADX (ta.dmi). Volatility
+split = ATR-fast / ATR-slow ratio (ta.atr, RMA of true range). A raw state
+must persist `persistBars` bars before it confirms (hysteresis), and the
+confirmed regime holds its last value until a new state confirms — bit for
+bit the same as the Pine `confirmedRegime` state machine.
 """
 
 from __future__ import annotations
@@ -31,7 +39,33 @@ sys.path.insert(0, str(_REPO_ROOT / "skills" / "midas-walk-forward"))
 from liquidity_sweep_backtester import OHLCV  # noqa: E402  (bar dataclass)
 from midas_walk_forward import DEFAULT_CFG, load_bars, run_strategy  # noqa: E402
 
-REGIMES = ("TREND_UP", "TREND_DOWN", "RANGE_QUIET", "RANGE_VOLATILE")
+# Confirmed-regime codes ↔ names, matching the Pine filter.
+REGIME_NAMES = {
+    1: "TRENDING_EXPANDING",
+    2: "TRENDING_QUIET",
+    3: "RANGING_VOLATILE",
+    4: "RANGING_QUIET",
+    0: "UNCONFIRMED",
+}
+REGIMES = ("TRENDING_EXPANDING", "TRENDING_QUIET", "RANGING_VOLATILE", "RANGING_QUIET")
+
+
+@dataclass
+class RegimeSettings:
+    """Input block — 1:1 with the Pine indicator's inputs."""
+    er_len: int = 14
+    er_trend_min: float = 0.35
+    er_range_max: float = 0.20
+    adx_len: int = 14
+    adx_trend_min: float = 20.0
+    atr_fast_len: int = 14
+    atr_slow_len: int = 100
+    vol_expand_min: float = 1.15
+    vol_contract_max: float = 0.85
+    persist_bars: int = 3
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass
@@ -52,53 +86,128 @@ class RegimeSliceResult:
         return asdict(self)
 
 
-def _atr_series(bars: list[OHLCV], length: int) -> list[Optional[float]]:
-    trs: list[float] = []
-    out: list[Optional[float]] = []
-    prev_close = None
-    atr = None
+def _true_ranges(bars: list[OHLCV]) -> list[float]:
+    """Pine ta.tr: first bar = high-low, then the standard 3-term max."""
+    out: list[float] = []
+    prev_close: Optional[float] = None
     for b in bars:
-        tr = b.high - b.low if prev_close is None else max(
-            b.high - b.low, abs(b.high - prev_close), abs(b.low - prev_close))
-        trs.append(tr)
-        if len(trs) < length:
-            out.append(None)
-        elif atr is None:
-            atr = sum(trs[-length:]) / length
-            out.append(atr)
+        if prev_close is None:
+            out.append(b.high - b.low)
         else:
-            atr = (atr * (length - 1) + tr) / length  # Wilder smoothing
-            out.append(atr)
+            out.append(max(b.high - b.low, abs(b.high - prev_close), abs(b.low - prev_close)))
         prev_close = b.close
     return out
 
 
-def classify_regimes(
-    bars: list[OHLCV],
-    er_window: int = 48,
-    er_threshold: float = 0.30,
-    atr_length: int = 14,
-    vol_lookback: int = 400,
-) -> list[Optional[str]]:
-    """Regime label per bar from TRAILING data only — the label at bar i uses
-    nothing after bar i, so slicing entries by it is lookahead-free."""
+def _rma(values: list[Optional[float]], length: int) -> list[Optional[float]]:
+    """Pine ta.rma (Wilder): seed with the SMA of the first `length` non-na
+    values, then rma = (prev*(len-1) + v)/len. Leading na values are skipped
+    so a stream that starts one bar late (like DM) seeds one bar late — the
+    exact behaviour of Pine's per-series na handling."""
+    out: list[Optional[float]] = [None] * len(values)
+    acc: list[float] = []
+    rma: Optional[float] = None
+    for i, v in enumerate(values):
+        if rma is None:
+            if v is None:
+                continue  # still before this series' first real value
+            acc.append(v)
+            if len(acc) == length:
+                rma = sum(acc) / length
+                out[i] = rma
+        else:
+            vv = 0.0 if v is None else v
+            rma = (rma * (length - 1) + vv) / length
+            out[i] = rma
+    return out
+
+
+def _dmi_adx(bars: list[OHLCV], di_len: int, adx_len: int) -> list[Optional[float]]:
+    """Port of Pine ta.dmi's ADX leg (Wilder). Returns adx[] aligned to bars."""
+    n = len(bars)
+    tr = _true_ranges(bars)
+    plus_dm: list[Optional[float]] = [None] * n
+    minus_dm: list[Optional[float]] = [None] * n
+    for i in range(1, n):
+        up = bars[i].high - bars[i - 1].high
+        down = bars[i - 1].low - bars[i].low
+        plus_dm[i] = up if (up > down and up > 0) else 0.0
+        minus_dm[i] = down if (down > up and down > 0) else 0.0
+
+    trur = _rma(tr, di_len)
+    rma_plus = _rma(plus_dm, di_len)
+    rma_minus = _rma(minus_dm, di_len)
+
+    dx: list[Optional[float]] = [None] * n
+    for i in range(n):
+        if trur[i] and trur[i] > 0 and rma_plus[i] is not None and rma_minus[i] is not None:
+            plus = 100.0 * rma_plus[i] / trur[i]
+            minus = 100.0 * rma_minus[i] / trur[i]
+            s = plus + minus
+            dx[i] = abs(plus - minus) / (s if s != 0 else 1.0)
+
+    return [100.0 * v if v is not None else None for v in _rma(dx, adx_len)]
+
+
+def classify_regimes(bars: list[OHLCV], s: RegimeSettings) -> list[int]:
+    """Confirmed regime code per bar (0=UNCONFIRMED, 1..4). Trailing-only, so
+    slicing entries by it is lookahead-free. Bit-for-bit port of the Pine
+    filter's rawState → hysteresis → confirmedRegime state machine."""
+    n = len(bars)
     closes = [b.close for b in bars]
-    atrs = _atr_series(bars, atr_length)
-    labels: list[Optional[str]] = []
-    for i in range(len(bars)):
-        if i < er_window or atrs[i] is None:
-            labels.append(None)
-            continue
-        net = closes[i] - closes[i - er_window]
-        noise = sum(abs(closes[j] - closes[j - 1]) for j in range(i - er_window + 1, i + 1))
-        er = abs(net) / noise if noise > 0 else 0.0
-        if er >= er_threshold:
-            labels.append("TREND_UP" if net > 0 else "TREND_DOWN")
-            continue
-        window = [a for a in atrs[max(0, i - vol_lookback) : i + 1] if a is not None]
-        rank = sum(1 for a in window if a <= atrs[i]) / len(window)
-        labels.append("RANGE_VOLATILE" if rank >= 0.5 else "RANGE_QUIET")
-    return labels
+    tr = _true_ranges(bars)
+    atr_fast = _rma(tr, s.atr_fast_len)
+    atr_slow = _rma(tr, s.atr_slow_len)
+    adx = _dmi_adx(bars, s.adx_len, s.adx_len)
+
+    confirmed = candidate = count = 0
+    out: list[int] = [0] * n
+    for i in range(n):
+        # Efficiency ratio over the last er_len bars.
+        if i >= s.er_len:
+            net = abs(closes[i] - closes[i - s.er_len])
+            path = sum(abs(closes[j] - closes[j - 1]) for j in range(i - s.er_len + 1, i + 1))
+            er: Optional[float] = 0.0 if path == 0 else net / path
+        else:
+            er = None
+
+        a = adx[i]
+        vr: Optional[float] = None
+        if atr_slow[i] and atr_slow[i] != 0 and atr_fast[i] is not None:
+            vr = atr_fast[i] / atr_slow[i]
+
+        if er is None or a is None or vr is None:
+            raw = 0  # warmup — indicators not yet defined
+        else:
+            is_trending = er >= s.er_trend_min and a >= s.adx_trend_min
+            is_ranging = er <= s.er_range_max and a < s.adx_trend_min
+            is_expanding = vr >= s.vol_expand_min
+            is_contracting = vr <= s.vol_contract_max
+            if is_trending and is_expanding:
+                raw = 1
+            elif is_trending and is_contracting:
+                raw = 2
+            elif is_trending:
+                raw = 2
+            elif is_ranging and is_expanding:
+                raw = 3
+            elif is_ranging and is_contracting:
+                raw = 4
+            elif is_ranging:
+                raw = 4
+            else:
+                raw = 0  # dead zone between the trend and range thresholds
+
+        # Hysteresis: a raw state must persist persist_bars bars to confirm;
+        # confirmed holds its last non-zero value otherwise.
+        if raw == candidate:
+            count += 1
+        else:
+            candidate, count = raw, 1
+        if count >= s.persist_bars and candidate != 0:
+            confirmed = candidate
+        out[i] = confirmed
+    return out
 
 
 def _slice_metrics(pnls: list[float]) -> dict[str, Any]:
@@ -128,10 +237,7 @@ def regime_slice(
     bars_path: str,
     params: Optional[dict[str, Any]] = None,
     trades_json: Optional[str] = None,
-    er_window: int = 48,
-    er_threshold: float = 0.30,
-    atr_length: int = 14,
-    vol_lookback: int = 400,
+    settings: Optional[RegimeSettings] = None,
     output: Optional[str] = None,
 ) -> RegimeSliceResult:
     if not Path(bars_path).exists():
@@ -142,7 +248,8 @@ def regime_slice(
     except Exception as e:
         return RegimeSliceResult(SKILL_ID, ok=False, error=f"bar loading failed: {e}")
 
-    labels = classify_regimes(bars, er_window, er_threshold, atr_length, vol_lookback)
+    settings = settings or RegimeSettings()
+    codes = classify_regimes(bars, settings)  # 0..4 per bar
 
     # Trades: either slice an external trade list (entry_dt + pnl_usd, the
     # backtest_payload.json["trades"] shape) or run the parity backtester.
@@ -171,15 +278,16 @@ def regime_slice(
     unclassified = 0
     for entry_dt, pnl in trade_list:
         i = index_of.get(entry_dt[:19])
-        label = labels[i] if i is not None else None
-        if label is None:
+        code = codes[i] if i is not None else 0
+        if code == 0:  # UNCONFIRMED / warmup — not attributable
             unclassified += 1
             continue
-        per_regime_pnls[label].append(pnl)
+        per_regime_pnls[REGIME_NAMES[code]].append(pnl)
 
-    classified = [l for l in labels if l is not None]
-    coverage = {r: round(classified.count(r) / len(classified), 4) if classified else 0.0
-                for r in REGIMES}
+    # Coverage over CONFIRMED bars only (code != 0); UNCONFIRMED tracked apart.
+    confirmed_bars = [c for c in codes if c != 0]
+    coverage = {r: round(sum(1 for c in confirmed_bars if REGIME_NAMES[c] == r) / len(confirmed_bars), 4)
+                if confirmed_bars else 0.0 for r in REGIMES}
 
     regimes = {r: _slice_metrics(per_regime_pnls[r]) for r in REGIMES}
     traded = {r: m for r, m in regimes.items() if m["trade_count"] > 0}
@@ -190,8 +298,8 @@ def regime_slice(
         skill_id=SKILL_ID, ok=True,
         bars_total=len(bars), trades_total=len(trade_list),
         params=used_params,
-        classifier={"er_window": er_window, "er_threshold": er_threshold,
-                    "atr_length": atr_length, "vol_lookback": vol_lookback,
+        classifier={**settings.to_dict(),
+                    "unconfirmed_bar_share": round((len(codes) - len(confirmed_bars)) / len(codes), 4) if codes else 0.0,
                     "unclassified_trades": unclassified},
         regime_coverage=coverage, regimes=regimes,
         best_regime=best, worst_regime=worst)
@@ -218,16 +326,28 @@ def _main(argv=None) -> int:
     ap.add_argument("--bars", required=True, help="OHLCV CSV path")
     ap.add_argument("--trades-json", help="slice an existing trade list (backtest_payload.json shape)")
     ap.add_argument("--params-json", help="JSON dict of backtester params (ignored with --trades-json)")
-    ap.add_argument("--er-window", type=int, default=48)
-    ap.add_argument("--er-threshold", type=float, default=0.30)
-    ap.add_argument("--vol-lookback", type=int, default=400)
+    # Regime filter settings — 1:1 with MIDAS_Regime_Filter.pine inputs.
+    ap.add_argument("--er-len", type=int, default=14)
+    ap.add_argument("--er-trend-min", type=float, default=0.35)
+    ap.add_argument("--er-range-max", type=float, default=0.20)
+    ap.add_argument("--adx-len", type=int, default=14)
+    ap.add_argument("--adx-trend-min", type=float, default=20.0)
+    ap.add_argument("--atr-fast-len", type=int, default=14)
+    ap.add_argument("--atr-slow-len", type=int, default=100)
+    ap.add_argument("--vol-expand-min", type=float, default=1.15)
+    ap.add_argument("--vol-contract-max", type=float, default=0.85)
+    ap.add_argument("--persist-bars", type=int, default=3)
     ap.add_argument("--output", help="write JSON report to file")
     args = ap.parse_args(argv)
 
     params = json.loads(args.params_json) if args.params_json else None
-    r = regime_slice(args.bars, params, args.trades_json,
-                     er_window=args.er_window, er_threshold=args.er_threshold,
-                     vol_lookback=args.vol_lookback, output=args.output)
+    settings = RegimeSettings(
+        er_len=args.er_len, er_trend_min=args.er_trend_min, er_range_max=args.er_range_max,
+        adx_len=args.adx_len, adx_trend_min=args.adx_trend_min,
+        atr_fast_len=args.atr_fast_len, atr_slow_len=args.atr_slow_len,
+        vol_expand_min=args.vol_expand_min, vol_contract_max=args.vol_contract_max,
+        persist_bars=args.persist_bars)
+    r = regime_slice(args.bars, params, args.trades_json, settings=settings, output=args.output)
     print(json.dumps(r.to_dict(), indent=2))
     return 0 if r.ok else 1
 
