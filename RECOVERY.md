@@ -71,8 +71,8 @@ Paste the JSON into a doc. (Skip if you've never saved anything in the Vault bla
 ## Recovery runbook (fresh machine)
 
 ```powershell
-git clone https://github.com/Hardthrone1/MIDAS-Orchestrator
-cd MIDAS-Orchestrator
+git clone https://github.com/Hardthrone1/Vega-Midas-Lite-Quant-Tower
+cd Vega-Midas-Lite-Quant-Tower
 
 # 1. Restore your backed-up .env to the repo root
 # 2. Drop the market CSVs back into the repo root
