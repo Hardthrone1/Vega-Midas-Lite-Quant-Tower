@@ -1,0 +1,67 @@
+{
+  "skill_id": "QBT-003",
+  "ok": true,
+  "bars_total": 3814,
+  "trades_total": 156,
+  "params": {
+    "source": "backtest_payload.json"
+  },
+  "classifier": {
+    "er_window": 48,
+    "er_threshold": 0.3,
+    "atr_length": 14,
+    "vol_lookback": 400,
+    "unclassified_trades": 0
+  },
+  "regime_coverage": {
+    "TREND_UP": 0.0534,
+    "TREND_DOWN": 0.0629,
+    "RANGE_QUIET": 0.4814,
+    "RANGE_VOLATILE": 0.4023
+  },
+  "regimes": {
+    "TREND_UP": {
+      "trade_count": 8,
+      "net_pnl": -180.0,
+      "win_rate": 0.375,
+      "profit_factor": 0.6421,
+      "ev_per_trade": -22.5,
+      "avg_win": 107.67,
+      "avg_loss": -100.6,
+      "max_drawdown": -300.0
+    },
+    "TREND_DOWN": {
+      "trade_count": 11,
+      "net_pnl": 342.0,
+      "win_rate": 0.6364,
+      "profit_factor": 1.868,
+      "ev_per_trade": 31.09,
+      "avg_win": 105.14,
+      "avg_loss": -98.5,
+      "max_drawdown": -207.0
+    },
+    "RANGE_QUIET": {
+      "trade_count": 64,
+      "net_pnl": -51.0,
+      "win_rate": 0.4531,
+      "profit_factor": 0.9853,
+      "ev_per_trade": -0.8,
+      "avg_win": 118.07,
+      "avg_loss": -99.29,
+      "max_drawdown": -992.0
+    },
+    "RANGE_VOLATILE": {
+      "trade_count": 73,
+      "net_pnl": -763.0,
+      "win_rate": 0.411,
+      "profit_factor": 0.8237,
+      "ev_per_trade": -10.45,
+      "avg_win": 118.87,
+      "avg_loss": -100.67,
+      "max_drawdown": -1583.0
+    }
+  },
+  "best_regime": "TREND_DOWN",
+  "worst_regime": "TREND_UP",
+  "error": null
+}

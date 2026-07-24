@@ -106,6 +106,35 @@
         "Trade Decision",
         "Runtime Skill"
       ]
+    },
+    {
+      "skill_id": "QBT-002",
+      "name": "midas-walk-forward",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Walk-Forward",
+        "Optimization",
+        "Anti-Overfit",
+        "OOS",
+        "Quant",
+        "Runtime Skill"
+      ]
+    },
+    {
+      "skill_id": "QBT-003",
+      "name": "midas-regime-slicer",
+      "phase": 5,
+      "runtime_skill": true,
+      "tags": [
+        "Regime",
+        "Slicer",
+        "Attribution",
+        "Trend",
+        "Volatility",
+        "Quant",
+        "Runtime Skill"
+      ]
     }
   ],
   "curator": {
@@ -205,43 +234,10 @@
       },
       {
         "params": {
-          "pivot_len": 3,
-          "min_opp_breaks": 2,
-          "max_opp_breaks": 4,
-          "retrace_threshold": 0.687
-        },
-        "fitness": 0.0,
-        "generation": 0,
-        "run_count": 0
-      },
-      {
-        "params": {
           "pivot_len": 2,
-          "min_opp_breaks": 2,
-          "max_opp_breaks": 4,
-          "retrace_threshold": 0.793
-        },
-        "fitness": 0.0,
-        "generation": 0,
-        "run_count": 0
-      },
-      {
-        "params": {
-          "pivot_len": 3,
           "min_opp_breaks": 4,
-          "max_opp_breaks": 3,
-          "retrace_threshold": 0.517
-        },
-        "fitness": 0.0,
-        "generation": 0,
-        "run_count": 0
-      },
-      {
-        "params": {
-          "pivot_len": 2,
-          "min_opp_breaks": 3,
           "max_opp_breaks": 5,
-          "retrace_threshold": 0.645
+          "retrace_threshold": 0.714
         },
         "fitness": 0.0,
         "generation": 0,
@@ -250,9 +246,9 @@
       {
         "params": {
           "pivot_len": 4,
-          "min_opp_breaks": 2,
-          "max_opp_breaks": 3,
-          "retrace_threshold": 0.781
+          "min_opp_breaks": 4,
+          "max_opp_breaks": 2,
+          "retrace_threshold": 0.616
         },
         "fitness": 0.0,
         "generation": 0,
@@ -260,10 +256,32 @@
       },
       {
         "params": {
-          "pivot_len": 4,
+          "pivot_len": 3,
+          "min_opp_breaks": 3,
+          "max_opp_breaks": 4,
+          "retrace_threshold": 0.61
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 3,
           "min_opp_breaks": 2,
-          "max_opp_breaks": 3,
-          "retrace_threshold": 0.756
+          "max_opp_breaks": 5,
+          "retrace_threshold": 0.595
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 7,
+          "min_opp_breaks": 4,
+          "max_opp_breaks": 2,
+          "retrace_threshold": 0.599
         },
         "fitness": 0.0,
         "generation": 0,
@@ -272,9 +290,20 @@
       {
         "params": {
           "pivot_len": 6,
-          "min_opp_breaks": 1,
-          "max_opp_breaks": 5,
-          "retrace_threshold": 0.557
+          "min_opp_breaks": 3,
+          "max_opp_breaks": 2,
+          "retrace_threshold": 0.546
+        },
+        "fitness": 0.0,
+        "generation": 0,
+        "run_count": 0
+      },
+      {
+        "params": {
+          "pivot_len": 2,
+          "min_opp_breaks": 2,
+          "max_opp_breaks": 2,
+          "retrace_threshold": 0.545
         },
         "fitness": 0.0,
         "generation": 0,
