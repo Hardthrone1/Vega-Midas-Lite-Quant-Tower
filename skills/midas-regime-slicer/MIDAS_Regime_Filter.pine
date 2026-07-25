@@ -1,47 +1,71 @@
 //@version=6
-// MIDAS Regime Filter v1 — canonical regime definition.
-// The Python port in midas_regime_slicer.py mirrors this file exactly:
-// same inputs, same ER + ADX trend gate, same ATR fast/slow vol split, and
-// the same persistBars hysteresis. Keep the two in lockstep.
-indicator("MIDAS Regime Filter v1", overlay=true, precision=2)
+// MIDAS Regime Filter v2 — canonical regime definition.
+// The Python port in midas_regime_slicer.py mirrors this file exactly.
+// Keep the two in lockstep.
+//
+// v2 fixes the v1 defect where the background froze on a stale label:
+//   v1 used two disjoint gates (trending: ER>=0.35 & ADX>=20 / ranging:
+//   ER<=0.20 & ADX<20). On MGC 5m the MEDIAN bar sits in the gap between
+//   them (median ER 0.224, median ADX 22.7), so 56.4% of bars produced
+//   rawState=0, which never confirms — the background kept painting the
+//   last confirmed regime for up to 4.4 hours at a stretch.
+//   v2 makes classification EXHAUSTIVE: one trend boundary, one volatility
+//   boundary, every bar gets a state, so the colour always tracks price.
+//
+// Thresholds are ADAPTIVE by default — each one is a rolling percentile of
+// its own indicator, so the filter self-calibrates to any instrument and
+// timeframe instead of needing hand-tuned constants. Flip useAdaptive off
+// to use fixed thresholds.
+indicator("MIDAS Regime Filter v2", overlay=true, precision=2)
 
-erLen        = input.int(14, "Efficiency Ratio Length", minval=2)
-erTrendMin   = input.float(0.35, "ER: Trending Threshold", minval=0.05, maxval=1.0, step=0.01)
-erRangeMax   = input.float(0.20, "ER: Ranging Threshold",  minval=0.01, maxval=1.0, step=0.01)
+// ─── Inputs ──────────────────────────────────────────────────────────────
+erLen        = input.int(14, "Efficiency Ratio Length", minval=2, group="Signals")
+adxLen       = input.int(14, "ADX Length", minval=2, group="Signals")
+atrFastLen   = input.int(14,  "ATR Fast Length", group="Signals")
+atrSlowLen   = input.int(100, "ATR Slow Length (baseline)", group="Signals")
 
-adxLen       = input.int(14, "ADX Length", minval=2)
-adxTrendMin  = input.float(20.0, "ADX: Trending Threshold", minval=5, maxval=50)
+useAdaptive  = input.bool(true, "Adaptive thresholds (self-calibrating)", group="Thresholds")
+calibLen     = input.int(500, "Calibration Lookback (bars)", minval=50, maxval=2000, group="Thresholds")
+erPct        = input.float(65, "Adaptive: ER percentile for trend",  minval=50, maxval=95, step=1, group="Thresholds")
+adxPct       = input.float(55, "Adaptive: ADX percentile for trend", minval=50, maxval=95, step=1, group="Thresholds")
+volPct       = input.float(50, "Adaptive: Vol percentile split",     minval=20, maxval=80, step=1, group="Thresholds")
 
-atrFastLen   = input.int(14,  "ATR Fast Length")
-atrSlowLen   = input.int(100, "ATR Slow Length (baseline)")
-volExpandMin = input.float(1.15, "Vol Expansion Ratio (fast/slow)", minval=1.0, step=0.05)
-volContractMax = input.float(0.85, "Vol Contraction Ratio (fast/slow)", minval=0.1, step=0.05)
+fixedErMin   = input.float(0.30, "Fixed: ER trend threshold",  minval=0.05, maxval=1.0, step=0.01, group="Fixed fallback")
+fixedAdxMin  = input.float(25.0, "Fixed: ADX trend threshold", minval=5, maxval=50, group="Fixed fallback")
+fixedVolSplit= input.float(1.00, "Fixed: Vol expansion split", minval=0.1, step=0.05, group="Fixed fallback")
 
-persistBars  = input.int(3, "Hysteresis: Bars Required to Confirm Flip", minval=1, maxval=20)
+persistBars  = input.int(3, "Hysteresis: Bars Required to Confirm Flip", minval=1, maxval=20, group="Stability")
+showTable    = input.bool(true, "Show debug table", group="Display")
 
+// ─── Signals ─────────────────────────────────────────────────────────────
 netChange   = math.abs(close - close[erLen])
 pathSum     = math.sum(math.abs(close - close[1]), erLen)
 er          = pathSum == 0 ? 0.0 : netChange / pathSum
 
 [diPlus, diMinus, adx] = ta.dmi(adxLen, adxLen)
 
-atrFast = ta.atr(atrFastLen)
-atrSlow = ta.atr(atrSlowLen)
+atrFast  = ta.atr(atrFastLen)
+atrSlow  = ta.atr(atrSlowLen)
 volRatio = atrSlow == 0 ? 1.0 : atrFast / atrSlow
 
-isTrending = er >= erTrendMin and adx >= adxTrendMin
-isRanging  = er <= erRangeMax and adx < adxTrendMin
-isExpanding   = volRatio >= volExpandMin
-isContracting = volRatio <= volContractMax
+// ─── Thresholds (adaptive = rolling percentile of each indicator) ────────
+erThresh  = useAdaptive ? ta.percentile_linear_interpolation(er,       calibLen, erPct)  : fixedErMin
+adxThresh = useAdaptive ? ta.percentile_linear_interpolation(adx,      calibLen, adxPct) : fixedAdxMin
+volThresh = useAdaptive ? ta.percentile_linear_interpolation(volRatio, calibLen, volPct) : fixedVolSplit
 
-rawState = isTrending and isExpanding ? 1 :
-           isTrending and isContracting ? 2 :
-           isTrending ? 2 :
-           isRanging and isExpanding ? 3 :
-           isRanging and isContracting ? 4 :
-           isRanging ? 4 :
-           0
+ready = not na(er) and not na(adx) and not na(volRatio) and not na(erThresh) and not na(adxThresh) and not na(volThresh)
 
+// ─── Exhaustive classification — every ready bar gets a state ────────────
+isTrending  = er >= erThresh and adx >= adxThresh
+isExpanding = volRatio >= volThresh
+
+rawState = not ready ? 0 :
+           isTrending and isExpanding  ? 1 :
+           isTrending                  ? 2 :
+           isExpanding                 ? 3 :
+                                         4
+
+// ─── Hysteresis: a state must persist N bars before it confirms ──────────
 var int confirmedRegime = 0
 var int candidateRegime = 0
 var int candidateCount  = 0
@@ -59,7 +83,7 @@ regimeLabel = confirmedRegime == 1 ? "TRENDING / EXPANDING" :
               confirmedRegime == 2 ? "TRENDING / QUIET" :
               confirmedRegime == 3 ? "RANGING / VOLATILE" :
               confirmedRegime == 4 ? "RANGING / QUIET" :
-              "UNCONFIRMED"
+              "WARMING UP"
 
 bgColor = confirmedRegime == 1 ? color.new(color.green, 85) :
           confirmedRegime == 2 ? color.new(color.teal, 88) :
@@ -69,26 +93,44 @@ bgColor = confirmedRegime == 1 ? color.new(color.green, 85) :
 
 bgcolor(bgColor)
 
+// ─── Last-bar label ──────────────────────────────────────────────────────
 var label regimeTag = na
 if barstate.islast
     label.delete(regimeTag)
     regimeTag := label.new(bar_index, high, regimeLabel,
                  style=label.style_label_down, color=bgColor, textcolor=color.white, size=size.normal)
 
-var table dbg = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 70))
-if barstate.islast
-    table.cell(dbg, 0, 0, "ER",       text_color=color.white)
-    table.cell(dbg, 1, 0, str.tostring(er, "#.###"), text_color=color.white)
-    table.cell(dbg, 0, 1, "ADX",      text_color=color.white)
-    table.cell(dbg, 1, 1, str.tostring(adx, "#.##"), text_color=color.white)
-    table.cell(dbg, 0, 2, "Vol Ratio",text_color=color.white)
-    table.cell(dbg, 1, 2, str.tostring(volRatio, "#.###"), text_color=color.white)
-    table.cell(dbg, 0, 3, "Raw State",text_color=color.white)
-    table.cell(dbg, 1, 3, str.tostring(rawState), text_color=color.white)
-    table.cell(dbg, 0, 4, "Confirmed",text_color=color.white)
-    table.cell(dbg, 1, 4, regimeLabel, text_color=color.yellow)
+// ─── Debug table: value vs the threshold it is being judged against ──────
+var table dbg = table.new(position.top_right, 3, 6, bgcolor=color.new(color.black, 70))
+if showTable and barstate.islast
+    table.cell(dbg, 0, 0, "",         text_color=color.gray)
+    table.cell(dbg, 1, 0, "value",    text_color=color.gray)
+    table.cell(dbg, 2, 0, "thresh",   text_color=color.gray)
+    table.cell(dbg, 0, 1, "ER",       text_color=color.white)
+    table.cell(dbg, 1, 1, str.tostring(er, "#.###"),        text_color=er >= erThresh ? color.lime : color.white)
+    table.cell(dbg, 2, 1, str.tostring(erThresh, "#.###"),  text_color=color.gray)
+    table.cell(dbg, 0, 2, "ADX",      text_color=color.white)
+    table.cell(dbg, 1, 2, str.tostring(adx, "#.##"),        text_color=adx >= adxThresh ? color.lime : color.white)
+    table.cell(dbg, 2, 2, str.tostring(adxThresh, "#.##"),  text_color=color.gray)
+    table.cell(dbg, 0, 3, "Vol Ratio",text_color=color.white)
+    table.cell(dbg, 1, 3, str.tostring(volRatio, "#.###"),  text_color=volRatio >= volThresh ? color.orange : color.white)
+    table.cell(dbg, 2, 3, str.tostring(volThresh, "#.###"), text_color=color.gray)
+    table.cell(dbg, 0, 4, "Raw",      text_color=color.white)
+    table.cell(dbg, 1, 4, str.tostring(rawState),           text_color=color.white)
+    table.cell(dbg, 2, 4, useAdaptive ? "adaptive" : "fixed", text_color=color.gray)
+    table.cell(dbg, 0, 5, "Confirmed",text_color=color.white)
+    table.cell(dbg, 1, 5, regimeLabel, text_color=color.yellow)
+    table.cell(dbg, 2, 5, "",          text_color=color.gray)
 
+// ─── Alerts on regime change ─────────────────────────────────────────────
+regimeChanged = confirmedRegime != confirmedRegime[1] and confirmedRegime != 0
+alertcondition(regimeChanged, "MIDAS regime changed", "MIDAS regime changed")
+
+// ─── Data-window exports (consumed by the Python slicer) ─────────────────
 plot(confirmedRegime, title="MIDAS_Regime_Code", display=display.data_window)
 plot(er,        title="MIDAS_ER",        display=display.data_window)
 plot(adx,       title="MIDAS_ADX",       display=display.data_window)
 plot(volRatio,  title="MIDAS_VolRatio",  display=display.data_window)
+plot(erThresh,  title="MIDAS_ER_Thresh",  display=display.data_window)
+plot(adxThresh, title="MIDAS_ADX_Thresh", display=display.data_window)
+plot(volThresh, title="MIDAS_Vol_Thresh", display=display.data_window)
