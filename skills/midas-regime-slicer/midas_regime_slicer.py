@@ -3,23 +3,32 @@ midas_regime_slicer.py — Regime-Conditional Backtest Slicer, as a Hermes runti
 
 Skill ID:   QBT-003
 Phase:      5
-Status:     LIVE — faithful Python port of MIDAS_Regime_Filter.pine (v6, in
+Status:     LIVE — faithful Python port of MIDAS_Regime_Filter.pine (v3, in
             this directory). Classifies every bar with trailing-only
             indicators (no lookahead), then slices backtest trades by the
             confirmed regime in force at ENTRY.
 
 Regime taxonomy (matches the Pine filter's confirmedRegime codes):
-  1 TRENDING_EXPANDING   ER >= erTrendMin & ADX >= adxTrendMin & volRatio >= volExpandMin
-  2 TRENDING_QUIET       trending, contracting or neither-expand-nor-contract
-  3 RANGING_VOLATILE     ER <= erRangeMax & ADX < adxTrendMin & volRatio >= volExpandMin
-  4 RANGING_QUIET        ranging, contracting or neither
-  0 UNCONFIRMED          dead zone between thresholds, or warmup
+  1 TRENDING_EXPANDING   trending and expanding
+  2 TRENDING_QUIET       trending, not expanding
+  3 RANGING_VOLATILE     not trending, expanding
+  4 RANGING_QUIET        not trending, not expanding
+  0 UNCONFIRMED          warmup only
 
-Trend gate = Kaufman efficiency ratio AND Wilder ADX (ta.dmi). Volatility
-split = ATR-fast / ATR-slow ratio (ta.atr, RMA of true range). A raw state
-must persist `persistBars` bars before it confirms (hysteresis), and the
-confirmed regime holds its last value until a new state confirms — bit for
-bit the same as the Pine `confirmedRegime` state machine.
+Classification is EXHAUSTIVE — one trend boundary, one volatility boundary —
+so every ready bar gets a state and the label never goes stale. Trend gate =
+Kaufman efficiency ratio AND Wilder ADX (ta.dmi), both against FIXED absolute
+thresholds by default. Volatility basis is selectable: fast/slow ATR ratio
+(relative, drifts with its own baseline) or an absolute ATR floor in ticks.
+
+Three opt-in rules handle zones whose raw numbers genuinely overlap:
+  R1 use_impulse     high ER alone implies trend (ADX lags at impulse starts)
+  R2 use_chop        expansion + poor efficiency = volatile range, whatever ADX says
+  R3 use_quiet_floor absolute ATR below a floor is quiet, whatever the ratio says
+
+A raw state must persist `persist_bars` bars before it confirms (hysteresis),
+and the confirmed regime holds its last value until a new state confirms —
+bit for bit the same as the Pine `confirmedRegime` state machine.
 """
 
 from __future__ import annotations
@@ -52,23 +61,34 @@ REGIMES = ("TRENDING_EXPANDING", "TRENDING_QUIET", "RANGING_VOLATILE", "RANGING_
 
 @dataclass
 class RegimeSettings:
-    """Input block — 1:1 with the Pine indicator's inputs (v2)."""
-    er_len: int = 14
-    adx_len: int = 14
-    atr_fast_len: int = 14
-    atr_slow_len: int = 100
-    # Adaptive thresholds: each is a rolling percentile of its own indicator,
-    # so the filter self-calibrates per instrument/timeframe.
-    use_adaptive: bool = True
+    """Input block — 1:1 with the Pine indicator's inputs (v3)."""
+    # Signal lengths
+    er_len: int = 5
+    adx_len: int = 5
+    atr_fast_len: int = 5
+    atr_slow_len: int = 40
+    # Core thresholds (fixed/absolute — the default)
+    er_trend_min: float = 0.20
+    adx_trend_min: float = 30.0
+    persist_bars: int = 2
+    # Volatility basis: "Ratio" | "Absolute" | "Both" | "Either"
+    vol_basis: str = "Ratio"
+    vol_split: float = 0.95        # fast/slow ratio
+    abs_vol_ticks: float = 50.0    # absolute ATR floor, in ticks (MGC 5m median)
+    tick_size: float = 0.1         # syminfo.mintick (MGC default)
+    # Opt-in override rules (default off — reproduce the tuned baseline)
+    use_impulse: bool = False      # R1: ER shortcut before ADX ramps
+    er_impulse_min: float = 0.55
+    use_chop: bool = False         # R2: expansion + poor efficiency = volatile range
+    er_chop_max: float = 0.35
+    use_quiet_floor: bool = False  # R3: absolute ATR floor forces quiet
+    quiet_ticks: float = 40.0
+    # Adaptive (legacy — drifts; see the Pine header)
+    use_adaptive: bool = False
     calib_len: int = 500
     er_pct: float = 65.0
     adx_pct: float = 55.0
     vol_pct: float = 50.0
-    # Fixed fallback (used when use_adaptive is False).
-    fixed_er_min: float = 0.30
-    fixed_adx_min: float = 25.0
-    fixed_vol_split: float = 1.00
-    persist_bars: int = 3
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -208,13 +228,32 @@ def classify_regimes(bars: list[OHLCV], s: RegimeSettings) -> list[int]:
             at = thresh(adx, i, s.adx_pct) if a is not None else None
             vt = thresh(vr_s, i, s.vol_pct) if vr is not None else None
         else:
-            et, at, vt = s.fixed_er_min, s.fixed_adx_min, s.fixed_vol_split
+            et, at, vt = s.er_trend_min, s.adx_trend_min, s.vol_split
 
         if er is None or a is None or vr is None or et is None or at is None or vt is None:
             raw = 0  # warming up — indicators/thresholds not yet defined
         else:
-            is_trending = er >= et and a >= at
-            is_expanding = vr >= vt
+            atr_ticks = (atr_fast[i] or 0.0) / s.tick_size
+            exp_ratio = vr >= vt
+            exp_abs = atr_ticks >= s.abs_vol_ticks
+            if s.vol_basis == "Absolute":
+                is_expanding = exp_abs
+            elif s.vol_basis == "Both":
+                is_expanding = exp_ratio and exp_abs
+            elif s.vol_basis == "Either":
+                is_expanding = exp_ratio or exp_abs
+            else:  # "Ratio"
+                is_expanding = exp_ratio
+
+            # R3 — an absolutely small ATR is quiet regardless of the ratio.
+            if s.use_quiet_floor and atr_ticks < s.quiet_ticks:
+                is_expanding = False
+
+            trend_core = er >= et and a >= at
+            trend_impulse = s.use_impulse and er >= s.er_impulse_min      # R1
+            chop_override = s.use_chop and is_expanding and er < s.er_chop_max  # R2
+            is_trending = (trend_core or trend_impulse) and not chop_override
+
             if is_trending:
                 raw = 1 if is_expanding else 2
             else:
@@ -348,20 +387,29 @@ def _main(argv=None) -> int:
     ap.add_argument("--bars", required=True, help="OHLCV CSV path")
     ap.add_argument("--trades-json", help="slice an existing trade list (backtest_payload.json shape)")
     ap.add_argument("--params-json", help="JSON dict of backtester params (ignored with --trades-json)")
-    # Regime filter settings — 1:1 with MIDAS_Regime_Filter.pine (v2) inputs.
-    ap.add_argument("--er-len", type=int, default=14)
-    ap.add_argument("--adx-len", type=int, default=14)
-    ap.add_argument("--atr-fast-len", type=int, default=14)
-    ap.add_argument("--atr-slow-len", type=int, default=100)
-    ap.add_argument("--fixed", action="store_true", help="use fixed thresholds instead of adaptive percentiles")
+    # Regime filter settings — 1:1 with MIDAS_Regime_Filter.pine (v3) inputs.
+    ap.add_argument("--er-len", type=int, default=5)
+    ap.add_argument("--adx-len", type=int, default=5)
+    ap.add_argument("--atr-fast-len", type=int, default=5)
+    ap.add_argument("--atr-slow-len", type=int, default=40)
+    ap.add_argument("--er-trend-min", type=float, default=0.20)
+    ap.add_argument("--adx-trend-min", type=float, default=30.0)
+    ap.add_argument("--persist-bars", type=int, default=2)
+    ap.add_argument("--vol-basis", default="Ratio", choices=["Ratio", "Absolute", "Both", "Either"])
+    ap.add_argument("--vol-split", type=float, default=0.95)
+    ap.add_argument("--abs-vol-ticks", type=float, default=50.0)
+    ap.add_argument("--tick-size", type=float, default=0.1, help="syminfo.mintick (MGC 0.1, MNQ 0.25)")
+    ap.add_argument("--r1-impulse", action="store_true", help="R1: ER shortcut before ADX ramps")
+    ap.add_argument("--er-impulse-min", type=float, default=0.55)
+    ap.add_argument("--r2-chop", action="store_true", help="R2: expansion + poor efficiency = volatile range")
+    ap.add_argument("--er-chop-max", type=float, default=0.35)
+    ap.add_argument("--r3-quiet-floor", action="store_true", help="R3: absolute ATR floor forces quiet")
+    ap.add_argument("--quiet-ticks", type=float, default=40.0)
+    ap.add_argument("--adaptive", action="store_true", help="legacy rolling-percentile thresholds (drifts)")
     ap.add_argument("--calib-len", type=int, default=500)
     ap.add_argument("--er-pct", type=float, default=65.0)
     ap.add_argument("--adx-pct", type=float, default=55.0)
     ap.add_argument("--vol-pct", type=float, default=50.0)
-    ap.add_argument("--fixed-er-min", type=float, default=0.30)
-    ap.add_argument("--fixed-adx-min", type=float, default=25.0)
-    ap.add_argument("--fixed-vol-split", type=float, default=1.00)
-    ap.add_argument("--persist-bars", type=int, default=3)
     ap.add_argument("--output", help="write JSON report to file")
     args = ap.parse_args(argv)
 
@@ -369,11 +417,15 @@ def _main(argv=None) -> int:
     settings = RegimeSettings(
         er_len=args.er_len, adx_len=args.adx_len,
         atr_fast_len=args.atr_fast_len, atr_slow_len=args.atr_slow_len,
-        use_adaptive=not args.fixed, calib_len=args.calib_len,
-        er_pct=args.er_pct, adx_pct=args.adx_pct, vol_pct=args.vol_pct,
-        fixed_er_min=args.fixed_er_min, fixed_adx_min=args.fixed_adx_min,
-        fixed_vol_split=args.fixed_vol_split,
-        persist_bars=args.persist_bars)
+        er_trend_min=args.er_trend_min, adx_trend_min=args.adx_trend_min,
+        persist_bars=args.persist_bars,
+        vol_basis=args.vol_basis, vol_split=args.vol_split,
+        abs_vol_ticks=args.abs_vol_ticks, tick_size=args.tick_size,
+        use_impulse=args.r1_impulse, er_impulse_min=args.er_impulse_min,
+        use_chop=args.r2_chop, er_chop_max=args.er_chop_max,
+        use_quiet_floor=args.r3_quiet_floor, quiet_ticks=args.quiet_ticks,
+        use_adaptive=args.adaptive, calib_len=args.calib_len,
+        er_pct=args.er_pct, adx_pct=args.adx_pct, vol_pct=args.vol_pct)
     r = regime_slice(args.bars, params, args.trades_json, settings=settings, output=args.output)
     print(json.dumps(r.to_dict(), indent=2))
     return 0 if r.ok else 1
