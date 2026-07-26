@@ -1,9 +1,0 @@
-# Keep Nixpacks from detecting this as a Python project. The MRE replay server
-# and the quant skills are local-only tools; the Railway service is Node.
-*.py
-skills/
-hermes/
-codegen/
-parity_engine/
-graphify-out/
-archive/
