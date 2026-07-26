@@ -3,9 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Card, Badge, SwipeToConfirm } from '../../../shared/ui'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
+import { gatewayFetch } from '../../../shared/gateway'
 import { AgentCard } from './AgentCard'
 
-const GW_URL = 'http://127.0.0.1:8001'
 const GW_POLL_MS = 8000
 
 // Live swarm roster — mirrors SWARM_AGENTS in swarm_orchestrator.js. Each lane
@@ -118,7 +118,7 @@ export function SwarmPanel() {
   // Gateway polling
   const checkGateway = useCallback(async () => {
     try {
-      const r = await fetch(`${GW_URL}/api/health`, { signal: AbortSignal.timeout(3000) })
+      const r = await gatewayFetch(`/api/health`, { signal: AbortSignal.timeout(3000) })
       const d = await r.json()
       if (r.ok) {
         setGatewayStatus('online')
@@ -151,7 +151,7 @@ export function SwarmPanel() {
 
   // Gateway call
   async function callGateway(messages: { role: string; content: string }[]) {
-    const resp = await fetch(`${GW_URL}/api/v1/chat/completions`, {
+    const resp = await gatewayFetch(`/api/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -173,7 +173,7 @@ export function SwarmPanel() {
   const runAgentCommand = useCallback(async (agent: typeof AGENTS[number], cmd: string) => {
     addMsg(agent.name.toUpperCase(), `» ${cmd}`, 'route')
     try {
-      const resp = await fetch(`${GW_URL}/api/v1/chat/completions`, {
+      const resp = await gatewayFetch(`/api/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -309,7 +309,7 @@ export function SwarmPanel() {
     addMsg('ROUTER', 'Dispatching multi-agent swarm…', 'route')
     addMsg('CONTEXT', context, 'sys')
     try {
-      const resp = await fetch(`${GW_URL}/api/swarm`, {
+      const resp = await gatewayFetch(`/api/swarm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

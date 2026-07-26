@@ -1,10 +1,12 @@
 {
   "name": "tradingview-suite",
   "version": "1.0.0",
-  "description": "A spec-first dashboard for taking a futures strategy from idea → canonical spec → Pine + Python (generated from the *same* spec) → diagnostics → backtest → vault, with a deploy gate that blocks anything where the two execution paths disagree. Built for MGC / MNQ work.",
+  "description": "A spec-first dashboard for taking a futures strategy from idea \u2192 canonical spec \u2192 Pine + Python (generated from the *same* spec) \u2192 diagnostics \u2192 backtest \u2192 vault, with a deploy gate that blocks anything where the two execution paths disagree. Built for MGC / MNQ work.",
   "main": "lightweight-charts.standalone.production.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "cd midas_code && ELECTRON_SKIP_BINARY_DOWNLOAD=1 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci --no-audit --no-fund && npm run build",
+    "start": "node Vega_Gateway_Server.js"
   },
   "repository": {
     "type": "git",
@@ -26,5 +28,8 @@
     "rate-limiter-flexible": "^11.2.0",
     "uuid": "^14.0.1",
     "zod": "^4.4.3"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

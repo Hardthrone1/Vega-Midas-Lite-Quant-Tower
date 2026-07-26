@@ -16,8 +16,18 @@ const client = require('prom-client');
 const { createSwarmOrchestrator } = require('./swarm_orchestrator');
 
 const app = express();
-const PORT = 8001;
+// Railway (and most PaaS) inject $PORT and route external traffic to it.
+const PORT = process.env.PORT || 8001;
+// Bind loopback locally (safe default), all interfaces when deployed —
+// binding 127.0.0.1 in a container makes the service unreachable and the
+// platform health check will crash-loop it.
+const HOST = process.env.HOST || (process.env.RAILWAY_ENVIRONMENT ? '0.0.0.0' : '127.0.0.1');
 const GATEWAY_VERSION = '1.4';
+
+// Shared-secret gate. When VEGA_API_KEY is set, every /api/* request must
+// carry it as X-Vega-Key. Unset = open (local dev). CORS alone is no defence:
+// it only constrains browsers, not curl.
+const VEGA_API_KEY = process.env.VEGA_API_KEY || null;
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -490,6 +500,20 @@ async function callProvider(providerConfig, body, maxAttempts = 4) {
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '2mb' }));
 
+// Shared-secret gate on /api/* (except health, so platform probes still pass).
+// Timing-safe compare; no-op when VEGA_API_KEY is unset (local dev).
+app.use('/api', (req, res, next) => {
+  if (!VEGA_API_KEY) return next();
+  if (req.path === '/health') return next();
+  if (req.method === 'OPTIONS') return next();          // CORS preflight
+  const supplied = req.get('X-Vega-Key') || '';
+  const a = Buffer.from(supplied);
+  const b = Buffer.from(VEGA_API_KEY);
+  const ok = a.length === b.length && require('crypto').timingSafeEqual(a, b);
+  if (!ok) return res.status(401).json({ error: { message: 'Unauthorized: bad or missing X-Vega-Key' } });
+  next();
+});
+
 app.use((req, res, next) => {
   req.requestId = uuidv4();
   const startTime = Date.now();
@@ -675,9 +699,27 @@ app.get('/metrics', async (_req, res) => {
 // ---------------------------------------------------------------------------
 // Start Server
 // ---------------------------------------------------------------------------
-app.listen(PORT, '127.0.0.1', () => {
+// ---------------------------------------------------------------------------
+// Static dashboard — serve the built SPA from the same origin as the API, so a
+// single-service deploy needs no cross-origin config at all. Mounted last so
+// every /api route above wins; the fallback only catches non-API GETs.
+// ---------------------------------------------------------------------------
+const DIST_DIR = path.join(__dirname, 'midas_code', 'dist');
+if (fs.existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR));
+  app.get(/^\/(?!api\/).*/, (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    res.sendFile(path.join(DIST_DIR, 'index.html'));
+  });
+  console.log(`[gateway] serving dashboard from ${DIST_DIR}`);
+} else {
+  console.log('[gateway] no midas_code/dist — API only (run: npm run build)');
+}
+
+app.listen(PORT, HOST, () => {
   console.log(`\n=== Vega Gateway Server v${GATEWAY_VERSION} ===`);
   console.log(`Default Provider : ${DEFAULT_PROVIDER}`);
-  console.log(`http://127.0.0.1:${PORT}`);
+  console.log(`Auth             : ${VEGA_API_KEY ? 'X-Vega-Key required' : 'OPEN (set VEGA_API_KEY to lock down)'}`);
+  console.log(`http://${HOST}:${PORT}`);
   console.log(`Rate limiting + Retry + Circuit Breaker + Tracing + Prometheus enabled\n`);
 });

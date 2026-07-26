@@ -13,6 +13,7 @@ import {
   Spinner,
 } from '@fluentui/react-components';
 import { Badge } from '../../../shared/ui';
+import { gatewayFetch } from '../../../shared/gateway';
 import { useStrategyStore } from '../../../store/useStrategyStore';
 import { createDefaultSpec } from '../../../shared/validation/strategySchema';
 import { useBlades } from '../../../app/layout/blades';
@@ -48,7 +49,6 @@ function pickEnum<T extends string>(value: string, options: readonly T[]): T {
   return (options as readonly string[]).includes(value) ? (value as T) : options[0];
 }
 
-const API_BASE = import.meta.env.VITE_GATEWAY_URL ?? 'http://localhost:8001';
 
 const IntakeResponseSchema = z.object({
   symbol: z.string(),
@@ -250,7 +250,7 @@ export function StrategyIntakePanel() {
         tool_choice: { type: 'function', function: { name: 'submit_strategy_spec' } },
       };
 
-      const response = await fetch(`${API_BASE}/api/v1/chat/completions`, {
+      const response = await gatewayFetch(`/api/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,

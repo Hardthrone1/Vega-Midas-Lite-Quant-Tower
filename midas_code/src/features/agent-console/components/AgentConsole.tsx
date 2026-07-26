@@ -3,8 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { RotateCcw, X, Zap } from 'lucide-react'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { SwipeToConfirm } from '../../../shared/ui'
+import { gatewayFetch } from '../../../shared/gateway'
 
-const GW_URL = 'http://127.0.0.1:8001'
 
 const SYSTEM_PROMPT = `You are VEGA Orchestrator — an embedded trading strategy assistant with direct read access to the full dashboard state and the ability to propose state changes.
 
@@ -98,7 +98,7 @@ export function AgentConsole({ open, onClose }: { open: boolean; onClose: () => 
 
   useEffect(() => {
     if (!open) return
-    fetch(`${GW_URL}/api/health`, { signal: AbortSignal.timeout(3000) })
+    gatewayFetch(`/api/health`, { signal: AbortSignal.timeout(3000) })
       .then(r => setGatewayOk(r.ok))
       .catch(() => setGatewayOk(false))
   }, [open])
@@ -155,7 +155,7 @@ export function AgentConsole({ open, onClose }: { open: boolean; onClose: () => 
       { role: 'user', content: text },
     ]
     try {
-      const resp = await fetch(`${GW_URL}/api/v1/chat/completions`, {
+      const resp = await gatewayFetch(`/api/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
