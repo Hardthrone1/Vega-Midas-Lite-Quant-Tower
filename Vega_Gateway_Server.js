@@ -698,6 +698,8 @@ app.get('/api/health', async (_req, res) => {
     circuitState: getCircuitBreaker(DEFAULT_PROVIDER).state,
     signalStore: signals.kind,
     signalCount,
+    // Lets you confirm remotely whether the dashboard build shipped.
+    distFound: fs.existsSync(path.join(__dirname, 'midas_code', 'dist', 'index.html')),
     timestamp: new Date().toISOString(),
   });
 });
@@ -778,15 +780,38 @@ app.get('/api/signals', async (req, res) => {
 // every /api route above wins; the fallback only catches non-API GETs.
 // ---------------------------------------------------------------------------
 const DIST_DIR = path.join(__dirname, 'midas_code', 'dist');
-if (fs.existsSync(DIST_DIR)) {
+const INDEX_HTML = path.join(DIST_DIR, 'index.html');
+const DIST_OK = fs.existsSync(INDEX_HTML);
+
+if (DIST_OK) {
   app.use(express.static(DIST_DIR));
   app.get(/^\/(?!api\/).*/, (req, res, next) => {
     if (req.method !== 'GET') return next();
-    res.sendFile(path.join(DIST_DIR, 'index.html'));
+    res.sendFile(INDEX_HTML);
   });
   console.log(`[gateway] serving dashboard from ${DIST_DIR}`);
 } else {
-  console.log('[gateway] no midas_code/dist — API only (run: npm run build)');
+  // Explain the failure instead of a bare "Cannot GET /". A blank 404 here
+  // sent us chasing ghosts; this says exactly what is missing and why.
+  console.error(`[gateway] MISSING BUILD: ${INDEX_HTML} not found — the dashboard cannot be served.`);
+  console.error('[gateway] the build step did not run or did not complete: npm run build');
+  app.get(/^\/(?!api\/).*/, (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    res.status(503).type('html').send(`<!doctype html>
+<meta charset="utf-8"><title>Vega — build missing</title>
+<style>body{font:14px/1.6 system-ui;margin:0;background:#0d1117;color:#e6edf3;padding:40px}
+code{background:#161b22;padding:2px 6px;border-radius:4px;color:#79c0ff}
+h1{font-size:18px;margin:0 0 4px}.d{color:#8b949e}.k{color:#f0883e}</style>
+<h1>Gateway is running — dashboard build is missing</h1>
+<p class="d">The API works. The front-end bundle was never produced, so there is nothing to serve at <code>/</code>.</p>
+<p><span class="k">Expected:</span> <code>${INDEX_HTML}</code></p>
+<p><span class="k">Cause:</span> the build step did not run or failed. It must execute
+<code>npm run build</code>, which runs <code>cd midas_code &amp;&amp; npm ci &amp;&amp; npm run build</code>.</p>
+<p><span class="k">Check:</span> Railway → Deployments → Build Logs. Confirm you see
+<code>vite build</code> and <code>dist/index.html</code>. If the build was skipped entirely,
+the service is using a cached config — set Builder to <b>Railpack</b> and redeploy.</p>
+<p class="d">Diagnostics: <code>/api/health</code> reports <code>distFound</code>.</p>`);
+  });
 }
 
 app.listen(PORT, HOST, () => {
