@@ -74,6 +74,72 @@ rather than relying on this shared key.
 
 ---
 
+## Signal capture (the reason to run this on Railway at all)
+
+The dashboard itself is better off local. What a cloud box gives you is a
+**public URL TradingView can POST to** — your laptop has no public IP and
+sleeps. This records every regime flip and strategy signal 24/7.
+
+### 1. Add storage
+
+Railway → **New → Database → Postgres**. It injects `DATABASE_URL`
+automatically; the `signals` table is created on boot.
+
+Without Postgres the gateway falls back to `signals.jsonl` on the container
+filesystem, which **Railway wipes on every redeploy**. Fine for a smoke test,
+useless for accumulating history.
+
+### 2. Set a webhook token
+
+| Variable | Value |
+|---|---|
+| `WEBHOOK_TOKEN` | a long random string |
+
+TradingView cannot send custom headers, so this secret lives in the URL:
+
+```
+https://<your-app>.up.railway.app/api/webhook/tradingview/<WEBHOOK_TOKEN>
+```
+
+Treat that whole URL as the credential. Anyone who has it can write rows.
+
+### 3. Create the TradingView alert
+
+On a chart running **MIDAS Regime Filter v3**:
+
+1. Right-click → **Add alert**
+2. **Condition**: the indicator → **Any alert() function call**
+3. Leave the **Message** box empty — `alert()` supplies the JSON body itself
+4. **Notifications → Webhook URL**: paste the URL from step 2
+5. Save
+
+Each regime change now POSTs a full diagnostic row: regime code and label,
+plus the ER / ADX / vol-ratio / ATR readings and which rule decided the bar.
+
+### 4. Verify
+
+```bash
+# should return 200 and an id
+curl -X POST https://<your-app>.up.railway.app/api/webhook/tradingview/<TOKEN> \
+     -H 'Content-Type: application/json' \
+     -d '{"event":"test","symbol":"MGC1!","price":4200}'
+
+# read it back
+curl -H "X-Vega-Key: $VEGA_API_KEY" https://<your-app>.up.railway.app/api/signals
+```
+
+`/api/health` reports `signalStore` (`postgres` or `jsonl`) and `signalCount`.
+
+### Reading the data back
+
+```
+GET /api/signals?limit=200&symbol=MGC1!&event=regime_change
+```
+Requires the `X-Vega-Key` header. The QBT-003 slicer can be pointed at
+exported rows once you have enough of them to be worth slicing.
+
+---
+
 ## What is not deployed
 
 - **MRE replay server** (`MRE_Server.py`, port 8002) — the Replay blade's live
