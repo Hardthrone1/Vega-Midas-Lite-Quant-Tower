@@ -14,6 +14,7 @@ const { z } = require('zod');
 const { v4: uuidv4 } = require('uuid');
 const client = require('prom-client');
 const { createSwarmOrchestrator } = require('./swarm_orchestrator');
+const { createStore, normalise: normaliseSignal } = require('./signal_store');
 
 const app = express();
 // Railway (and most PaaS) inject $PORT and route external traffic to it.
@@ -23,6 +24,9 @@ const PORT = process.env.PORT || 8001;
 // platform health check will crash-loop it.
 const HOST = process.env.HOST || (process.env.RAILWAY_ENVIRONMENT ? '0.0.0.0' : '127.0.0.1');
 const GATEWAY_VERSION = '1.4';
+
+// Signal store: Postgres when DATABASE_URL is set, JSONL otherwise.
+const signals = createStore();
 
 // Shared-secret gate. When VEGA_API_KEY is set, every /api/* request must
 // carry it as X-Vega-Key. Unset = open (local dev). CORS alone is no defence:
@@ -506,6 +510,9 @@ app.use('/api', (req, res, next) => {
   if (!VEGA_API_KEY) return next();
   if (req.path === '/health') return next();
   if (req.method === 'OPTIONS') return next();          // CORS preflight
+  // TradingView webhooks cannot set custom headers — that route carries its
+  // own secret in the URL path and is checked in its own handler.
+  if (req.path.startsWith('/webhook/')) return next();
   const supplied = req.get('X-Vega-Key') || '';
   const a = Buffer.from(supplied);
   const b = Buffer.from(VEGA_API_KEY);
@@ -681,12 +688,16 @@ app.get('/api/providers', (_req, res) => {
   res.json({ default: DEFAULT_PROVIDER, providers: list });
 });
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', async (_req, res) => {
+  let signalCount = null;
+  try { signalCount = await signals.count(); } catch { /* store not ready */ }
   res.json({
     status: 'ONLINE',
     version: GATEWAY_VERSION,
     activeProvider: DEFAULT_PROVIDER,
     circuitState: getCircuitBreaker(DEFAULT_PROVIDER).state,
+    signalStore: signals.kind,
+    signalCount,
     timestamp: new Date().toISOString(),
   });
 });
@@ -699,6 +710,68 @@ app.get('/metrics', async (_req, res) => {
 // ---------------------------------------------------------------------------
 // Start Server
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// TradingView signal intake
+//
+// TradingView's webhook is a bare POST with the alert message as the body —
+// it cannot attach headers, so the shared secret lives in the URL path:
+//   https://<app>/api/webhook/tradingview/<WEBHOOK_TOKEN>
+// Bodies arrive as JSON when the alert message is JSON, otherwise plain text,
+// so this route accepts both. Always answers 200 quickly on success: TradingView
+// disables an alert after repeated non-2xx responses.
+// ---------------------------------------------------------------------------
+const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN || null;
+
+app.post('/api/webhook/tradingview/:token',
+  express.text({ type: '*/*', limit: '256kb' }),   // capture non-JSON bodies too
+  async (req, res) => {
+    if (!WEBHOOK_TOKEN) {
+      return res.status(503).json({ error: { message: 'WEBHOOK_TOKEN not configured' } });
+    }
+    const a = Buffer.from(req.params.token || '');
+    const b = Buffer.from(WEBHOOK_TOKEN);
+    if (a.length !== b.length || !require('crypto').timingSafeEqual(a, b)) {
+      return res.status(401).json({ error: { message: 'bad webhook token' } });
+    }
+
+    // Body may arrive three ways: already-parsed object (the global
+    // express.json() claimed it when TradingView sent application/json), a
+    // JSON string, or plain text. Handle all three — TradingView's
+    // content-type is not guaranteed.
+    let parsed = null;
+    let text = '';
+    if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+      parsed = req.body;
+      text = JSON.stringify(req.body);
+    } else {
+      text = typeof req.body === 'string' ? req.body : String(req.body ?? '');
+      try { parsed = JSON.parse(text); } catch { /* plain-text alert */ }
+    }
+
+    try {
+      const row = await signals.insert(normaliseSignal(parsed, text));
+      console.log(JSON.stringify({ tag: 'signal', id: row.id, len: text.length }));
+      res.json({ ok: true, id: row.id, received_at: row.received_at });
+    } catch (e) {
+      console.error('[signals] insert failed:', e.message);
+      res.status(500).json({ error: { message: 'store failed' } });
+    }
+  });
+
+// Read back what has been captured (protected by X-Vega-Key like other APIs).
+app.get('/api/signals', async (req, res) => {
+  try {
+    const rows = await signals.list({
+      limit: parseInt(req.query.limit, 10) || 100,
+      symbol: req.query.symbol || null,
+      event: req.query.event || null,
+    });
+    res.json({ count: rows.length, store: signals.kind, signals: rows });
+  } catch (e) {
+    res.status(500).json({ error: { message: e.message } });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Static dashboard — serve the built SPA from the same origin as the API, so a
 // single-service deploy needs no cross-origin config at all. Mounted last so

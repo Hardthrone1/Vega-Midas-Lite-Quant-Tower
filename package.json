@@ -1,7 +1,7 @@
 {
   "name": "tradingview-suite",
   "version": "1.0.0",
-  "description": "A spec-first dashboard for taking a futures strategy from idea \u2192 canonical spec \u2192 Pine + Python (generated from the *same* spec) \u2192 diagnostics \u2192 backtest \u2192 vault, with a deploy gate that blocks anything where the two execution paths disagree. Built for MGC / MNQ work.",
+  "description": "A spec-first dashboard for taking a futures strategy from idea → canonical spec → Pine + Python (generated from the *same* spec) → diagnostics → backtest → vault, with a deploy gate that blocks anything where the two execution paths disagree. Built for MGC / MNQ work.",
   "main": "lightweight-charts.standalone.production.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -24,6 +24,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "pg": "^8.22.0",
     "prom-client": "^15.1.3",
     "rate-limiter-flexible": "^11.2.0",
     "uuid": "^14.0.1",

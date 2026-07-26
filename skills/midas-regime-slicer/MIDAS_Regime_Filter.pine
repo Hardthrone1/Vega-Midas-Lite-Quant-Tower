@@ -190,8 +190,28 @@ if showTable and barstate.islast
     table.cell(dbg, 2, 7, "",          text_color=color.gray,   text_size=size.tiny)
 
 // ─── Alerts ──────────────────────────────────────────────────────────────
+// Two paths. alertcondition() is the classic pop-up. alert() fires a dynamic
+// JSON body that the Vega gateway's /api/webhook/tradingview/<token> endpoint
+// parses straight into the signals table — create the alert with condition
+// "Any alert() function call" and paste the webhook URL into the TradingView
+// alert dialog. Leave the alert Message box EMPTY; alert() supplies the body.
 regimeChanged = confirmedRegime != confirmedRegime[1] and confirmedRegime != 0
 alertcondition(regimeChanged, "MIDAS regime changed", "MIDAS regime changed")
+
+if regimeChanged
+    alert('{"event":"regime_change"' +
+          ',"symbol":"'      + syminfo.ticker + '"' +
+          ',"timeframe":"'   + timeframe.period + '"' +
+          ',"regime_code":'  + str.tostring(confirmedRegime) +
+          ',"regime_label":"'+ regimeLabel + '"' +
+          ',"price":'        + str.tostring(close) +
+          ',"er":'           + str.tostring(er, "#.####") +
+          ',"adx":'          + str.tostring(adx, "#.##") +
+          ',"vol_ratio":'    + str.tostring(volRatio, "#.####") +
+          ',"atr_ticks":'    + str.tostring(atrTicks, "#.#") +
+          ',"rule":"'        + ruleTag + '"' +
+          ',"bar_time":"'    + str.format_time(time_close, "yyyy-MM-dd HH:mm:ss", syminfo.timezone) + '"' +
+          '}', alert.freq_once_per_bar_close)
 
 // ─── Data-window exports (consumed by the Python slicer) ─────────────────
 plot(confirmedRegime, title="MIDAS_Regime_Code", display=display.data_window)

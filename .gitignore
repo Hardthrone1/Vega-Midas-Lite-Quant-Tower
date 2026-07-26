@@ -41,3 +41,6 @@ Thumbs.db
 .chrome-cdp-profile/
 
 .chrome-cdp-profile/
+
+# Local signal capture (JSONL fallback store)
+signals.jsonl
