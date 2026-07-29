@@ -1,44 +1,57 @@
 /* src/styles/theme.css
    VEGA — strategy control tower.
-   Design thesis: an instrument panel, not a webpage. Quiet near-black field,
-   data in monospace, meaning carried by status color (the deploy-state machine
-   is the spine of the product, so its states get the palette). One accent —
-   "gold" — nodding to the MGC contract, used with restraint. */
+   Design thesis: an instrument panel, not a webpage. Flat near-black field, no
+   glass, meaning carried by colour: blue = cleared/current/profit, red =
+   blocked/loss, orange = warning, purple = agents. Depth comes from glow
+   (coloured box-shadow blooms), never from drop shadows or blur. */
 
 :root {
   /* ---- field & surfaces ---- */
-  --bg: #0b0e13;
-  --surface-1: #11151c;
-  --surface-2: #161b24;
-  --surface-3: #1c222d;
-  --line: #232a36;
-  --line-strong: #313a49;
+  --bg: #0b0d12;
+  --surface-1: #12151c;
+  --surface-2: #171b24;
+  --surface-3: #1d2431;
+  --line: #232936;
+  --line-strong: #2e3542;
 
   /* ---- ink ---- */
-  --ink-1: #e7ecf3; /* primary text */
-  --ink-2: #aab4c4; /* secondary */
-  --ink-3: #6b7689; /* muted / captions */
-  --ink-inv: #0b0e13;
+  --ink-1: #eef1f6; /* primary text */
+  --ink-2: #8b94a6; /* secondary */
+  --ink-3: #7d8797; /* muted / captions — AA on every surface above */
+  --ink-inv: #0b0d12;
 
-  /* ---- the one accent: MGC gold ---- */
-  --gold: #e7b75f;
-  --gold-dim: #b98f3f;
-  --gold-glow: rgba(231, 183, 95, 0.16);
+  /* ---- primary accent ---- */
+  --blue: #4c8dff;
+  --blue-dim: #7dabff;
+  --blue-glow: rgba(76, 141, 255, 0.5);
 
-  /* ---- status palette (drives deploy state + diagnostics) ---- */
-  --ok: #46c08a;
-  --ok-dim: #2f8a62;
-  --warn: #e0a64b;
-  --warn-dim: #a87a31;
-  --err: #e0604f;
-  --err-dim: #a8443a;
-  --info: #5aa6e0;
-  --info-dim: #3d76a8;
-  --idle: #6b7689;
+  /* ---- agent/swarm accent — deliberately outside the Status scale ---- */
+  --purple: #a97cff;
+  --purple-dim: #bd96ff;
+  --purple-glow: rgba(169, 124, 255, 0.5);
+
+  /* Legacy aliases: ~30 call sites in app.css still say --gold. They are being
+     retired selectively (primary -> blue, agent identity -> purple). */
+  --gold: var(--blue);
+  --gold-dim: var(--blue-dim);
+  --gold-glow: var(--blue-glow);
+
+  /* ---- status palette (drives deploy state + diagnostics) ----
+     "ok" and "info" intentionally collapse onto one blue: in this product a
+     cleared gate and an informational reading carry the same weight. */
+  --ok: var(--blue);
+  --ok-dim: var(--blue-dim);
+  --warn: #ff9a3c;
+  --warn-dim: #ffb166;
+  --err: #ff4d5e;
+  --err-dim: #ff6b78;
+  --info: var(--blue);
+  --info-dim: var(--blue-dim);
+  --idle: var(--ink-3);
 
   /* ---- type ---- */
-  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-body: 'Archivo', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, 'Cascadia Code', monospace;
 
   --fs-xs: 11px;
@@ -50,9 +63,11 @@
   --fs-2xl: 28px;
 
   /* ---- geometry ---- */
-  --r-sm: 4px;
-  --r-md: 7px;
-  --r-lg: 10px;
+  --r-xs: 3px;
+  --r-sm: 7px;
+  --r-md: 9px;
+  --r-lg: 11px;
+  --r-xl: 14px;
   --gap: 14px;
   --pad: 16px;
 
@@ -85,8 +100,8 @@ body {
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
@@ -99,16 +114,19 @@ h1, h2, h3, h4 {
   color: var(--ink-3);
 }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--line-strong);
-  border-radius: 99px;
+  border-radius: 6px;
   border: 2px solid var(--bg);
 }
+::-webkit-scrollbar-thumb:hover { background: #3b445a; }
+
+::selection { background: rgba(76, 141, 255, 0.3); }
 
 :focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--blue);
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }

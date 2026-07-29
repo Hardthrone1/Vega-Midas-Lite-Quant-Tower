@@ -15,8 +15,8 @@ import {
 import { Badge } from '../../../shared/ui';
 import { gatewayFetch } from '../../../shared/gateway';
 import { useStrategyStore } from '../../../store/useStrategyStore';
+import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader';
 import { createDefaultSpec } from '../../../shared/validation/strategySchema';
-import { useBlades } from '../../../app/layout/blades';
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot';
 import {
   deployLabel,
@@ -134,9 +134,8 @@ export function StrategyIntakePanel() {
     lintResult,
     parityResult,
     backtestResult,
+    setActiveTab,
   } = useStrategyStore();
-
-  const { openBlade } = useBlades();
   const [loading, setLoading] = React.useState(false);
   const abortRef = React.useRef<AbortController | null>(null);
 
@@ -290,7 +289,7 @@ export function StrategyIntakePanel() {
       setCanonicalSpec(finalSpec);
       addAgentMessage({ agent: 'Intake', level: 'success', message: 'Spec generated via Gateway' });
       // Azure Portal behavior: the result opens as a child blade to the right.
-      openBlade('spec');
+      setActiveTab('spec');
 
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -335,6 +334,7 @@ export function StrategyIntakePanel() {
       <BladeHeaderActions>
         {canonicalSpec ? <Badge status="ok">spec live</Badge> : <Badge>no spec</Badge>}
       </BladeHeaderActions>
+      <StagePanelHeader tab="intake" />
       <form className="col" onSubmit={handleSubmit(startSpec)} noValidate>
         <div className="system-state-strip">
           <div className="sss-head">

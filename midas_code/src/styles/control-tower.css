@@ -2,112 +2,15 @@
    Control-tower layout fix + visual identity pass.
 
    Loaded last so it layers on top of portal.css. Two jobs:
-   1. Style the relocated blade-header controls (the panels no longer render
+   1. Style the relocated stage-header controls (the panels no longer render
       their own duplicate header — their controls teleport up here).
    2. High-impact polish: live glow pulses, loading gauge, scroll-triggered
       reveals, and micro-interactions — all theme-aware via Fluent tokens. */
 
 /* ============================================================= *
- *  1 · Blade header — one consolidated, high-impact header row  *
+ *  1 · Stage header actions — relocated panel controls          *
  * ============================================================= */
 
-/* A hairline brand sheen rides the top edge of every blade header. */
-.blade-header {
-  position: relative;
-  gap: 12px;
-  padding: 12px 16px;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--colorBrandBackground2) 22%, transparent),
-      transparent 78%),
-    var(--glass-tint);
-}
-.blade-header::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--colorBrandForeground1) 60%, transparent) 20%,
-    var(--colorBrandForeground1) 50%,
-    color-mix(in srgb, var(--colorBrandForeground1) 60%, transparent) 80%,
-    transparent
-  );
-  background-size: 220% 100%;
-  opacity: 0.55;
-  animation: ct-header-sheen 7s var(--ease-standard) infinite;
-}
-@keyframes ct-header-sheen {
-  0%, 100% { background-position: 0% 0; opacity: 0.35; }
-  50% { background-position: 100% 0; opacity: 0.8; }
-}
-
-/* Glowing, breathing step icon. */
-.blade-header-icon {
-  position: relative;
-  overflow: visible;
-}
-.blade-header-icon-glow {
-  position: absolute;
-  inset: -6px;
-  border-radius: inherit;
-  background: radial-gradient(circle, var(--colorBrandForeground1), transparent 68%);
-  opacity: 0.28;
-  filter: blur(5px);
-  animation: ct-icon-breathe 3.6s var(--ease-standard) infinite;
-  pointer-events: none;
-}
-@keyframes ct-icon-breathe {
-  0%, 100% { opacity: 0.18; transform: scale(0.9); }
-  50% { opacity: 0.4; transform: scale(1.12); }
-}
-.blade-header:hover .blade-header-icon {
-  transform: scale(1.08) rotate(-2deg);
-}
-
-/* Bolder title, structured subtitle with a mono step chip. */
-.blade-title {
-  letter-spacing: -0.01em;
-  font-weight: var(--fontWeightSemibold);
-}
-.blade-subtitle {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-}
-.blade-step {
-  font-size: 10px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  padding: 1px 7px;
-  border-radius: 999px;
-  color: var(--colorBrandForeground2);
-  background: color-mix(in srgb, var(--colorBrandBackground2) 60%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--colorBrandForeground2) 26%, transparent);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.blade-subtitle-sep { opacity: 0.4; }
-.blade-subtitle-desc {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Actions area now hosts the relocated panel controls + close. */
-.blade-header-actions {
-  align-items: center;
-  gap: 8px;
-}
-.blade-header-slot {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
 .blade-actions-group {
   display: inline-flex;
   align-items: center;
@@ -142,22 +45,18 @@
 }
 .blade-icon-btn:hover {
   transform: translateY(-1px);
-  color: var(--colorBrandForeground1);
-  border-color: color-mix(in srgb, var(--colorBrandForeground1) 55%, transparent);
+  color: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 55%, transparent);
   background: color-mix(in srgb, var(--colorBrandBackground2) 55%, transparent);
-  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--colorBrandForeground1) 55%, transparent);
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--blue) 55%, transparent);
 }
 .blade-icon-btn:active { transform: translateY(0) scale(0.94); }
 .blade-icon-btn[aria-pressed='true'],
 .blade-icon-btn[aria-expanded='true'] {
-  color: var(--colorBrandForeground1);
-  border-color: color-mix(in srgb, var(--colorBrandForeground1) 55%, transparent);
+  color: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 55%, transparent);
   background: color-mix(in srgb, var(--colorBrandBackground2) 45%, transparent);
 }
-
-/* Close button spins subtly on hover. */
-.blade-close-btn { transition: transform var(--motion-normal) var(--ease-standard); }
-.blade-close-btn:hover { transform: rotate(90deg); }
 
 /* ============================================================= *
  *  2 · Live glow pulses                                         *
@@ -166,11 +65,11 @@
 /* A soft haloed pulse for any "live" tinted badge (gateway online, playing…). */
 .fui-Badge.badge-live {
   position: relative;
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorStatusSuccessForeground1) 60%, transparent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent);
   animation: ct-badge-live 2.2s var(--ease-standard) infinite;
 }
 @keyframes ct-badge-live {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorStatusSuccessForeground1) 55%, transparent); }
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); }
   70% { box-shadow: 0 0 0 7px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
@@ -231,20 +130,20 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--colorNeutralForeground4);
+  background: var(--ink-3);
 }
 .agent-timeline-live.is-live {
-  color: var(--colorStatusSuccessForeground1);
-  background: color-mix(in srgb, var(--colorStatusSuccessBackground1) 70%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--colorStatusSuccessForeground1) 30%, transparent);
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 70%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 30%, transparent);
 }
 .agent-timeline-live.is-live .agent-timeline-live-dot {
-  background: var(--colorStatusSuccessForeground1);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorStatusSuccessForeground1) 65%, transparent);
+  background: var(--ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 65%, transparent);
   animation: ct-livedot 1.8s var(--ease-standard) infinite;
 }
 @keyframes ct-livedot {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorStatusSuccessForeground1) 60%, transparent); }
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); }
   70% { box-shadow: 0 0 0 6px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
@@ -259,71 +158,10 @@
 }
 
 /* ============================================================= *
- *  4 · Sidebar nav — glowing active rail + micro-interactions   *
- * ============================================================= */
-.portal-nav-tabs [role='tab'] {
-  border-radius: var(--borderRadiusMedium);
-  transition:
-    background var(--motion-fast) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-standard),
-    box-shadow var(--motion-normal) var(--ease-standard);
-}
-.portal-nav-tabs [role='tab']:hover {
-  transform: translateX(2px);
-  background: color-mix(in srgb, var(--colorBrandBackground2) 40%, transparent);
-}
-.portal-nav-tabs [role='tab'] svg {
-  transition: transform var(--motion-normal) var(--ease-enter);
-}
-.portal-nav-tabs [role='tab']:hover svg {
-  transform: scale(1.14);
-}
-.portal-nav-tabs [role='tab'][aria-selected='true'] {
-  background: color-mix(in srgb, var(--colorBrandBackground2) 55%, transparent);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--colorBrandForeground1) 22%, transparent),
-    0 4px 18px -8px color-mix(in srgb, var(--colorBrandForeground1) 70%, transparent);
-}
-.portal-nav-tabs [role='tab'][aria-selected='true'] svg {
-  color: var(--colorBrandForeground1);
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--colorBrandForeground1) 65%, transparent));
-}
-
-/* Rich nav tooltip surface. */
-.nav-tooltip-surface {
-  max-width: 260px;
-  padding: 9px 12px;
-}
-.nav-tooltip {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.nav-tooltip-head {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.nav-tooltip-step {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--colorBrandForeground2);
-}
-.nav-tooltip-label {
-  font-weight: 600;
-  font-size: 13px;
-}
-.nav-tooltip-desc {
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--colorNeutralForeground3);
-}
-
-/* ============================================================= *
  *  5 · Loading gauge — a branded pulse instead of a bare spinner *
  * ============================================================= */
-.blade-loading { flex-direction: column; gap: 14px; }
-.blade-loading-gauge {
+.stage-loading { flex-direction: column; gap: 14px; }
+.stage-loading-gauge {
   position: relative;
   width: 46px;
   height: 46px;
@@ -331,19 +169,19 @@
   align-items: center;
   justify-content: center;
 }
-.blade-loading-ring {
+.stage-loading-ring {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--colorBrandForeground1) 22%, transparent);
-  border-top-color: var(--colorBrandForeground1);
+  border: 2px solid color-mix(in srgb, var(--blue) 22%, transparent);
+  border-top-color: var(--blue);
   animation: spin 0.9s linear infinite;
 }
-.blade-loading-core {
+.stage-loading-core {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--colorBrandForeground1), transparent 70%);
+  background: radial-gradient(circle, var(--blue), transparent 70%);
   animation: ct-core-pulse 1.4s var(--ease-standard) infinite;
 }
 @keyframes ct-core-pulse {
@@ -355,13 +193,13 @@
 }
 
 /* ============================================================= *
- *  6 · Scroll-triggered reveal for blade content                *
+ *  6 · Scroll-triggered reveal for stage content                *
  * ============================================================= */
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
-    .blade-body .card,
-    .blade-body .metrics-grid,
-    .blade-body .system-state-strip {
+    .stage-body .card,
+    .stage-body .metrics-grid,
+    .stage-body .system-state-strip {
       animation: ct-scroll-reveal linear both;
       animation-timeline: view();
       animation-range: entry 2% cover 20%;
@@ -379,7 +217,7 @@
 /* Blade panels fill their body so internal flex layouts (the replay chart,
    the swarm workspace) get a real height instead of collapsing to content.
    Content-flow panels simply top-align and let the body scroll — unchanged. */
-.blade-body > section {
+.stage-body > section {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -387,13 +225,13 @@
 }
 
 /* Cards lift toward the pointer — dense compositions feel tactile. */
-.blade-body .card {
+.stage-body .card {
   transition:
     transform var(--motion-normal) var(--ease-standard),
     box-shadow var(--motion-normal) var(--ease-standard),
     border-color var(--motion-normal) var(--ease-standard);
 }
-.blade-body .card:hover {
+.stage-body .card:hover {
   transform: translateY(-2px);
   box-shadow: var(--elev-4);
 }
@@ -405,11 +243,11 @@
 /* Glow recipes (brand-keyed). Fallback #479ef5 = colorBrandForeground1. */
 .portal-fluent-root {
   --brand-glow:
-    inset 0 0 0 1px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 22%, transparent),
-    0 4px 18px -8px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 70%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--blue) 22%, transparent),
+    0 4px 18px -8px color-mix(in srgb, var(--blue) 70%, transparent);
   --brand-glow-subtle:
-    inset 0 0 0 1px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 12%, transparent),
-    0 4px 14px -9px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 40%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--blue) 12%, transparent),
+    0 4px 14px -9px color-mix(in srgb, var(--blue) 40%, transparent);
 }
 
 /* Pills — same recipe as the main panel, keyed to each pill's own color
@@ -450,7 +288,7 @@
 }
 
 /* Card lift keeps its elevation and gains the subtle brand ring. */
-.blade-body .card:hover {
+.stage-body .card:hover {
   box-shadow: var(--elev-4), var(--brand-glow-subtle);
 }
 
@@ -462,5 +300,5 @@
 #root .fui-Button.vega-btn-glow:hover:not(:disabled) {
   box-shadow:
     var(--brand-glow),
-    0 6px 24px -8px color-mix(in srgb, var(--colorBrandForeground1, #479ef5) 80%, transparent);
+    0 6px 24px -8px color-mix(in srgb, var(--blue) 80%, transparent);
 }

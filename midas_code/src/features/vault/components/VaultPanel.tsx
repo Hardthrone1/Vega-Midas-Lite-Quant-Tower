@@ -1,5 +1,6 @@
 // src/features/vault/components/VaultPanel.tsx
 import { Card, Button, Empty, Badge } from '../../../shared/ui'
+import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 import { deployLabel, deployStatusKind } from '../../../shared/deployStatus'
@@ -21,6 +22,10 @@ export function VaultPanel() {
       <BladeHeaderActions>
         <Button variant="primary" onClick={save} disabled={!canonicalSpec}>Save version</Button>
       </BladeHeaderActions>
+      <StagePanelHeader
+        tab="vault"
+        meta={`${versionHistory.length} spec version${versionHistory.length === 1 ? '' : 's'} · ${pineVault.length} Pine build${pineVault.length === 1 ? '' : 's'}`}
+      />
       {totalItems === 0 ? (
         <Empty>No saved versions. Save a spec version here or generate Pine Script via the Swarm tab — both land in this registry.</Empty>
       ) : (

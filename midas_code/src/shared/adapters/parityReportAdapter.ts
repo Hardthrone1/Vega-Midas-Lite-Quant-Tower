@@ -99,6 +99,50 @@ export function toBacktestResult(payload: PythonBacktestArtifact) {
   }
 }
 
+export type ParityCell = {
+  /** Pine trade number, in execution order. */
+  num: number
+  state: 'matched' | 'divergent' | 'unmatched'
+  label: string
+}
+
+/**
+ * One cell per Pine trade, in execution order — the parity grid.
+ *
+ * The two sources name their fields differently: matched rows carry
+ * `trade_num`/`entry_dt`/`entry_signal`, while unmatched Pine rows come
+ * straight from the Pine side as `num`/`entry`/`signal`. Both are normalised
+ * here so the grid never has to know which list a trade came from.
+ */
+export function toParityCells(report: DivergenceReportArtifact): ParityCell[] {
+  const cells: ParityCell[] = []
+
+  for (const m of report.matched_trades) {
+    const divergent = m.status === 'FAIL'
+    cells.push({
+      num: m.trade_num,
+      state: divergent ? 'divergent' : 'matched',
+      label: divergent
+        ? `Pine trade #${m.trade_num} — diverges: ${m.divergences.join(', ')}`
+        : `Pine trade #${m.trade_num} — matched (${m.entry_signal}, ${m.entry_dt})`,
+    })
+  }
+
+  for (const raw of report.unmatched_pine_trades) {
+    const t = raw as { num?: number; trade_num?: number; entry?: string; entry_dt?: string; signal?: string; entry_signal?: string }
+    const num = t.num ?? t.trade_num ?? 0
+    const when = t.entry ?? t.entry_dt ?? 'unknown time'
+    const side = t.signal ?? t.entry_signal ?? 'unknown side'
+    cells.push({
+      num,
+      state: 'unmatched',
+      label: `Pine trade #${num} — no Python counterpart (${side}, ${when})`,
+    })
+  }
+
+  return cells.sort((a, b) => a.num - b.num)
+}
+
 /** Validator report -> store ParityResult shape. Nothing is softened: an
  *  unmatched trade counts as a mismatch and blocks the deploy gate. */
 export function toParityResult(report: DivergenceReportArtifact) {

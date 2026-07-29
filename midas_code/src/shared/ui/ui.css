@@ -41,11 +41,10 @@
 .panel-expand-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
 
 .card {
-  background: var(--surface-2);
-  background: var(--glass-tint);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  padding: 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: 20px;
   box-shadow: var(--elev-2);
   transition:
     transform var(--motion-fast) var(--ease-standard),
@@ -53,9 +52,8 @@
     border-color var(--motion-fast) var(--ease-standard);
 }
 .card:hover {
-  transform: translateY(-2px);
+  border-color: var(--line-strong);
   box-shadow: var(--elev-4);
-  border-color: var(--glass-highlight);
 }
 
 /* MetricCard — glass stat tile with a semantic accent bar */
@@ -64,13 +62,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px 16px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--elev-2);
+  padding: 15px 16px 13px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-1);
   overflow: hidden;
   transition:
     transform var(--motion-fast) var(--ease-standard),
@@ -82,18 +77,18 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: var(--metric-accent, var(--colorNeutralForeground4));
+  background: var(--metric-accent, var(--ink-3));
   box-shadow: 0 0 12px color-mix(in srgb, var(--metric-accent, transparent) 55%, transparent);
 }
 .metric-card:hover {
-  transform: translateY(-2px);
+  border-color: var(--line-strong);
   box-shadow: var(--elev-4);
-  border-color: var(--glass-highlight);
 }
-.metric-card--ok   { --metric-accent: var(--colorStatusSuccessForeground1); }
-.metric-card--warn { --metric-accent: var(--colorStatusWarningForeground1); }
-.metric-card--err  { --metric-accent: var(--colorStatusDangerForeground1); }
-.metric-card--info { --metric-accent: var(--colorBrandForeground1); }
+.metric-card--ok   { --metric-accent: var(--ok); }
+.metric-card--warn { --metric-accent: var(--warn); }
+.metric-card--err  { --metric-accent: var(--err); }
+.metric-card--info { --metric-accent: var(--blue); }
+.metric-card--idle { --metric-accent: var(--line-strong); }
 .metric-card-label {
   font-size: var(--fontSizeBase100);
   line-height: var(--lineHeightBase100);
@@ -109,16 +104,16 @@
   color: var(--colorNeutralForeground1);
   transition: color var(--motion-fast) var(--ease-standard);
 }
-.metric-card--ok .metric-card-value   { color: var(--colorStatusSuccessForeground1); }
-.metric-card--err .metric-card-value  { color: var(--colorStatusDangerForeground1); }
-.metric-card--warn .metric-card-value { color: var(--colorStatusWarningForeground1); }
+.metric-card--ok .metric-card-value   { color: var(--ok); }
+.metric-card--err .metric-card-value  { color: var(--err); }
+.metric-card--warn .metric-card-value { color: var(--warn); }
 .metric-card-delta {
   font-size: var(--fontSizeBase200);
   color: var(--metric-accent, var(--colorNeutralForeground3));
 }
 .metric-card-hint {
   font-size: var(--fontSizeBase100);
-  color: var(--colorNeutralForeground4);
+  color: var(--ink-3);
 }
 
 /* status dots */
@@ -148,11 +143,11 @@
    Only the danger accent — which Fluent's Button has no appearance for —
    lives here, expressed with Fluent status tokens. */
 .vega-btn-danger {
-  color: var(--colorStatusDangerForeground1);
+  color: var(--err);
   border-color: var(--colorStatusDangerBorder1);
 }
 .vega-btn-danger:hover:not(:disabled) {
-  color: var(--colorStatusDangerForeground1);
+  color: var(--err);
   border-color: var(--colorStatusDangerBorder2);
   background: var(--colorStatusDangerBackground1);
 }
@@ -297,7 +292,7 @@
 .range-slider-label { color: var(--ink-2); }
 .range-slider-value {
   font-size: var(--fontSizeBase200);
-  color: var(--colorBrandForeground2);
+  color: var(--blue-dim);
   background: var(--colorBrandBackground2);
   border: 1px solid color-mix(in srgb, var(--colorBrandStroke1) 30%, transparent);
   border-radius: 999px;

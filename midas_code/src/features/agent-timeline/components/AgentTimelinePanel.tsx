@@ -24,7 +24,7 @@ export function AgentTimelinePanel() {
             <span className="agent-timeline-live-dot" aria-hidden />
             LIVE
           </span>
-          <h1 className="agent-timeline-title">Agent timeline</h1>
+          <h1 className="agent-timeline-title">Agent activity</h1>
           {agentMessages.length > 0 && (
             <span className="agent-timeline-count mono" aria-label={`${agentMessages.length} events`}>
               {agentMessages.length}
@@ -32,7 +32,7 @@ export function AgentTimelinePanel() {
           )}
         </div>
         {agentMessages.length > 0 && (
-          <Button onClick={clearAgentMessages} aria-label="Clear agent timeline">Clear</Button>
+          <Button onClick={clearAgentMessages} aria-label="Clear agent activity">Clear</Button>
         )}
       </header>
       {agentMessages.length === 0 ? (

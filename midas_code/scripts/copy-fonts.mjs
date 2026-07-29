@@ -7,6 +7,9 @@ const dest = join(root, 'public', 'fonts')
 mkdirSync(dest, { recursive: true })
 
 const files = [
+  ['@fontsource/archivo/files/archivo-latin-400-normal.woff2', 'archivo-latin-400-normal.woff2'],
+  ['@fontsource/archivo/files/archivo-latin-600-normal.woff2', 'archivo-latin-600-normal.woff2'],
+  ['@fontsource/archivo/files/archivo-latin-800-normal.woff2', 'archivo-latin-800-normal.woff2'],
   ['@fontsource/inter/files/inter-latin-400-normal.woff2', 'inter-latin-400-normal.woff2'],
   ['@fontsource/inter/files/inter-latin-500-normal.woff2', 'inter-latin-500-normal.woff2'],
   ['@fontsource/inter/files/inter-latin-600-normal.woff2', 'inter-latin-600-normal.woff2'],

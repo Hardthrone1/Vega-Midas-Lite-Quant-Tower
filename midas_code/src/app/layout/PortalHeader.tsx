@@ -1,165 +1,98 @@
 // src/app/layout/PortalHeader.tsx
-// Azure Portal-style top command bar: hamburger, product brand, global search,
-// trading context, deploy status, and utility buttons (agent console, agent
-// activity pane, theme toggle, account).
-import { lazy, Suspense, useState, useCallback } from 'react'
-import { flushSync } from 'react-dom'
-import {
-  Avatar,
-  Badge,
-  Button,
-  SearchBox,
-  Tooltip,
-} from '@fluentui/react-components'
-import {
-  Alert24Regular,
-  WeatherMoon24Regular,
-  WeatherSunny24Regular,
-  WindowConsole20Regular,
-} from '@fluentui/react-icons'
+// Command bar: identity, the run's context at a glance, the global check
+// trigger, and the deploy verdict. Navigation lives in the spine below, so
+// there is no rail toggle or breadcrumb here.
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStrategyStore } from '../../store/useStrategyStore'
-import { deployLabel, deployStatusKind } from '../../shared/deployStatus'
-import { useThemeMode } from '../theme/ThemeProvider'
-import type { Status } from '../../shared/ui'
+import { deployLabel } from '../../shared/deployStatus'
+import { CHECK_STEPS, runDiagnosticChecks, type CheckStep } from '../../features/diagnostics/lib/runChecks'
 
-const AgentConsole = lazy(() =>
-  import('../../features/agent-console/components/AgentConsole').then((m) => ({
-    default: m.AgentConsole,
-  }))
-)
+export function PortalHeader() {
+  const symbol = useStrategyStore((s) => s.symbol)
+  const timeframe = useStrategyStore((s) => s.timeframe)
+  const session = useStrategyStore((s) => s.session)
+  const executionMode = useStrategyStore((s) => s.executionMode)
+  const strategyId = useStrategyStore((s) => s.strategyId)
+  const deployStatus = useStrategyStore((s) => s.deployStatus)
+  const canonicalSpec = useStrategyStore((s) => s.canonicalSpec)
 
-const BADGE_COLOR: Record<Status, 'success' | 'warning' | 'danger' | 'informative' | 'subtle'> = {
-  ok: 'success',
-  warn: 'warning',
-  err: 'danger',
-  info: 'informative',
-  idle: 'subtle',
-}
+  const [running, setRunning] = useState(false)
+  const [step, setStep] = useState<CheckStep | null>(null)
+  // Re-armed on mount, not just initialised: StrictMode runs the cleanup once
+  // before the real mount, which would otherwise leave this false for good.
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => { alive.current = false }
+  }, [])
 
-export function PortalHeader({
-  navExpanded,
-  onToggleNav,
-  timelineOpen,
-  onToggleTimeline,
-}: {
-  navExpanded: boolean
-  onToggleNav: () => void
-  timelineOpen: boolean
-  onToggleTimeline: () => void
-}) {
-  const { symbol, session, executionMode, strategyId, deployStatus } = useStrategyStore()
-  const { mode, toggleMode } = useThemeMode()
-  const [consoleOpen, setConsoleOpen] = useState(false)
-
-  const handleThemeToggle = useCallback((e: React.MouseEvent) => {
-    document.documentElement.style.setProperty('--cx', e.clientX + 'px')
-    document.documentElement.style.setProperty('--cy', e.clientY + 'px')
-    // Must be invoked ON document — detaching the method loses its native
-    // receiver and throws "Illegal invocation", silently killing the toggle.
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown }
-    if (typeof doc.startViewTransition === 'function') {
-      doc.startViewTransition(() => { flushSync(toggleMode) })
-    } else {
-      toggleMode()
+  const runChecks = useCallback(async () => {
+    if (running || !canonicalSpec) return
+    setRunning(true)
+    try {
+      await runDiagnosticChecks((s) => { if (alive.current) setStep(s) })
+    } finally {
+      if (alive.current) {
+        setRunning(false)
+        setStep(null)
+      }
     }
-  }, [toggleMode])
+  }, [running, canonicalSpec])
 
-  const kind = deployStatusKind(deployStatus)
-  const deployText = deployLabel(deployStatus)
+  const stepIndex = step ? CHECK_STEPS.findIndex((s) => s.id === step) + 1 : 0
+  const runLabel = running
+    ? `${CHECK_STEPS[stepIndex - 1]?.label ?? 'Running'} ${stepIndex}/${CHECK_STEPS.length}…`
+    : 'Run checks'
+
+  const blocked = deployStatus === 'deploy_blocked'
+  const ready = deployStatus === 'deploy_ready'
+  const chipTone = blocked ? 'err' : ready ? 'ok' : 'idle'
+
+  const context = [
+    { k: 'symbol', v: symbol },
+    { k: 'timeframe', v: timeframe },
+    { k: 'session', v: session },
+    { k: 'mode', v: executionMode },
+    { k: 'strategy', v: strategyId ? strategyId.slice(0, 12) : '—' },
+  ]
 
   return (
     <header className="portal-header">
-      <div className="portal-header-left">
-        {/* Animated hamburger — bars morph to an X while the rail is open.
-            React state drives the morph (no hidden checkbox needed). */}
-        <button
-          type="button"
-          className={`hamburger${navExpanded ? ' hamburger--open' : ''}`}
-          onClick={onToggleNav}
-          aria-label="Toggle navigation sidebar"
-          aria-expanded={navExpanded}
-        >
-          <span className="bar top" />
-          <span className="bar mid" />
-          <span className="bar bot" />
-        </button>
-        <span className="portal-header-brand">
-          <span className="portal-header-product">VEGA</span>
-          <span className="portal-header-sub">Strategy Control Tower</span>
-        </span>
+      <span className="portal-header-brand">
+        <span className="portal-brand-mark" aria-hidden>V</span>
+        <span className="portal-brand-name">VEGA</span>
+      </span>
+
+      <div className="portal-header-context" aria-label="Trading context">
+        {context.map((c) => (
+          <div key={c.k} className="portal-ctx-item">
+            <span className="portal-ctx-label">{c.k}</span>
+            <span className="portal-ctx-value">{c.v}</span>
+          </div>
+        ))}
       </div>
 
-      <div className="portal-header-search">
-        <SearchBox
-          appearance="filled-lighter"
-          size="small"
-          placeholder="Search strategies, specs, and versions"
-          aria-label="Global search"
-        />
-      </div>
+      <span className="portal-header-spacer" />
 
-      <div className="portal-header-right">
-        <div className="portal-header-context mono" aria-label="Trading context">
-          <ContextItem label="symbol" value={symbol} />
-          <ContextItem label="session" value={session} />
-          <ContextItem label="mode" value={executionMode} />
-          <ContextItem label="strategy" value={strategyId ? strategyId.slice(0, 14) : '—'} />
-        </div>
+      <button
+        type="button"
+        className={`portal-runchecks${running ? ' is-running' : ''}`}
+        onClick={runChecks}
+        disabled={running || !canonicalSpec}
+        title={canonicalSpec ? 'Run the deploy-gate checks' : 'Draft a spec first'}
+        aria-busy={running}
+      >
+        {runLabel}
+      </button>
 
-        <Badge appearance="tint" color={BADGE_COLOR[kind]} className="portal-header-deploy">
-          {deployText}
-        </Badge>
-        <p className="sr-only" aria-live="polite" aria-atomic="true">
-          Deploy status: {deployText}
-        </p>
+      <span className={`portal-verdict-chip portal-verdict-chip--${chipTone}`}>
+        {blocked ? 'Blocked' : ready ? 'Ready' : deployLabel(deployStatus)}
+      </span>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        Deploy status: {deployLabel(deployStatus)}
+      </p>
 
-        <Tooltip content={consoleOpen ? 'Close agent console' : 'Open agent console'} relationship="label">
-          <Button
-            appearance="transparent"
-            className="portal-header-iconbtn"
-            icon={<WindowConsole20Regular />}
-            onClick={() => setConsoleOpen((o) => !o)}
-            aria-expanded={consoleOpen}
-            aria-controls="agent-console-panel"
-          />
-        </Tooltip>
-
-        <Tooltip content={timelineOpen ? 'Hide agent activity' : 'Show agent activity'} relationship="label">
-          <Button
-            appearance="transparent"
-            className="portal-header-iconbtn"
-            icon={<Alert24Regular />}
-            onClick={onToggleTimeline}
-            aria-pressed={timelineOpen}
-          />
-        </Tooltip>
-
-        <Tooltip content={mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} relationship="label">
-          <Button
-            appearance="transparent"
-            className="portal-header-iconbtn"
-            icon={mode === 'dark' ? <WeatherSunny24Regular /> : <WeatherMoon24Regular />}
-            onClick={handleThemeToggle}
-          />
-        </Tooltip>
-
-        <Avatar name="Vega Operator" size={28} color="colorful" className="portal-header-avatar" />
-      </div>
-
-      {consoleOpen && (
-        <Suspense fallback={null}>
-          <AgentConsole open={consoleOpen} onClose={() => setConsoleOpen(false)} />
-        </Suspense>
-      )}
+      <span className="portal-header-avatar-chip" aria-label="Vega Operator">VO</span>
     </header>
-  )
-}
-
-function ContextItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="portal-ctx-item">
-      <span className="portal-ctx-label">{label}</span>
-      <span className="portal-ctx-value">{value}</span>
-    </div>
   )
 }

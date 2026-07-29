@@ -7,6 +7,7 @@
 // uses. This is the deterministic counterpart to the LLM-driven Swarm panel.
 import { useEffect, useMemo, useState } from 'react'
 import { Card, Button, Badge, Empty, MetricCard } from '../../../shared/ui'
+import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 import {
@@ -81,6 +82,7 @@ export function CodegenPanel() {
         <BladeHeaderActions>
           <Button variant="primary" onClick={load} disabled={loading}>{loading ? 'Loading…' : 'Load codegen'}</Button>
         </BladeHeaderActions>
+        <StagePanelHeader tab="codegen" />
         <Empty>No codegen output loaded. One canonical StrategySpec generates<br />the Pine v5 script and the Python backtest payload together.</Empty>
       </section>
     )
@@ -102,6 +104,10 @@ export function CodegenPanel() {
         <Button variant="primary" onClick={useThisBuild}>Use this build</Button>
       </BladeHeaderActions>
 
+      <StagePanelHeader
+        tab="codegen"
+        meta={`${artifact.variants.length} variant(s) · Pine v5 ${variant.pine_chars.toLocaleString('en-US')} chars`}
+      />
       <div className="col">
         {/* Parity proof: both outputs carry the SAME spec hash. */}
         <Card>
