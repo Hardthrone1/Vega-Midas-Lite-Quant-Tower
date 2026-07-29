@@ -71,6 +71,14 @@ type ValidationState = {
   issues: ValidationIssue[]
 }
 
+export type ChartSource = 'bars' | 'parity'
+
+export type ChartOverlayState = {
+  source: ChartSource
+  /** Aggregation interval in minutes; only meaningful for the bars source. */
+  timeframe: number
+}
+
 type StrategyStore = {
   strategyId: string
   activeTab: Tab
@@ -115,6 +123,10 @@ type StrategyStore = {
 
   pythonPayload: ReturnType<typeof buildPythonBacktestPayload> | null
 
+  /** Full-screen chart. Lives in the store (not context) so a federated panel
+   *  can open the shell-owned overlay. null = closed. */
+  chartOverlay: ChartOverlayState | null
+
   setStrategyId: (id: string) => void
   setActiveTab: (tab: Tab) => void
   setSymbol: (symbol: string) => void
@@ -151,6 +163,11 @@ type StrategyStore = {
   addVersion: (version: { name: string; notes: string }) => void
   addPineVault: (entry: { name: string; code: string; lintPassed: boolean; violations: string[]; warnings: string[]; source: 'generate' | 'repair' }) => void
   resetRun: () => void
+
+  openChartOverlay: (opts?: Partial<ChartOverlayState>) => void
+  closeChartOverlay: () => void
+  setChartSource: (source: ChartSource) => void
+  setChartTimeframe: (timeframe: number) => void
 }
 
 const uid = () => crypto.randomUUID()
@@ -208,6 +225,8 @@ const initialState = {
   }>,
 
   pythonPayload: null as ReturnType<typeof buildPythonBacktestPayload> | null,
+
+  chartOverlay: null as ChartOverlayState | null,
 }
 
 export const useStrategyStore = create<StrategyStore>()(
@@ -495,6 +514,26 @@ export const useStrategyStore = create<StrategyStore>()(
             },
             false,
             'resetRun'
+          ),
+
+        openChartOverlay: (opts) =>
+          set(
+            { chartOverlay: { source: 'bars', timeframe: 15, ...(get().chartOverlay ?? {}), ...opts } },
+            false,
+            'openChartOverlay'
+          ),
+        closeChartOverlay: () => set({ chartOverlay: null }, false, 'closeChartOverlay'),
+        setChartSource: (source) =>
+          set(
+            (s) => ({ chartOverlay: s.chartOverlay ? { ...s.chartOverlay, source } : s.chartOverlay }),
+            false,
+            'setChartSource'
+          ),
+        setChartTimeframe: (timeframe) =>
+          set(
+            (s) => ({ chartOverlay: s.chartOverlay ? { ...s.chartOverlay, timeframe } : s.chartOverlay }),
+            false,
+            'setChartTimeframe'
           ),
       })),
       {

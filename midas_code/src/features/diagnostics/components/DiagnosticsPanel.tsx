@@ -1,103 +1,194 @@
 // src/features/diagnostics/components/DiagnosticsPanel.tsx
-import { Card, Badge, Button, StatusDot } from '../../../shared/ui'
+//
+// The deploy gate. Parity is the headline: one cell per Pine trade in execution
+// order, so a single unmatched trade reads as a position in the run rather than
+// a count. Parity comes from the real divergence report; lint and risk remain
+// demo values until their pipeline stages exist.
+//
+// The checks themselves are triggered from the header (see
+// features/diagnostics/lib/runChecks.ts) — this stage displays their result.
+import { useEffect, useState } from 'react'
+import { Card, Badge, StatusDot } from '../../../shared/ui'
+import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader'
 import { useStrategyStore } from '../../../store/useStrategyStore'
-import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
-import { deployLabel, deployStatusKind, deployProgress, DEPLOY_PIPELINE } from '../../../shared/deployStatus'
-import { loadDivergenceReport, toParityResult } from '../../../shared/adapters/parityReportAdapter'
+import { deployLabel, deployProgress, DEPLOY_PIPELINE } from '../../../shared/deployStatus'
+import { loadDivergenceReport, toParityCells, type ParityCell } from '../../../shared/adapters/parityReportAdapter'
+
+const GATES = [
+  'Draft', 'Spec ready', 'Pine generated', 'Lint passed',
+  'Parity checked', 'Backtested', 'Risk scored', 'Deploy ready',
+]
+
+/** Parity is the gate that holds this run — index into GATES. */
+const FAIL_GATE = 4
 
 export function DiagnosticsPanel() {
-  const {
-    deployStatus, deployBlockers, lintResult, parityResult, riskResult,
-    canonicalSpec, setLintResult, setParityResult, setRiskResult, addAgentMessage,
-  } = useStrategyStore()
+  const { deployStatus, deployBlockers, lintResult, parityResult, riskResult } = useStrategyStore()
+  const [cells, setCells] = useState<ParityCell[]>([])
 
-  // Parity comes from the real divergence report; lint and risk remain demo
-  // values until their pipeline stages exist.
-  const runChecks = async () => {
-    if (!canonicalSpec) return
-    setLintResult({ passed: true, violations: [], warnings: ['No session filter on intrabar mode'] })
-    setRiskResult({ score: 84, var: 0.021, kelly: 0.18, sharpe: 1.32, drawdown: 0.094 })
-    addAgentMessage({ agent: 'Lint', level: 'success', message: 'Lint passed (1 warning) [demo]' })
-    addAgentMessage({ agent: 'Risk', level: 'success', message: 'Risk score 84 — above threshold [demo]' })
-    const report = await loadDivergenceReport()
-    if (!report) {
-      addAgentMessage({ agent: 'Parity', level: 'error', message: 'divergence_report.json not found — run parity_validator.py and sync-parity-data' })
-      return
-    }
-    const parity = toParityResult(report)
-    setParityResult(parity)
-    const s = report.summary
-    addAgentMessage({
-      agent: 'Parity',
-      level: parity.passed ? 'success' : 'warn',
-      message: `Parity ${s.overall_status}: ${s.pass_count}/${s.matched_trades} matched trades pass, ${s.fail_count} divergent, ${s.unmatched_python + s.unmatched_pine} unmatched`,
+  // The grid needs per-trade detail the store's ParityResult doesn't carry, so
+  // it reads the report directly — the same file the checks fetch.
+  useEffect(() => {
+    let alive = true
+    void loadDivergenceReport().then((r) => {
+      if (alive && r) setCells(toParityCells(r))
     })
-  }
+    return () => { alive = false }
+  }, [parityResult])
 
-  const kind = deployStatusKind(deployStatus)
-  const pct = Math.round(deployProgress(deployStatus) * 100)
+  const progress = deployProgress(deployStatus)
+  const blocked = deployStatus === 'deploy_blocked'
+  const unmatched = cells.filter((c) => c.state !== 'matched')
+  const reconciled = cells.length - unmatched.length
 
   return (
     <section className="diagnostics-panel">
-      <BladeHeaderActions>
-        <Button variant="primary" onClick={runChecks} disabled={!canonicalSpec}>Run checks</Button>
-      </BladeHeaderActions>
-      <div className="col">
-        {/* Deploy gate */}
-        <Card>
-          <div className="spread">
-            <span className="eyebrow">Deploy gate</span>
-            <Badge status={kind}>{deployLabel(deployStatus)}</Badge>
-          </div>
-          <div className="gate-track">
-            <div className="gate-fill" style={{ width: `${pct}%`, background: kind === 'err' ? 'var(--err)' : 'var(--gold)' }} />
-          </div>
-          <div className="gate-steps">
-            {DEPLOY_PIPELINE.map((s) => {
-              const reached = deployProgress(deployStatus) >= deployProgress(s) && deployStatus !== 'deploy_blocked'
-              return <span key={s} className={`gate-step ${reached ? 'on' : ''}`} title={deployLabel(s)} />
-            })}
-          </div>
-          {deployBlockers.length > 0 && (
-            <div className="blockers">
-              {deployBlockers.map((b, i) => <div key={i} className="blocker"><StatusDot status="err" /> {b}</div>)}
-            </div>
-          )}
-        </Card>
+      <StagePanelHeader
+        tab="diagnostics"
+        meta={<>Deploy gate · signal integrity · parity · risk<br />{deployLabel(deployStatus)}</>}
+      />
 
-        {/* Check sections */}
-        <div className="grid-2">
-          <Card>
-            <div className="spread"><span className="eyebrow">Signal integrity</span>
-              <Badge status={lintResult.passed ? 'ok' : 'idle'}>{lintResult.passed ? 'pass' : 'pending'}</Badge></div>
-            <div className="checklist mono">
-              <div>repaint guard</div><div>lookahead guard</div><div>bar-close confirm</div>
-            </div>
-            {lintResult.warnings.map((w, i) => <div key={i} className="sub warn-text">⚠ {w}</div>)}
-            {lintResult.violations.map((v, i) => <div key={i} className="sub err-text">✕ {v}</div>)}
-          </Card>
-          <Card>
-            <div className="spread"><span className="eyebrow">Parity health</span>
-              <Badge status={parityResult.passed ? 'ok' : parityResult.mismatchCount > 0 ? 'err' : 'idle'}>
-                {parityResult.passed ? 'aligned' : parityResult.mismatchCount > 0 ? 'mismatch' : 'pending'}</Badge></div>
-            <div className="mono big">{parityResult.mismatchCount}</div>
-            <div className="sub">Pine vs Python mismatches</div>
-          </Card>
+      <div className="col">
+        <div className="gate-grid">
+          {GATES.map((label, i) => {
+            // A gate machine only reaches the failing step by clearing the ones
+            // before it, so a block reads as "cleared up to here, then failed".
+            const failed = blocked && i === FAIL_GATE
+            const reached = blocked ? i < FAIL_GATE : progress >= deployProgress(DEPLOY_PIPELINE[i])
+            return (
+              <div
+                key={label}
+                className={`gate-card${failed ? ' gate-card--failed' : reached ? ' gate-card--cleared' : ''}`}
+              >
+                <span className="gate-card-n">0{i + 1}</span>
+                <span className="gate-card-label">{label}</span>
+                <span className="gate-card-state">{failed ? 'Failed' : reached ? 'Cleared' : 'Held'}</span>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Risk scorecard */}
-        <Card>
-          <div className="spread"><span className="eyebrow live-text status-live">Live-readiness</span>
-            <Badge status={riskResult.score >= 80 ? 'ok' : riskResult.score > 0 ? 'warn' : 'idle'}>score {riskResult.score}</Badge></div>
-          <div className="kv mono">
-            <div><span>VaR</span>{fmtPct(riskResult.var)}</div>
-            <div><span>Kelly</span>{fmtNum(riskResult.kelly)}</div>
-            <div><span>Sharpe</span>{fmtNum(riskResult.sharpe)}</div>
-            <div><span>max DD</span>{fmtPct(riskResult.drawdown)}</div>
+        {deployBlockers.length > 0 && (
+          <div className="blockers">
+            {deployBlockers.map((b, i) => (
+              <div key={i} className="blocker"><StatusDot status="err" /> {b}</div>
+            ))}
           </div>
-        </Card>
+        )}
+
+        <div className="diag-split">
+          <Card>
+            <div className="spread">
+              <h3 className="diag-h3">Pine ↔ Python parity</h3>
+              <Badge status={parityResult.passed ? 'ok' : parityResult.mismatchCount > 0 ? 'err' : 'idle'}>
+                {parityResult.passed ? 'Pass' : parityResult.mismatchCount > 0 ? 'Fail' : 'Pending'}
+              </Badge>
+            </div>
+            <p className="sub diag-lede">
+              Every square is one Pine trade in execution order. Filled means Python produced the same trade.
+            </p>
+
+            {cells.length === 0 ? (
+              <p className="sub">Run the checks to load the divergence report.</p>
+            ) : (
+              <>
+                <div className="parity-grid">
+                  {cells.map((c) => (
+                    <span key={c.num} title={c.label} className={`parity-cell parity-cell--${c.state}`} />
+                  ))}
+                </div>
+
+                <div className="parity-stats">
+                  <ParityStat v={cells.length} k="Pine trades" />
+                  <ParityStat v={reconciled} k="Reconciled" tone="blue" />
+                  <ParityStat v={unmatched.length} k="Unmatched" tone={unmatched.length ? 'red' : 'blue'} />
+                  <ParityStat
+                    v={parityResult.mismatchCount}
+                    k="Mismatches"
+                    tone={parityResult.mismatchCount ? 'red' : 'blue'}
+                  />
+                </div>
+
+                {unmatched.length > 0 && (
+                  <div className="parity-callout">
+                    <div className="parity-callout-head">
+                      Unmatched — Pine trade {unmatched.map((u) => u.num).join(', ')}
+                    </div>
+                    <div className="parity-callout-body">
+                      {unmatched[0].label}. Everything either side of it reconciles, which points at entry-offset
+                      rounding rather than the signal itself.
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
+
+          <div className="col">
+            <Card>
+              <div className="spread">
+                <h3 className="diag-h3">Signal integrity</h3>
+                <Badge status={lintResult.passed ? 'ok' : 'idle'}>{lintResult.passed ? 'pass' : 'pending'}</Badge>
+              </div>
+              <div className="integrity-list">
+                <IntegrityRow label="Repaint guard" ok={lintResult.passed} />
+                <IntegrityRow label="Lookahead guard" ok={lintResult.passed} />
+                <IntegrityRow label="Bar-close confirm" ok={lintResult.passed} />
+                {lintResult.warnings.map((w, i) => (
+                  <IntegrityRow key={i} label={w} ok={false} state="Warning" />
+                ))}
+                {lintResult.violations.map((v, i) => (
+                  <IntegrityRow key={`v${i}`} label={v} ok={false} state="Failed" tone="err" />
+                ))}
+              </div>
+            </Card>
+
+            <Card>
+              <div className="spread">
+                <h3 className="diag-h3">Risk</h3>
+                <span className="risk-score" style={{ color: riskResult.score >= 80 ? 'var(--blue)' : 'var(--warn)' }}>
+                  {riskResult.score}
+                  <span className="risk-score-max">/100</span>
+                </span>
+              </div>
+              <div className="risk-track">
+                <div className="risk-fill" style={{ width: `${Math.max(0, Math.min(100, riskResult.score))}%` }} />
+              </div>
+              <div className="kv mono">
+                <div><span>VaR</span>{fmtPct(riskResult.var)}</div>
+                <div><span>Kelly</span>{fmtNum(riskResult.kelly)}</div>
+                <div><span>Sharpe</span>{fmtNum(riskResult.sharpe)}</div>
+                <div><span>max DD</span>{fmtPct(riskResult.drawdown)}</div>
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
     </section>
+  )
+}
+
+function ParityStat({ v, k, tone }: { v: number; k: string; tone?: 'blue' | 'red' }) {
+  const color = tone === 'red' ? 'var(--err)' : tone === 'blue' ? 'var(--blue)' : '#fff'
+  return (
+    <div className="parity-stat">
+      <span className="parity-stat-v" style={{ color }}>{v}</span>
+      <span className="parity-stat-k">{k}</span>
+    </div>
+  )
+}
+
+function IntegrityRow({ label, ok, state, tone }: { label: string; ok: boolean; state?: string; tone?: 'err' }) {
+  const color = tone === 'err' ? 'var(--err)' : ok ? 'var(--blue)' : 'var(--warn)'
+  return (
+    <div className="integrity-row">
+      <span
+        className="integrity-mark"
+        style={{ background: ok ? color : 'transparent', boxShadow: `inset 0 0 0 2px ${color}` }}
+      />
+      <span className="integrity-label">{label}</span>
+      <span className="integrity-state" style={{ color }}>{state ?? (ok ? 'Pass' : 'Pending')}</span>
+    </div>
   )
 }
 

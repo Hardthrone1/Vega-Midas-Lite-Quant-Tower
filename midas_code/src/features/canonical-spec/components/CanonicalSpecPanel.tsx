@@ -1,6 +1,7 @@
 // src/features/canonical-spec/components/CanonicalSpecPanel.tsx
 import { useMemo, useState } from 'react'
 import { Card, Button, Badge, Empty } from '../../../shared/ui'
+import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 
@@ -22,6 +23,7 @@ export function CanonicalSpecPanel() {
         <BladeHeaderActions>
           <Badge>no spec</Badge>
         </BladeHeaderActions>
+        <StagePanelHeader tab="spec" />
         <Empty>No spec yet. Draft one from intake — it becomes the single source<br />both Pine and Python are generated from.</Empty>
       </section>
     )
@@ -45,6 +47,11 @@ export function CanonicalSpecPanel() {
           <button className={`seg-btn ${view === 'json' ? 'seg-on' : ''}`} onClick={() => setView('json')}>JSON</button>
         </div>
       </BladeHeaderActions>
+      <StagePanelHeader
+        tab="spec"
+        title={canonicalSpec.meta?.name || 'Spec'}
+        meta={`${canonicalSpec.asset.symbol} · ${canonicalSpec.asset.timeframe} · ${canonicalSpec.entry.conditions.length} entry condition(s)`}
+      />
       {!specValidation.valid && specValidation.issues.length > 0 && (
         <Card className="issues">
           {specValidation.issues.map((i, n) => (

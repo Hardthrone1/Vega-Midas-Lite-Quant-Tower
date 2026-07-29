@@ -50,9 +50,11 @@ export function StatusDot({ status, pulse = false }: { status: Status; pulse?: b
   return <span className={`dot dot-${status} ${pulse ? 'dot-pulse' : ''}`} />
 }
 
-const BADGE_COLOR: Record<Status, 'subtle' | 'success' | 'warning' | 'danger' | 'informative'> = {
+// "ok" maps to brand, not success: Fluent's success ramp is its own green and
+// ignores our tokens, whereas brand follows the blue ramp in brandRamp.ts.
+const BADGE_COLOR: Record<Status, 'subtle' | 'brand' | 'warning' | 'danger' | 'informative'> = {
   idle: 'subtle',
-  ok: 'success',
+  ok: 'brand',
   warn: 'warning',
   err: 'danger',
   info: 'informative',

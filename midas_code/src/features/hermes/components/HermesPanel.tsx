@@ -7,12 +7,14 @@
 // hermes/skill_registry.py, hermes/curator.py, and hermes/gepa.py actually hold.
 import { useEffect, useMemo, useState } from 'react'
 import { Card, Button, Badge, Empty, MetricCard } from '../../../shared/ui'
+import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 import {
   loadHermesArtifact,
   type HermesArtifact,
 } from '../../../shared/adapters/runtimeArtifactAdapter'
+import { HermesConsole } from './HermesConsole'
 
 type Section = 'skills' | 'curator' | 'gepa'
 
@@ -54,6 +56,7 @@ export function HermesPanel() {
         <BladeHeaderActions>
           <Button variant="primary" onClick={load} disabled={loading}>{loading ? 'Loading…' : 'Load runtime'}</Button>
         </BladeHeaderActions>
+        <StagePanelHeader tab="hermes" />
         <Empty>Hermes runtime not loaded. The custom loop dispatches skills,<br />the Curator auto-handles failures, GEPA evolves parameters.</Empty>
       </section>
     )
@@ -72,6 +75,11 @@ export function HermesPanel() {
         </div>
       </BladeHeaderActions>
 
+      <StagePanelHeader
+        tab="hermes"
+        meta={`${skills.length} skills · GEPA generation ${gepa.generation} · ${gepa.total_runs} runs`}
+      />
+      <div className="hermes-split">
       <div className="col">
         <div className="metrics-grid">
           <MetricCard label="Skills" value={String(skills.length)} status="info" hint="auto-discovered" />
@@ -189,6 +197,8 @@ export function HermesPanel() {
             </Card>
           </>
         )}
+      </div>
+        <HermesConsole generation={gepa.generation} skillCount={skills.length} />
       </div>
     </section>
   )

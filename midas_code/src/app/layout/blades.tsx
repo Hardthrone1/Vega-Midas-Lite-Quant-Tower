@@ -1,10 +1,9 @@
 // src/app/layout/blades.tsx
-// Blade registry + context for the Azure Portal-style shell.
-// A "blade" is a vertical panel that opens to the right of its parent, exactly
-// like resource blades in the Azure Portal. The registry maps each workflow
-// step to a lazily-loaded feature panel; the context lets any panel push a
-// child blade onto the stack (e.g. Intake opens Spec after drafting).
-import { createContext, lazy, useContext, type ComponentType, type LazyExoticComponent } from 'react'
+// Stage registry: the ordered pipeline, mapping each workflow step to a lazily
+// loaded feature panel. This is the single source of truth for stage id, order,
+// step number and label — the nav spine, stage headlines and the status
+// derivation all read from it so they cannot drift.
+import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import type { FluentIcon } from '@fluentui/react-icons'
 import {
   Bot20Regular,
@@ -141,23 +140,4 @@ export const BLADES: BladeDefinition[] = [
 
 export function bladeById(id: Tab): BladeDefinition | undefined {
   return BLADES.find((b) => b.id === id)
-}
-
-export type BladeApi = {
-  /** Open blades, left to right. stack[0] is the root blade (the nav selection). */
-  stack: Tab[]
-  /** Push a child blade (or collapse back to it if already open). */
-  openBlade: (tab: Tab) => void
-  /** Close a blade and everything to its right. No-op on the root blade. */
-  closeBlade: (tab: Tab) => void
-  /** Replace the whole stack — what the left nav does. */
-  resetTo: (tab: Tab) => void
-}
-
-export const BladeContext = createContext<BladeApi | null>(null)
-
-export function useBlades(): BladeApi {
-  const ctx = useContext(BladeContext)
-  if (!ctx) throw new Error('useBlades must be used inside the portal shell')
-  return ctx
 }

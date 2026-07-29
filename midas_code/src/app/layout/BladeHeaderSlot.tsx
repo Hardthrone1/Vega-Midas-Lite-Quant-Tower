@@ -3,7 +3,7 @@
 // badges, action buttons, local toggles) up into the shared blade-header's
 // actions area — instead of duplicating a second in-panel header row.
 //
-// The Blade component (BladeHost) owns the DOM node; each panel calls
+// The StageHost owns the DOM node; each panel calls
 // <BladeHeaderActions> and its children are portaled into that node. This keeps
 // the control logic co-located with the panel state that drives it, while the
 // chrome lives once, in the blade-header.

@@ -1,10 +1,12 @@
 // src/features/swarm/components/SwarmPanel.tsx
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Card, Badge, SwipeToConfirm } from '../../../shared/ui'
+import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 import { gatewayFetch } from '../../../shared/gateway'
 import { AgentCard } from './AgentCard'
+import { AgentThreadPanel, type SwarmTurn } from './AgentThreadPanel'
 
 const GW_POLL_MS = 8000
 
@@ -76,7 +78,10 @@ export function SwarmPanel() {
   const [gatewayStatus, setGatewayStatus] = useState<GatewayStatus>('checking')
   const [gatewayMeta, setGatewayMeta] = useState('—')
   const [gwInfo, setGwInfo] = useState<{ version?: string; provider?: string; circuit?: string; ts?: string } | null>(null)
-  const [activeAgent, setActiveAgent] = useState<string | null>(null)
+  const [activeAgent, setActiveAgent] = useState<string>(AGENTS[0].name)
+  const [threads, setThreads] = useState<Record<string, SwarmTurn[]>>({})
+  const [threadBusy, setThreadBusy] = useState<Record<string, boolean>>({})
+  const turnId = useRef(0)
   const [mode, setMode] = useState<SwarmMode>('swarm')
   const [busy, setBusy] = useState(false)
   const [agentMsgs, setAgentMsgs] = useState<AgentMsg[]>([
@@ -93,6 +98,15 @@ export function SwarmPanel() {
 
   const addMsg = useCallback((who: string, txt: string, level: AgentMsg['level'] = 'sys') => {
     setAgentMsgs(prev => [...prev, { id: msgIdRef.current++, who, txt, level }])
+  }, [])
+
+  const pushTurn = useCallback((agentName: string, turn: Omit<SwarmTurn, 'id' | 'time'>) => {
+    const entry: SwarmTurn = {
+      ...turn,
+      id: `t${(turnId.current += 1)}`,
+      time: new Date().toLocaleTimeString(),
+    }
+    setThreads((prev) => ({ ...prev, [agentName]: [...(prev[agentName] ?? []), entry] }))
   }, [])
 
   // auto-scroll messages
@@ -202,6 +216,28 @@ export function SwarmPanel() {
       throw err
     }
   }, [addMsg, symbol, timeframe])
+
+  const sendToAgent = useCallback(async (agent: typeof AGENTS[number], text: string) => {
+    pushTurn(agent.name, { who: 'you', text })
+    setThreadBusy((b) => ({ ...b, [agent.name]: true }))
+    try {
+      const reply = await runAgentCommand(agent, text)
+      pushTurn(agent.name, { who: 'agent', text: reply })
+    } catch (err) {
+      pushTurn(agent.name, {
+        who: 'agent',
+        text: err instanceof Error ? err.message : String(err),
+        failed: true,
+      })
+    } finally {
+      setThreadBusy((b) => ({ ...b, [agent.name]: false }))
+    }
+  }, [pushTurn, runAgentCommand])
+
+  const broadcast = useCallback((text: string) => {
+    addAgentMessage({ agent: 'Swarm', level: 'info', message: `Broadcast to all ${AGENTS.length} agents: ${text}` })
+    AGENTS.forEach((a) => { void sendToAgent(a, text) })
+  }, [sendToAgent, addAgentMessage])
 
   function applyLintResult(lint: ReturnType<typeof lintPine>, label: string) {
     setLintResult(lint)
@@ -381,6 +417,7 @@ export function SwarmPanel() {
           {isFs ? '⤡' : '⤢'}
         </button>
       </BladeHeaderActions>
+      <StagePanelHeader tab="swarm" meta={`gateway :8001 · ${gatewayStatus}`} />
       <div className="swarm-workspace">
 
         {/* LEFT: Gateway + Agents + Message window */}
@@ -404,7 +441,7 @@ export function SwarmPanel() {
                 </>
               ) : gatewayMeta}
             </div>
-            <div className="swarm-agent-grid vega-prism">
+            <div className="swarm-agent-grid">
               {AGENTS.map(a => (
                 <AgentCard
                   key={a.name}
@@ -413,9 +450,9 @@ export function SwarmPanel() {
                   model={a.model}
                   skillTag={a.tier}
                   agentStatus={gatewayStatus}
-                  open={activeAgent === a.name}
-                  onToggle={() => setActiveAgent(cur => (cur === a.name ? null : a.name))}
-                  onExecute={cmd => runAgentCommand(a, cmd)}
+                  selected={activeAgent === a.name}
+                  messageCount={(threads[a.name] ?? []).length}
+                  onSelect={() => setActiveAgent(a.name)}
                 />
               ))}
             </div>
@@ -440,8 +477,19 @@ export function SwarmPanel() {
           </Card>
         </div>
 
-        {/* RIGHT: Mode toggle + Input + Output */}
+        {/* RIGHT: the selected agent's thread, then the build tooling */}
         <div className="swarm-right">
+          <AgentThreadPanel
+            agent={AGENTS.find((a) => a.name === activeAgent) ?? AGENTS[0]}
+            turns={threads[activeAgent] ?? []}
+            busy={!!threadBusy[activeAgent]}
+            online={gatewayStatus === 'online'}
+            onSend={(text) => { void sendToAgent(AGENTS.find((a) => a.name === activeAgent) ?? AGENTS[0], text) }}
+            onBroadcast={broadcast}
+            agentCount={AGENTS.length}
+          />
+
+
           <Card className="swarm-card">
         {/* Mode toggle */}
             <div className="seg" style={{ marginBottom: 16 }}>

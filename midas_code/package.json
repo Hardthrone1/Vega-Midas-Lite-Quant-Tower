@@ -18,6 +18,7 @@
   "dependencies": {
     "@fluentui/react-components": "^9.74.3",
     "@fluentui/react-icons": "^2.0.331",
+    "@fontsource/archivo": "^5.3.0",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",

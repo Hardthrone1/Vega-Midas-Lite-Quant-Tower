@@ -6,49 +6,8 @@ import { BladeHeaderActions } from '../../../app/layout/BladeHeaderSlot'
 import { ReplayChart } from './ReplayChart'
 import { emitReplayEvent, onReplayEvent } from '../lib/replayEvents'
 import { type ReplayBar, type ReplayDiagnostic, useReplayScheduler } from '../hooks/useReplayScheduler'
-
-type InstrumentProfile = {
-  symbol: string
-  tickSize: number
-  tickValue: number
-  pointValue: number
-  defaultSlippageTicks: number
-  minStopTicks: number
-}
-
-const INSTRUMENT_PROFILES: Record<string, InstrumentProfile> = {
-  MGC:    { symbol: 'MGC',   tickSize: 0.1,  tickValue: 1,   pointValue: 10, defaultSlippageTicks: 2, minStopTicks: 8  },
-  'MGC1!':{ symbol: 'MGC1!', tickSize: 0.1,  tickValue: 1,   pointValue: 10, defaultSlippageTicks: 2, minStopTicks: 8  },
-  MNQ:    { symbol: 'MNQ',   tickSize: 0.25, tickValue: 0.5, pointValue: 2,  defaultSlippageTicks: 4, minStopTicks: 12 },
-  'MNQ1!':{ symbol: 'MNQ1!', tickSize: 0.25, tickValue: 0.5, pointValue: 2,  defaultSlippageTicks: 4, minStopTicks: 12 },
-  'NQ1!': { symbol: 'NQ1!',  tickSize: 0.25, tickValue: 5,   pointValue: 20, defaultSlippageTicks: 2, minStopTicks: 10 },
-}
-
-const timeframeMinutes = (tf: string) => {
-  const m = tf.match(/^(\d+)(m|h)$/i)
-  if (!m) return 5
-  return m[2].toLowerCase() === 'h' ? Number(m[1]) * 60 : Number(m[1])
-}
-
-function makeReplayBars(symbol: string, timeframe: string): ReplayBar[] {
-  const profile = INSTRUMENT_PROFILES[symbol] ?? INSTRUMENT_PROFILES.MGC
-  const step = timeframeMinutes(timeframe) * 60_000
-  const start = Date.UTC(2026, 5, 24, 13, 30)
-  const base = symbol.includes('NQ') ? 21480 : 3350
-  const tick = profile.tickSize
-  return Array.from({ length: 72 }, (_, i) => {
-    const open = base + i * tick * (symbol.includes('NQ') ? 2.8 : 1.3) + Math.sin(i / 4) * tick * 18
-    const close = open + Math.sin(i / 3.2) * tick * 10 + (i > 36 ? tick * 1.5 : 0)
-    return {
-      time: start + i * step,
-      open: Number(open.toFixed(2)),
-      high: Number((Math.max(open, close) + tick * (8 + (i % 5))).toFixed(2)),
-      low:  Number((Math.min(open, close) - tick * (7 + (i % 4))).toFixed(2)),
-      close: Number(close.toFixed(2)),
-      volume: 120 + i * 3 + Math.round(Math.abs(Math.sin(i)) * 80),
-    }
-  })
-}
+import { makeReplayBars, profileFor } from '../lib/replayBars'
+import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader'
 
 // ── Toast for warn/error events ──────────────────────────────────────────────
 type Toast = { id: number; level: 'warn' | 'error'; message: string }
@@ -121,27 +80,11 @@ function useReplayDiagState() {
 // ── Main panel ────────────────────────────────────────────────────────────────
 export function ReplayPanel() {
   const { symbol, timeframe, addAgentMessage } = useStrategyStore()
+  const openChartOverlay = useStrategyStore((s) => s.openChartOverlay)
   const bars = useMemo(() => makeReplayBars(symbol, timeframe), [symbol, timeframe])
-  const profile = INSTRUMENT_PROFILES[symbol] ?? INSTRUMENT_PROFILES.MGC
+  const profile = profileFor(symbol)
   const emittedMarkers = useRef(new Set<string>())
   const [sidecarOpen, setSidecarOpen] = useState(false)
-  const panelRef = useRef<HTMLElement | null>(null)
-  const [isFs, setIsFs] = useState(false)
-
-  // Track real fullscreen state
-  useEffect(() => {
-    const onFsChange = () => setIsFs(!!document.fullscreenElement)
-    document.addEventListener('fullscreenchange', onFsChange)
-    return () => document.removeEventListener('fullscreenchange', onFsChange)
-  }, [])
-
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      panelRef.current?.requestFullscreen?.()
-    } else {
-      document.exitFullscreen?.()
-    }
-  }, [])
 
   const { confirmedBars, slippageDelta, parityState, toasts, dismissToast } = useReplayDiagState()
 
@@ -173,7 +116,7 @@ export function ReplayPanel() {
   const tickInfo = scheduler.mode !== 'bar_close' ? ` · tick ${scheduler.currentTickIndex + 1}` : ''
 
   return (
-    <section className="replay-panel" ref={(el: HTMLElement | null) => { panelRef.current = el }}>
+    <section className="replay-panel">
       <BladeHeaderActions>
         <button
           type="button"
@@ -187,6 +130,8 @@ export function ReplayPanel() {
         </button>
         <Badge status={scheduler.status === 'playing' ? 'ok' : 'info'} className={scheduler.status === 'playing' ? 'badge-live' : undefined}>{scheduler.status}</Badge>
       </BladeHeaderActions>
+      <StagePanelHeader tab="replay" meta={`${symbol} · ${timeframe} · scenario replay`} />
+
       {/* Toast container */}
       {toasts.length > 0 && (
         <div className="replay-toast-stack">
@@ -237,8 +182,14 @@ export function ReplayPanel() {
                 </button>
                 <button type="button" className="replay-hud-btn" onClick={scheduler.stepForward} aria-label="Step forward one bar">⏭</button>
                 <button type="button" className="replay-hud-btn" onClick={resetReplay} aria-label="Reset replay">↺</button>
-                <button type="button" className="replay-hud-btn replay-hud-btn--fs" onClick={toggleFullscreen} aria-label={isFs ? 'Exit fullscreen' : 'Enter fullscreen'}>
-                  {isFs ? '⊡' : '⛶'}
+                <button
+                  type="button"
+                  className="replay-hud-btn replay-hud-btn--fs"
+                  onClick={() => openChartOverlay({ source: 'bars' })}
+                  aria-label="Open the full-screen chart"
+                  title="Open the full-screen chart"
+                >
+                  ⛶
                 </button>
               </div>
             </div>
