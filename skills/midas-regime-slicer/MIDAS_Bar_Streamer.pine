@@ -1,0 +1,41 @@
+//@version=6
+// MIDAS Bar Streamer — compounds real OHLCV history via the existing webhook.
+//
+// TradingView forbids automated scraping (screen scraping, API replay,
+// scripted logins) of its own data — that rules out unofficial pullers like
+// tvdatafeed. alert() is the sanctioned channel: this fires one JSON message
+// per closed bar, reusing the same /api/webhook/tradingview/<TOKEN> endpoint
+// and gateway already built for MIDAS_Regime_Filter.pine. Point this at
+// whatever symbol/timeframe you want to start accumulating — e.g. MGC1! on
+// a 1-minute chart — and every bar close lands in the gateway's market_bars
+// cache from that point forward. It does not back-fill history; TradingView
+// alerts only fire on live and newly-loaded bars, never on the past.
+//
+// Setup:
+//   1. Add this to a chart at the symbol/timeframe you want to capture.
+//   2. Right-click -> Add alert -> Condition: this indicator -> "Any alert()
+//      function call" -> Trigger: Once Per Bar Close.
+//   3. Webhook URL: the same https://<app>/api/webhook/tradingview/<TOKEN>
+//      used for the regime filter. Leave the alert Message box EMPTY.
+//   4. One alert per symbol/timeframe you want streamed — a free/basic plan
+//      caps concurrent alerts, so this is deliberately a separate, minimal
+//      indicator rather than bolted onto the regime filter.
+indicator("MIDAS Bar Streamer", overlay=true)
+
+// barstate.isconfirmed gates the alert() call to a closed bar's final
+// evaluation; alert.freq_once_per_bar_close is belt-and-suspenders so
+// TradingView's alert engine dedupes to exactly one fire per bar even if
+// the script re-evaluates intrabar.
+if barstate.isconfirmed
+    alert('{"event":"bar_close"' +
+          ',"symbol":"'    + syminfo.ticker + '"' +
+          ',"timeframe":"' + timeframe.period + '"' +
+          ',"bar_time":'   + str.tostring(time) +
+          ',"open":'       + str.tostring(open) +
+          ',"high":'       + str.tostring(high) +
+          ',"low":'        + str.tostring(low) +
+          ',"close":'      + str.tostring(close) +
+          ',"volume":'     + str.tostring(volume) +
+          '}', alert.freq_once_per_bar_close)
+
+// Purely a data pipe — nothing plotted, nothing else computed.

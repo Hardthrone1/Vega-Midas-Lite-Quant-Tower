@@ -140,6 +140,50 @@ exported rows once you have enough of them to be worth slicing.
 
 ---
 
+## Compounding real 1m MGC bars (MIDAS Bar Streamer)
+
+TradingView's terms explicitly prohibit automated scraping — scripts, API
+replay, scripted logins — of its own data, which rules out unofficial
+pullers like `tvdatafeed`. `alert()` is the sanctioned channel instead, and
+it's already wired up: **`skills/midas-regime-slicer/MIDAS_Bar_Streamer.pine`**
+fires one JSON message per closed bar, reusing the exact same webhook
+endpoint and gateway as the regime filter above. It does not back-fill —
+alerts only fire on live and newly-loaded bars — but every bar closes into
+the `market_bars` cache from the moment the alert is created, same table the
+Alpha Vantage integration uses.
+
+### Setup
+
+On a chart at the symbol/timeframe you want to accumulate (e.g. **MGC1! on
+a 1-minute chart**):
+
+1. Add `MIDAS_Bar_Streamer.pine`
+2. Right-click → **Add alert**
+3. **Condition**: the indicator → **Any alert() function call**
+4. **Trigger**: Once Per Bar Close
+5. Leave the **Message** box empty
+6. **Notifications → Webhook URL**: the same
+   `https://<your-app>.up.railway.app/api/webhook/tradingview/<TOKEN>` URL
+   used for the regime filter
+7. Save
+
+One alert per symbol/timeframe you want streamed — a free/basic TradingView
+plan caps concurrent alerts, which is why this is a separate, minimal
+indicator rather than folded into the regime filter.
+
+### Reading it back
+
+```
+GET /api/market/bars?symbol=MGC1!&timeframe=1&limit=500
+```
+Requires `X-Vega-Key`. Rows are tagged `source: "tradingview_webhook"` to
+distinguish them from Alpha Vantage's cached data in the same table.
+`parity_engine/alphavantage_loader.py`'s `load_cached_bars()` reads this
+generically — despite the module name, it just hits `/api/market/bars` and
+doesn't care which source populated a given symbol/timeframe.
+
+---
+
 ## Market data (Alpha Vantage) — macro context, not an MGC feed
 
 Alpha Vantage has **no futures coverage** — there is no `MGC1!` at any price

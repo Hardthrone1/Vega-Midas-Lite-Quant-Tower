@@ -15,7 +15,7 @@ const { v4: uuidv4 } = require('uuid');
 const client = require('prom-client');
 const { createSwarmOrchestrator } = require('./swarm_orchestrator');
 const { createStore, normalise: normaliseSignal } = require('./signal_store');
-const { createStore: createMarketStore } = require('./market_store');
+const { createStore: createMarketStore, normaliseBar } = require('./market_store');
 const { createMarketDataClient, QuotaExceededError } = require('./market_data');
 
 const app = express();
@@ -812,6 +812,13 @@ app.get('/metrics', async (_req, res) => {
 // Bodies arrive as JSON when the alert message is JSON, otherwise plain text,
 // so this route accepts both. Always answers 200 quickly on success: TradingView
 // disables an alert after repeated non-2xx responses.
+//
+// Two payload shapes share this one endpoint, split by `event`:
+//   - "bar_close" (MIDAS_Bar_Streamer.pine) -> OHLCV, goes to market_bars
+//     via marketStore. This is real accumulated history, not a discrete
+//     event, so it does not belong in the signals log.
+//   - anything else (MIDAS_Regime_Filter.pine, manual test posts, etc.)
+//     -> the existing signals table, unchanged.
 // ---------------------------------------------------------------------------
 const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN || null;
 
@@ -839,6 +846,21 @@ app.post('/api/webhook/tradingview/:token',
     } else {
       text = typeof req.body === 'string' ? req.body : String(req.body ?? '');
       try { parsed = JSON.parse(text); } catch { /* plain-text alert */ }
+    }
+
+    if (parsed && parsed.event === 'bar_close') {
+      try {
+        const bar = normaliseBar(parsed);
+        if (!bar.symbol || !bar.timeframe || bar.time == null || bar.close == null) {
+          return res.status(400).json({ error: { message: 'bar_close payload missing required fields' } });
+        }
+        await marketStore.upsertBars([bar]);
+        console.log(JSON.stringify({ tag: 'bar', symbol: bar.symbol, timeframe: bar.timeframe, time: bar.time }));
+        return res.json({ ok: true, kind: 'bar', symbol: bar.symbol, timeframe: bar.timeframe });
+      } catch (e) {
+        console.error('[market] bar_close insert failed:', e.message);
+        return res.status(500).json({ error: { message: 'store failed' } });
+      }
     }
 
     try {

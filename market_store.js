@@ -261,4 +261,29 @@ function jsonlStore() {
   };
 }
 
-module.exports = { createStore };
+/**
+ * Normalises a MIDAS_Bar_Streamer.pine `bar_close` webhook payload into the
+ * tower's bar shape. `time` is epoch ms as TradingView's `time` returns it —
+ * the bar's open, matching the convention parity_engine.frd_loader and
+ * market_data.js already use, so bars from any source sort and compare the
+ * same way regardless of where they came from.
+ */
+function normaliseBar(json) {
+  const num = (v) => {
+    const n = typeof v === 'string' ? parseFloat(v) : v;
+    return Number.isFinite(n) ? n : null;
+  };
+  return {
+    symbol: json.symbol,
+    timeframe: json.timeframe,
+    time: num(json.bar_time),
+    open: num(json.open),
+    high: num(json.high),
+    low: num(json.low),
+    close: num(json.close),
+    volume: num(json.volume),
+    source: 'tradingview_webhook',
+  };
+}
+
+module.exports = { createStore, normaliseBar };
