@@ -140,6 +140,72 @@ exported rows once you have enough of them to be worth slicing.
 
 ---
 
+## Market data (Alpha Vantage) — macro context, not an MGC feed
+
+Alpha Vantage has **no futures coverage** — there is no `MGC1!` at any price
+tier — and gates intraday bars behind a paid plan even for the instruments it
+does cover. This integration does not pretend otherwise: it adds daily gold
+spot (`GOLD_SILVER_HISTORY`), macro series (Treasury yields, CPI, Fed funds,
+a dollar-strength FX proxy), and a daily RSI/ATR/ADX read on `GLD` as an
+independent third opinion against the Pine/Python parity check. All of it
+shows up in the Diagnostics stage under **Macro & third opinion** — purely
+informational, never part of the deploy gate.
+
+### 1. Set the key
+
+| Variable | Value |
+|---|---|
+| `ALPHAVANTAGE_API_KEY` | your Alpha Vantage key |
+
+Optional tuning (defaults shown):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ALPHAVANTAGE_DAILY_QUOTA` | `25` | raise after upgrading past the free tier |
+
+### 2. How it fetches
+
+Never on-demand from the dashboard — the free tier's 25 requests/day makes
+that a footgun. Instead the gateway runs a fixed ~8-call watchlist once every
+UTC day (checked on boot, then hourly, so a redeploy after the daily window
+still catches it), stopping early if the budget runs out rather than failing
+loudly. The dashboard only ever reads what's already cached
+(`GET /api/market/bars`, `/api/market/macro`, `/api/market/indicators`) —
+those routes never trigger a live call. To force a refresh immediately:
+
+```bash
+curl -X POST -H "X-Vega-Key: $VEGA_API_KEY" https://<your-app>.up.railway.app/api/market/refresh
+```
+
+`/api/health` reports `marketData`: `quotaUsedToday`, `quotaRemaining`,
+`lastRefreshAt`, `cachedBars`.
+
+### 3. Storage
+
+Same dual-backend as signals: Postgres when `DATABASE_URL` is set (the same
+database, a separate `market_bars` / `macro_series` / `market_quota` set of
+tables), JSONL fallback (`market_bars.jsonl`, `macro_series.jsonl`,
+`market_quota.json`) otherwise — ephemeral on Railway without Postgres, same
+caveat as signals. The quota counter needs to survive redeploys to actually
+enforce the daily cap, so attach Postgres here too.
+
+### 4. Python access
+
+`parity_engine/alphavantage_loader.py` reads the same cache over HTTP
+(`GET /api/market/bars`) rather than calling Alpha Vantage directly, so quota
+is never spent twice:
+
+```bash
+GATEWAY_URL=https://<your-app>.up.railway.app VEGA_API_KEY=$VEGA_API_KEY \
+  python -m parity_engine.alphavantage_loader XAUUSD
+```
+
+Note the gold series is a daily spot close, not an OHLC session — open,
+high and low all equal close on every bar. Honest about what the data is
+rather than fabricating a range.
+
+---
+
 ## What is not deployed
 
 - **MRE replay server** (`MRE_Server.py`, port 8002) — the Replay blade's live
