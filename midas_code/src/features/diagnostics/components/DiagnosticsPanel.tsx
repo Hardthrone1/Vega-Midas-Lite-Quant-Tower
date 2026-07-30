@@ -13,6 +13,7 @@ import { StagePanelHeader } from '../../../shared/ui/StagePanelHeader'
 import { useStrategyStore } from '../../../store/useStrategyStore'
 import { deployLabel, deployProgress, DEPLOY_PIPELINE } from '../../../shared/deployStatus'
 import { loadDivergenceReport, toParityCells, type ParityCell } from '../../../shared/adapters/parityReportAdapter'
+import { loadMarketSnapshot, type MarketSnapshot } from '../../../shared/adapters/marketDataAdapter'
 
 const GATES = [
   'Draft', 'Spec ready', 'Pine generated', 'Lint passed',
@@ -25,6 +26,7 @@ const FAIL_GATE = 4
 export function DiagnosticsPanel() {
   const { deployStatus, deployBlockers, lintResult, parityResult, riskResult } = useStrategyStore()
   const [cells, setCells] = useState<ParityCell[]>([])
+  const [market, setMarket] = useState<MarketSnapshot | null>(null)
 
   // The grid needs per-trade detail the store's ParityResult doesn't carry, so
   // it reads the report directly — the same file the checks fetch.
@@ -35,6 +37,14 @@ export function DiagnosticsPanel() {
     })
     return () => { alive = false }
   }, [parityResult])
+
+  // Alpha Vantage cache — informational only, refreshed by the gateway at
+  // most once a day. Never gates the deploy checks.
+  useEffect(() => {
+    let alive = true
+    void loadMarketSnapshot().then((snap) => { if (alive) setMarket(snap) })
+    return () => { alive = false }
+  }, [])
 
   const progress = deployProgress(deployStatus)
   const blocked = deployStatus === 'deploy_blocked'
@@ -161,6 +171,29 @@ export function DiagnosticsPanel() {
                 <div><span>max DD</span>{fmtPct(riskResult.drawdown)}</div>
               </div>
             </Card>
+
+            <Card>
+              <div className="spread">
+                <h3 className="diag-h3">Macro &amp; third opinion</h3>
+                <Badge status={market ? 'ok' : 'idle'}>Alpha Vantage</Badge>
+              </div>
+              <p className="sub diag-lede">
+                Independent daily read — cached, refreshed once a day. Not part of the deploy gate.
+              </p>
+              {!market ? (
+                <p className="sub">Loading cached market data…</p>
+              ) : (
+                <div className="kv mono">
+                  <div><span>Gold (XAUUSD)</span>{fmtGold(market.gold?.close, market.goldPrevClose)}</div>
+                  <div><span>10Y yield</span>{fmtUnit(market.treasuryYield10y?.value, '%')}</div>
+                  <div><span>CPI</span>{fmtNum(market.cpi?.value ?? null)}</div>
+                  <div><span>EUR/USD</span>{fmtNum(market.fxEurUsd?.value ?? null)}</div>
+                  <div><span>GLD RSI(14)</span>{fmtNum(market.gldRsi?.value ?? null)}</div>
+                  <div><span>GLD ATR(14)</span>{fmtNum(market.gldAtr?.value ?? null)}</div>
+                  <div><span>GLD ADX(14)</span>{fmtNum(market.gldAdx?.value ?? null)}</div>
+                </div>
+              )}
+            </Card>
           </div>
         </div>
       </div>
@@ -194,3 +227,10 @@ function IntegrityRow({ label, ok, state, tone }: { label: string; ok: boolean; 
 
 const fmtNum = (n: number | null) => (n == null ? '—' : n.toFixed(2))
 const fmtPct = (n: number | null) => (n == null ? '—' : `${(n * 100).toFixed(1)}%`)
+const fmtUnit = (n: number | null | undefined, unit: string) => (n == null ? '—' : `${n.toFixed(2)}${unit}`)
+const fmtGold = (close: number | null | undefined, prevClose: number | null) => {
+  if (close == null) return '—'
+  if (prevClose == null) return `$${close.toFixed(2)}`
+  const chg = ((close - prevClose) / prevClose) * 100
+  return `$${close.toFixed(2)} (${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%)`
+}

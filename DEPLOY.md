@@ -140,6 +140,116 @@ exported rows once you have enough of them to be worth slicing.
 
 ---
 
+## Compounding real 1m MGC bars (MIDAS Bar Streamer)
+
+TradingView's terms explicitly prohibit automated scraping — scripts, API
+replay, scripted logins — of its own data, which rules out unofficial
+pullers like `tvdatafeed`. `alert()` is the sanctioned channel instead, and
+it's already wired up: **`skills/midas-regime-slicer/MIDAS_Bar_Streamer.pine`**
+fires one JSON message per closed bar, reusing the exact same webhook
+endpoint and gateway as the regime filter above. It does not back-fill —
+alerts only fire on live and newly-loaded bars — but every bar closes into
+the `market_bars` cache from the moment the alert is created, same table the
+Alpha Vantage integration uses.
+
+### Setup
+
+On a chart at the symbol/timeframe you want to accumulate (e.g. **MGC1! on
+a 1-minute chart**):
+
+1. Add `MIDAS_Bar_Streamer.pine`
+2. Right-click → **Add alert**
+3. **Condition**: the indicator → **Any alert() function call**
+4. **Trigger**: Once Per Bar Close
+5. Leave the **Message** box empty
+6. **Notifications → Webhook URL**: the same
+   `https://<your-app>.up.railway.app/api/webhook/tradingview/<TOKEN>` URL
+   used for the regime filter
+7. Save
+
+One alert per symbol/timeframe you want streamed — a free/basic TradingView
+plan caps concurrent alerts, which is why this is a separate, minimal
+indicator rather than folded into the regime filter.
+
+### Reading it back
+
+```
+GET /api/market/bars?symbol=MGC1!&timeframe=1&limit=500
+```
+Requires `X-Vega-Key`. Rows are tagged `source: "tradingview_webhook"` to
+distinguish them from Alpha Vantage's cached data in the same table.
+`parity_engine/alphavantage_loader.py`'s `load_cached_bars()` reads this
+generically — despite the module name, it just hits `/api/market/bars` and
+doesn't care which source populated a given symbol/timeframe.
+
+---
+
+## Market data (Alpha Vantage) — macro context, not an MGC feed
+
+Alpha Vantage has **no futures coverage** — there is no `MGC1!` at any price
+tier — and gates intraday bars behind a paid plan even for the instruments it
+does cover. This integration does not pretend otherwise: it adds daily gold
+spot (`GOLD_SILVER_HISTORY`), macro series (Treasury yields, CPI, Fed funds,
+a dollar-strength FX proxy), and a daily RSI/ATR/ADX read on `GLD` as an
+independent third opinion against the Pine/Python parity check. All of it
+shows up in the Diagnostics stage under **Macro & third opinion** — purely
+informational, never part of the deploy gate.
+
+### 1. Set the key
+
+| Variable | Value |
+|---|---|
+| `ALPHAVANTAGE_API_KEY` | your Alpha Vantage key |
+
+Optional tuning (defaults shown):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ALPHAVANTAGE_DAILY_QUOTA` | `25` | raise after upgrading past the free tier |
+
+### 2. How it fetches
+
+Never on-demand from the dashboard — the free tier's 25 requests/day makes
+that a footgun. Instead the gateway runs a fixed ~8-call watchlist once every
+UTC day (checked on boot, then hourly, so a redeploy after the daily window
+still catches it), stopping early if the budget runs out rather than failing
+loudly. The dashboard only ever reads what's already cached
+(`GET /api/market/bars`, `/api/market/macro`, `/api/market/indicators`) —
+those routes never trigger a live call. To force a refresh immediately:
+
+```bash
+curl -X POST -H "X-Vega-Key: $VEGA_API_KEY" https://<your-app>.up.railway.app/api/market/refresh
+```
+
+`/api/health` reports `marketData`: `quotaUsedToday`, `quotaRemaining`,
+`lastRefreshAt`, `cachedBars`.
+
+### 3. Storage
+
+Same dual-backend as signals: Postgres when `DATABASE_URL` is set (the same
+database, a separate `market_bars` / `macro_series` / `market_quota` set of
+tables), JSONL fallback (`market_bars.jsonl`, `macro_series.jsonl`,
+`market_quota.json`) otherwise — ephemeral on Railway without Postgres, same
+caveat as signals. The quota counter needs to survive redeploys to actually
+enforce the daily cap, so attach Postgres here too.
+
+### 4. Python access
+
+`parity_engine/alphavantage_loader.py` reads the same cache over HTTP
+(`GET /api/market/bars`) rather than calling Alpha Vantage directly, so quota
+is never spent twice:
+
+```bash
+GATEWAY_URL=https://<your-app>.up.railway.app VEGA_API_KEY=$VEGA_API_KEY \
+  python -m parity_engine.alphavantage_loader XAUUSD
+```
+
+Note the gold series is a daily spot close, not an OHLC session — open,
+high and low all equal close on every bar. Honest about what the data is
+rather than fabricating a range.
+
+---
+
 ## What is not deployed
 
 - **MRE replay server** (`MRE_Server.py`, port 8002) — the Replay blade's live

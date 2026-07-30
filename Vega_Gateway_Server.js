@@ -15,6 +15,8 @@ const { v4: uuidv4 } = require('uuid');
 const client = require('prom-client');
 const { createSwarmOrchestrator } = require('./swarm_orchestrator');
 const { createStore, normalise: normaliseSignal } = require('./signal_store');
+const { createStore: createMarketStore, normaliseBar } = require('./market_store');
+const { createMarketDataClient, QuotaExceededError } = require('./market_data');
 
 const app = express();
 // Railway (and most PaaS) inject $PORT and route external traffic to it.
@@ -27,6 +29,18 @@ const GATEWAY_VERSION = '1.4';
 
 // Signal store: Postgres when DATABASE_URL is set, JSONL otherwise.
 const signals = createStore();
+
+// Market data cache (bars + macro/indicator series) and the Alpha Vantage
+// client. See market_data.js for why this is provider-agnostic and what it
+// can and can't do (no futures, no free-tier intraday, 25 req/day).
+const marketStore = createMarketStore();
+const ALPHAVANTAGE_API_KEY = process.env.ALPHAVANTAGE_API_KEY || '';
+const ALPHAVANTAGE_DAILY_QUOTA = Number(process.env.ALPHAVANTAGE_DAILY_QUOTA || 25);
+const marketClient = createMarketDataClient({
+  apiKey: ALPHAVANTAGE_API_KEY,
+  store: marketStore,
+  dailyQuota: ALPHAVANTAGE_DAILY_QUOTA,
+});
 
 // Shared-secret gate. When VEGA_API_KEY is set, every /api/* request must
 // carry it as X-Vega-Key. Unset = open (local dev). CORS alone is no defence:
@@ -215,6 +229,66 @@ function appendLog(line) {
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ---------------------------------------------------------------------------
+// Market data refresh
+//
+// Never fetched on-demand from a dashboard request — the 25/day cap makes
+// that a footgun. Instead a small watchlist runs on a schedule, and the
+// dashboard only ever reads what has already been cached. The list below is
+// ~8 calls, comfortably inside the daily cap with headroom for a manual
+// POST /api/market/refresh or ad-hoc debugging.
+// ---------------------------------------------------------------------------
+const MARKET_WATCHLIST = [
+  { label: 'XAUUSD daily (gold spot history)', run: (c) => c.fetchGoldSilverHistory('GOLD') },
+  { label: 'GLD RSI(14) daily',  run: (c) => c.fetchIndicator('RSI', 'GLD', { time_period: 14, series_type: 'close' }) },
+  { label: 'GLD ATR(14) daily',  run: (c) => c.fetchIndicator('ATR', 'GLD', { time_period: 14 }) },
+  { label: 'GLD ADX(14) daily',  run: (c) => c.fetchIndicator('ADX', 'GLD', { time_period: 14 }) },
+  { label: '10Y Treasury yield', run: (c) => c.fetchMacro('TREASURY_YIELD', 'TREASURY_YIELD_10Y', { interval: 'daily' }) },
+  { label: 'Federal funds rate', run: (c) => c.fetchMacro('FEDERAL_FUNDS_RATE', 'FEDERAL_FUNDS_RATE') },
+  { label: 'CPI',                run: (c) => c.fetchMacro('CPI', 'CPI') },
+  { label: 'EUR/USD (dollar strength proxy)', run: (c) => c.fetchFxRate('EUR', 'USD') },
+];
+
+let marketRefreshInFlight = null;
+
+/** Walks the watchlist, stopping the moment the daily budget runs out rather
+ *  than failing loudly mid-run — a partial refresh is still useful. One
+ *  step's failure does not abort the rest. */
+async function runMarketRefresh() {
+  if (marketRefreshInFlight) return marketRefreshInFlight;
+  marketRefreshInFlight = (async () => {
+    const results = [];
+    for (const step of MARKET_WATCHLIST) {
+      try {
+        const rows = await step.run(marketClient);
+        results.push({ label: step.label, ok: true, count: Array.isArray(rows) ? rows.length : 1 });
+      } catch (e) {
+        results.push({ label: step.label, ok: false, error: e.message });
+        if (e instanceof QuotaExceededError) break;
+      }
+    }
+    await marketStore.setLastRefresh(marketClient.provider, new Date().toISOString());
+    return results;
+  })();
+  try {
+    return await marketRefreshInFlight;
+  } finally {
+    marketRefreshInFlight = null;
+  }
+}
+
+/** Runs at most once per UTC day. Checked on boot and hourly thereafter —
+ *  no cron dependency needed for a once-a-day job. */
+async function maybeRunDailyMarketRefresh() {
+  if (!ALPHAVANTAGE_API_KEY) return;
+  const { lastRefreshAt } = await marketStore.getQuota(marketClient.provider);
+  const today = new Date().toISOString().slice(0, 10);
+  if (lastRefreshAt && lastRefreshAt.slice(0, 10) === today) return;
+  console.log('[market] running scheduled daily refresh');
+  const results = await runMarketRefresh();
+  console.log(JSON.stringify({ tag: 'market_refresh', results }));
 }
 
 function isCircuitOpen(provider) {
@@ -691,6 +765,22 @@ app.get('/api/providers', (_req, res) => {
 app.get('/api/health', async (_req, res) => {
   let signalCount = null;
   try { signalCount = await signals.count(); } catch { /* store not ready */ }
+
+  let marketData = { configured: !!ALPHAVANTAGE_API_KEY };
+  try {
+    const quota = await marketStore.getQuota(marketClient.provider);
+    marketData = {
+      configured: !!ALPHAVANTAGE_API_KEY,
+      provider: marketClient.provider,
+      store: marketStore.kind,
+      dailyQuota: ALPHAVANTAGE_DAILY_QUOTA,
+      quotaUsedToday: quota.used,
+      quotaRemaining: Math.max(0, ALPHAVANTAGE_DAILY_QUOTA - quota.used),
+      lastRefreshAt: quota.lastRefreshAt,
+      cachedBars: await marketStore.count(),
+    };
+  } catch { /* store not ready */ }
+
   res.json({
     status: 'ONLINE',
     version: GATEWAY_VERSION,
@@ -698,6 +788,7 @@ app.get('/api/health', async (_req, res) => {
     circuitState: getCircuitBreaker(DEFAULT_PROVIDER).state,
     signalStore: signals.kind,
     signalCount,
+    marketData,
     // Lets you confirm remotely whether the dashboard build shipped.
     distFound: fs.existsSync(path.join(__dirname, 'midas_code', 'dist', 'index.html')),
     timestamp: new Date().toISOString(),
@@ -721,6 +812,13 @@ app.get('/metrics', async (_req, res) => {
 // Bodies arrive as JSON when the alert message is JSON, otherwise plain text,
 // so this route accepts both. Always answers 200 quickly on success: TradingView
 // disables an alert after repeated non-2xx responses.
+//
+// Two payload shapes share this one endpoint, split by `event`:
+//   - "bar_close" (MIDAS_Bar_Streamer.pine) -> OHLCV, goes to market_bars
+//     via marketStore. This is real accumulated history, not a discrete
+//     event, so it does not belong in the signals log.
+//   - anything else (MIDAS_Regime_Filter.pine, manual test posts, etc.)
+//     -> the existing signals table, unchanged.
 // ---------------------------------------------------------------------------
 const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN || null;
 
@@ -750,6 +848,21 @@ app.post('/api/webhook/tradingview/:token',
       try { parsed = JSON.parse(text); } catch { /* plain-text alert */ }
     }
 
+    if (parsed && parsed.event === 'bar_close') {
+      try {
+        const bar = normaliseBar(parsed);
+        if (!bar.symbol || !bar.timeframe || bar.time == null || bar.close == null) {
+          return res.status(400).json({ error: { message: 'bar_close payload missing required fields' } });
+        }
+        await marketStore.upsertBars([bar]);
+        console.log(JSON.stringify({ tag: 'bar', symbol: bar.symbol, timeframe: bar.timeframe, time: bar.time }));
+        return res.json({ ok: true, kind: 'bar', symbol: bar.symbol, timeframe: bar.timeframe });
+      } catch (e) {
+        console.error('[market] bar_close insert failed:', e.message);
+        return res.status(500).json({ error: { message: 'store failed' } });
+      }
+    }
+
     try {
       const row = await signals.insert(normaliseSignal(parsed, text));
       console.log(JSON.stringify({ tag: 'signal', id: row.id, len: text.length }));
@@ -769,6 +882,65 @@ app.get('/api/signals', async (req, res) => {
       event: req.query.event || null,
     });
     res.json({ count: rows.length, store: signals.kind, signals: rows });
+  } catch (e) {
+    res.status(500).json({ error: { message: e.message } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Market data — cached Alpha Vantage bars, indicators and macro series.
+// These routes only ever read the cache (see market_store.js); nothing here
+// triggers a live upstream call, so a dashboard hammering this endpoint can
+// never burn the 25/day budget. Refreshing the cache is a separate,
+// explicitly rate-limited action (see POST /api/market/refresh below).
+// ---------------------------------------------------------------------------
+app.get('/api/market/bars', async (req, res) => {
+  const symbol = req.query.symbol;
+  const timeframe = req.query.timeframe || '1d';
+  if (!symbol) return res.status(400).json({ error: { message: 'symbol is required' } });
+  try {
+    const rows = await marketStore.listBars({ symbol, timeframe, limit: parseInt(req.query.limit, 10) || 500 });
+    res.json({ symbol, timeframe, count: rows.length, bars: rows });
+  } catch (e) {
+    res.status(500).json({ error: { message: e.message } });
+  }
+});
+
+app.get('/api/market/macro', async (req, res) => {
+  const series = req.query.series;
+  if (!series) return res.status(400).json({ error: { message: 'series is required' } });
+  try {
+    const rows = await marketStore.listMacro({ series, limit: parseInt(req.query.limit, 10) || 200 });
+    res.json({ series, count: rows.length, data: rows });
+  } catch (e) {
+    res.status(500).json({ error: { message: e.message } });
+  }
+});
+
+// Sugar over /api/market/macro for the RSI/ATR/ADX series the refresh caches,
+// so a caller doesn't need to know the `${symbol}_${fn}_${period}` naming
+// convention used internally.
+app.get('/api/market/indicators', async (req, res) => {
+  const { symbol, fn, period = '14' } = req.query;
+  if (!symbol || !fn) return res.status(400).json({ error: { message: 'symbol and fn are required' } });
+  try {
+    const series = `${symbol}_${fn.toUpperCase()}_${period}`;
+    const rows = await marketStore.listMacro({ series, limit: parseInt(req.query.limit, 10) || 200 });
+    res.json({ symbol, fn: fn.toUpperCase(), period: Number(period), count: rows.length, data: rows });
+  } catch (e) {
+    res.status(500).json({ error: { message: e.message } });
+  }
+});
+
+// Manual trigger — same budget-aware watchlist runner the scheduler uses.
+// Protected by the standard X-Vega-Key gate like every other /api route.
+app.post('/api/market/refresh', async (_req, res) => {
+  if (!ALPHAVANTAGE_API_KEY) {
+    return res.status(503).json({ error: { message: 'ALPHAVANTAGE_API_KEY not configured' } });
+  }
+  try {
+    const results = await runMarketRefresh();
+    res.json({ ok: true, results });
   } catch (e) {
     res.status(500).json({ error: { message: e.message } });
   }
@@ -820,4 +992,16 @@ app.listen(PORT, HOST, () => {
   console.log(`Auth             : ${VEGA_API_KEY ? 'X-Vega-Key required' : 'OPEN (set VEGA_API_KEY to lock down)'}`);
   console.log(`http://${HOST}:${PORT}`);
   console.log(`Rate limiting + Retry + Circuit Breaker + Tracing + Prometheus enabled\n`);
+
+  // Once-a-day market data refresh. Checked on boot (covers a redeploy that
+  // lands after the previous day's refresh already ran) and then hourly —
+  // no cron dependency needed for a job this infrequent.
+  if (ALPHAVANTAGE_API_KEY) {
+    maybeRunDailyMarketRefresh().catch((e) => console.error('[market] refresh check failed:', e.message));
+    setInterval(() => {
+      maybeRunDailyMarketRefresh().catch((e) => console.error('[market] refresh check failed:', e.message));
+    }, 60 * 60 * 1000);
+  } else {
+    console.log('Market data      : disabled (set ALPHAVANTAGE_API_KEY to enable)');
+  }
 });

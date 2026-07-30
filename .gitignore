@@ -44,3 +44,8 @@ Thumbs.db
 
 # Local signal capture (JSONL fallback store)
 signals.jsonl
+
+# Local market data cache (JSONL fallback store)
+market_bars.jsonl
+macro_series.jsonl
+market_quota.json
